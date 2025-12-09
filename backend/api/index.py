@@ -211,6 +211,42 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'logs': logs}),
                     'isBase64Encoded': False
                 }
+            
+            elif resource == 'users':
+                cur.execute('''
+                    SELECT id, username, full_name, email, phone, role, is_active, created_at
+                    FROM users
+                    ORDER BY created_at DESC
+                ''')
+                columns = [desc[0] for desc in cur.description]
+                users = [dict(zip(columns, row)) for row in cur.fetchall()]
+                
+                for user in users:
+                    if user.get('created_at'):
+                        user['created_at'] = user['created_at'].strftime('%d.%m.%Y %H:%M')
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'users': users}),
+                    'isBase64Encoded': False
+                }
+            
+            elif resource == 'roles':
+                cur.execute('''
+                    SELECT id, role_name, display_name, permissions
+                    FROM roles
+                    ORDER BY id
+                ''')
+                columns = [desc[0] for desc in cur.description]
+                roles = [dict(zip(columns, row)) for row in cur.fetchall()]
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'roles': roles}),
+                    'isBase64Encoded': False
+                }
         
         elif method == 'POST':
             body_data = json.loads(event.get('body', '{}'))
@@ -374,6 +410,44 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'success': True, 'id': client_id}),
                     'isBase64Encoded': False
                 }
+            
+            elif action == 'create_user':
+                data = body_data.get('data', {})
+                cur.execute('''
+                    INSERT INTO users (username, full_name, email, phone, role)
+                    VALUES (%s, %s, %s, %s, %s)
+                    RETURNING id
+                ''', (data.get('username'), data.get('full_name'), data.get('email'),
+                      data.get('phone'), data.get('role')))
+                
+                user_id = cur.fetchone()[0]
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'id': user_id}),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'update_role_permissions':
+                data = body_data.get('data', {})
+                role_name = body_data.get('role_name')
+                
+                cur.execute('''
+                    UPDATE roles
+                    SET permissions = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE role_name = %s
+                ''', (json.dumps(data.get('permissions')), role_name))
+                
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
         
         elif method == 'PUT':
             body_data = json.loads(event.get('body', '{}'))
@@ -466,6 +540,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     WHERE id = %s
                 ''', (data.get('name'), data.get('contact_person'), data.get('phone'), 
                       data.get('email'), data.get('address'), item_id))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
+            elif resource == 'user':
+                cur.execute('''
+                    UPDATE users SET full_name = %s, email = %s, phone = %s, role = %s, is_active = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ''', (data.get('full_name'), data.get('email'), data.get('phone'),
+                      data.get('role'), data.get('is_active'), item_id))
                 conn.commit()
                 
                 return {

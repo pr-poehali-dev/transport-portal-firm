@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import OrderForm from '@/components/OrderForm';
 import ResourceManager from '@/components/ResourceManager';
+import SettingsPage from '@/components/SettingsPage';
 
 const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44ca0e';
 const DOCS_URL = 'https://functions.poehali.dev/7a5d7ce6-72d6-4fb9-8c89-2adabbad28c2';
@@ -41,6 +42,7 @@ const Index = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [selectedLogOrder, setSelectedLogOrder] = useState<number | null>(null);
+  const [userPermissions, setUserPermissions] = useState<any>({});
 
   useEffect(() => {
     loadData();
@@ -71,6 +73,13 @@ const Index = () => {
       setStats(statsData);
       setClients(clientsData.clients || []);
       setActivityLogs(logsData.logs || []);
+      
+      const rolesRes = await fetch(`${API_URL}?resource=roles`);
+      const rolesData = await rolesRes.json();
+      const currentRole = rolesData.roles?.find((r: any) => r.role_name === userRole);
+      if (currentRole) {
+        setUserPermissions(currentRole.permissions || {});
+      }
     } catch (error) {
       toast.error('Ошибка загрузки данных');
       console.error(error);
@@ -206,6 +215,16 @@ const Index = () => {
               <Icon name="Activity" size={20} className="mr-3" />
               Обзор
             </Button>
+            {userPermissions?.settings?.view && (
+              <Button
+                variant={activeSection === 'settings' ? 'default' : 'ghost'}
+                className="w-full justify-start"
+                onClick={() => { setActiveSection('settings'); setMobileMenuOpen(false); }}
+              >
+                <Icon name="Settings" size={20} className="mr-3" />
+                Настройки
+              </Button>
+            )}
           </nav>
 
           <div className="p-4 border-t border-sidebar-border">
@@ -232,6 +251,7 @@ const Index = () => {
                   {activeSection === 'vehicles' && 'Автопарк'}
                   {activeSection === 'drivers' && 'База водителей'}
                   {activeSection === 'clients' && 'Перевозчик'}
+                  {activeSection === 'settings' && 'Настройки'}
                 </h2>
                 <p className="text-xs md:text-sm text-gray-500 mt-1">
                   Роль: <span className="font-semibold capitalize">{userRole}</span>
@@ -474,6 +494,10 @@ const Index = () => {
               <div className="space-y-6 animate-fade-in">
                 <ResourceManager type="clients" data={clients} clients={clients} onRefresh={loadData} />
               </div>
+            )}
+
+            {activeSection === 'settings' && userPermissions?.settings?.view && (
+              <SettingsPage currentUser={userRole} />
             )}
 
             {(activeSection === 'routes' || activeSection === 'reports') && (
