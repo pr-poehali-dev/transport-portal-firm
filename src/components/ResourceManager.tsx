@@ -42,8 +42,7 @@ export default function ResourceManager({ type, data, onRefresh }: ResourceManag
           license_series: '',
           license_number: '', 
           license_issued_by: '',
-          license_issue_date: '',
-          status: 'available' 
+          license_issue_date: ''
         };
       case 'vehicles':
         return { license_plate: '', model: '', capacity: '', status: 'available' };
@@ -421,18 +420,6 @@ export default function ResourceManager({ type, data, onRefresh }: ResourceManag
             </div>
           </div>
 
-          <div className="border-t pt-4 mt-4">
-            <Label>Статус</Label>
-            <Select value={formData.status} onValueChange={(val) => setFormData({ ...formData, status: val })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="available">Доступен</SelectItem>
-                <SelectItem value="busy">Занят</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </>
       );
     }
