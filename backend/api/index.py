@@ -172,8 +172,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 cur.execute('''
                     INSERT INTO orders (
                         order_number, client_id, carrier, vehicle_id, driver_id,
-                        route_from, route_to, order_date, status, invoice_number, phone
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        route_from, route_to, order_date, status, invoice_number, phone,
+                        border_crossing, delivery_address, overload
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 ''', (
                     data.get('order_number'),
@@ -186,7 +187,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     data.get('order_date'),
                     'pending',
                     data.get('invoice_number'),
-                    data.get('phone')
+                    data.get('phone'),
+                    data.get('border_crossing'),
+                    data.get('delivery_address'),
+                    data.get('overload')
                 ))
                 
                 order_id = cur.fetchone()[0]
@@ -216,13 +220,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             elif action == 'update_stage':
                 stage_id = body_data.get('stage_id')
                 is_completed = body_data.get('is_completed')
-                completed_by = body_data.get('completed_by')
+                completed_by = body_data.get('completed_by', 'Пользователь')
                 
-                cur.execute('''
-                    UPDATE order_stages
-                    SET is_completed = %s, completed_by = %s, completed_at = CURRENT_TIMESTAMP
-                    WHERE id = %s
-                ''', (is_completed, completed_by, stage_id))
+                if is_completed:
+                    cur.execute('''
+                        UPDATE order_stages
+                        SET is_completed = true, completed_by = %s, completed_at = CURRENT_TIMESTAMP
+                        WHERE id = %s
+                    ''', (completed_by, stage_id))
+                else:
+                    cur.execute('''
+                        UPDATE order_stages
+                        SET is_completed = false, completed_by = NULL, completed_at = NULL
+                        WHERE id = %s
+                    ''', (stage_id,))
                 
                 conn.commit()
                 
@@ -232,6 +243,160 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'success': True}),
                     'isBase64Encoded': False
                 }
+            
+            elif action == 'create_driver':
+                data = body_data.get('data', {})
+                cur.execute('''
+                    INSERT INTO drivers (full_name, phone, license_number, status)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING id
+                ''', (data.get('full_name'), data.get('phone'), data.get('license_number'), 'available'))
+                
+                driver_id = cur.fetchone()[0]
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'id': driver_id}),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'create_vehicle':
+                data = body_data.get('data', {})
+                cur.execute('''
+                    INSERT INTO vehicles (license_plate, model, capacity, status)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING id
+                ''', (data.get('license_plate'), data.get('model'), data.get('capacity'), 'available'))
+                
+                vehicle_id = cur.fetchone()[0]
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'id': vehicle_id}),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'create_client':
+                data = body_data.get('data', {})
+                cur.execute('''
+                    INSERT INTO clients (name, contact_person, phone, email, address)
+                    VALUES (%s, %s, %s, %s, %s)
+                    RETURNING id
+                ''', (data.get('name'), data.get('contact_person'), data.get('phone'), 
+                      data.get('email'), data.get('address')))
+                
+                client_id = cur.fetchone()[0]
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'id': client_id}),
+                    'isBase64Encoded': False
+                }
+        
+        elif method == 'PUT':
+            body_data = json.loads(event.get('body', '{}'))
+            resource = body_data.get('resource')
+            data = body_data.get('data', {})
+            item_id = body_data.get('id')
+            
+            if resource == 'order':
+                cur.execute('''
+                    UPDATE orders SET
+                        order_number = %s, client_id = %s, carrier = %s, vehicle_id = %s,
+                        driver_id = %s, route_from = %s, route_to = %s, status = %s,
+                        invoice_number = %s, phone = %s, border_crossing = %s,
+                        delivery_address = %s, overload = %s
+                    WHERE id = %s
+                ''', (
+                    data.get('order_number'), data.get('client_id'), data.get('carrier'),
+                    data.get('vehicle_id'), data.get('driver_id'), data.get('route_from'),
+                    data.get('route_to'), data.get('status'), data.get('invoice_number'),
+                    data.get('phone'), data.get('border_crossing'), data.get('delivery_address'),
+                    data.get('overload'), item_id
+                ))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
+            elif resource == 'driver':
+                cur.execute('''
+                    UPDATE drivers SET full_name = %s, phone = %s, license_number = %s, status = %s
+                    WHERE id = %s
+                ''', (data.get('full_name'), data.get('phone'), data.get('license_number'), 
+                      data.get('status'), item_id))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
+            elif resource == 'vehicle':
+                cur.execute('''
+                    UPDATE vehicles SET license_plate = %s, model = %s, capacity = %s, status = %s
+                    WHERE id = %s
+                ''', (data.get('license_plate'), data.get('model'), data.get('capacity'), 
+                      data.get('status'), item_id))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
+            elif resource == 'client':
+                cur.execute('''
+                    UPDATE clients SET name = %s, contact_person = %s, phone = %s, email = %s, address = %s
+                    WHERE id = %s
+                ''', (data.get('name'), data.get('contact_person'), data.get('phone'), 
+                      data.get('email'), data.get('address'), item_id))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+        
+        elif method == 'DELETE':
+            body_data = json.loads(event.get('body', '{}'))
+            resource = body_data.get('resource')
+            item_id = body_data.get('id')
+            
+            if resource == 'order':
+                cur.execute('DELETE FROM order_stages WHERE order_id = %s', (item_id,))
+                cur.execute('DELETE FROM orders WHERE id = %s', (item_id,))
+            elif resource == 'driver':
+                cur.execute('DELETE FROM drivers WHERE id = %s', (item_id,))
+            elif resource == 'vehicle':
+                cur.execute('DELETE FROM vehicles WHERE id = %s', (item_id,))
+            elif resource == 'client':
+                cur.execute('DELETE FROM clients WHERE id = %s', (item_id,))
+            
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'success': True}),
+                'isBase64Encoded': False
+            }
         
         return {
             'statusCode': 405,

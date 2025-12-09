@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import OrderForm from '@/components/OrderForm';
+import ResourceManager from '@/components/ResourceManager';
 
 const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44ca0e';
 const DOCS_URL = 'https://functions.poehali.dev/7a5d7ce6-72d6-4fb9-8c89-2adabbad28c2';
@@ -31,6 +33,11 @@ const Index = () => {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [orderStages, setOrderStages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showOrderForm, setShowOrderForm] = useState(false);
+  const [editOrder, setEditOrder] = useState<any>(null);
+  const [clients, setClients] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     loadData();
@@ -39,15 +46,17 @@ const Index = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [ordersRes, driversRes, vehiclesRes, statsRes] = await Promise.all([
+      const [ordersRes, driversRes, vehiclesRes, statsRes, clientsRes] = await Promise.all([
         fetch(`${API_URL}?resource=orders`),
         fetch(`${API_URL}?resource=drivers`),
         fetch(`${API_URL}?resource=vehicles`),
-        fetch(`${API_URL}?resource=stats`)
+        fetch(`${API_URL}?resource=stats`),
+        fetch(`${API_URL}?resource=clients`)
       ]);
 
       const ordersData = await ordersRes.json();
       const driversData = await driversRes.json();
+      const clientsData = await clientsRes.json();
       const vehiclesData = await vehiclesRes.json();
       const statsData = await statsRes.json();
 
@@ -55,6 +64,7 @@ const Index = () => {
       setDrivers(driversData.drivers || []);
       setVehicles(vehiclesData.vehicles || []);
       setStats(statsData);
+      setClients(clientsData.clients || []);
     } catch (error) {
       toast.error('Ошибка загрузки данных');
       console.error(error);
@@ -316,7 +326,28 @@ const Index = () => {
                         <CardDescription>Управление перевозками и отчетность</CardDescription>
                       </div>
                       <div className="flex gap-2">
-                        <Input placeholder="Поиск заказа..." className="w-64" />
+                        <Input 
+                          placeholder="Поиск заказа..." 
+                          className="w-64"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                          <SelectTrigger className="w-40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Все статусы</SelectItem>
+                            <SelectItem value="pending">Ожидание</SelectItem>
+                            <SelectItem value="loading">Загрузка</SelectItem>
+                            <SelectItem value="in_transit">В пути</SelectItem>
+                            <SelectItem value="delivered">Доставлен</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button onClick={() => { setEditOrder(null); setShowOrderForm(true); }}>
+                          <Icon name="Plus" size={18} className="mr-2" />
+                          Новый заказ
+                        </Button>
                       </div>
                     </div>
                   </CardHeader>
@@ -336,7 +367,16 @@ const Index = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {orders.map((order) => (
+                        {orders
+                          .filter(order => {
+                            const matchesSearch = searchQuery === '' || 
+                              order.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              order.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              order.carrier.toLowerCase().includes(searchQuery.toLowerCase());
+                            const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+                            return matchesSearch && matchesStatus;
+                          })
+                          .map((order) => (
                           <TableRow key={order.id} className="hover:bg-gray-50">
                             <TableCell className="font-medium">{order.order_number}</TableCell>
                             <TableCell>{order.client_name}</TableCell>
@@ -357,9 +397,14 @@ const Index = () => {
                               )}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="ghost" size="sm" onClick={() => openOrderDetails(order)}>
-                                <Icon name="Eye" size={16} />
-                              </Button>
+                              <div className="flex gap-1 justify-end">
+                                <Button variant="ghost" size="sm" onClick={() => openOrderDetails(order)}>
+                                  <Icon name="Eye" size={16} />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => { setEditOrder(order); setShowOrderForm(true); }}>
+                                  <Icon name="Pencil" size={16} />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -372,78 +417,13 @@ const Index = () => {
 
             {activeSection === 'drivers' && (
               <div className="space-y-6 animate-fade-in">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle>База водителей</CardTitle>
-                        <CardDescription>Информация о водительском составе</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>ФИО</TableHead>
-                          <TableHead>Телефон</TableHead>
-                          <TableHead>Водит. удостоверение</TableHead>
-                          <TableHead>Статус</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {drivers.map((driver) => (
-                          <TableRow key={driver.id}>
-                            <TableCell className="font-medium">{driver.full_name}</TableCell>
-                            <TableCell>{driver.phone}</TableCell>
-                            <TableCell>{driver.license_number}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{driver.status}</Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
+                <ResourceManager type="drivers" data={drivers} onRefresh={loadData} />
               </div>
             )}
 
             {activeSection === 'vehicles' && (
               <div className="space-y-6 animate-fade-in">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle>Автопарк компании</CardTitle>
-                        <CardDescription>Управление транспортными средствами</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {vehicles.map((vehicle) => (
-                        <Card key={vehicle.id} className="hover:shadow-lg transition-all">
-                          <CardHeader>
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-lg">{vehicle.license_plate}</CardTitle>
-                              <Badge variant="outline">{vehicle.status}</Badge>
-                            </div>
-                            <CardDescription>{vehicle.model}</CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Грузоподъемность:</span>
-                                <span className="font-semibold">{vehicle.capacity}</span>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                <ResourceManager type="vehicles" data={vehicles} onRefresh={loadData} />
               </div>
             )}
 
@@ -501,7 +481,13 @@ const Index = () => {
               </div>
             )}
 
-            {(activeSection === 'routes' || activeSection === 'clients' || activeSection === 'reports') && (
+            {activeSection === 'clients' && (
+              <div className="space-y-6 animate-fade-in">
+                <ResourceManager type="clients" data={clients} onRefresh={loadData} />
+              </div>
+            )}
+
+            {(activeSection === 'routes' || activeSection === 'reports') && (
               <div className="animate-fade-in">
                 <Card className="text-center py-16">
                   <CardContent>
@@ -509,7 +495,6 @@ const Index = () => {
                     <h3 className="text-2xl font-bold mb-2">Раздел в разработке</h3>
                     <p className="text-gray-600">
                       Функционал "{activeSection === 'routes' && 'Маршруты'}
-                      {activeSection === 'clients' && 'Клиенты'}
                       {activeSection === 'reports' && 'Отчеты'}" будет доступен в следующей версии
                     </p>
                   </CardContent>
@@ -611,6 +596,16 @@ const Index = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <OrderForm
+        open={showOrderForm}
+        onClose={() => { setShowOrderForm(false); setEditOrder(null); }}
+        onSuccess={loadData}
+        editOrder={editOrder}
+        clients={clients}
+        drivers={drivers}
+        vehicles={vehicles}
+      />
     </div>
   );
 };
