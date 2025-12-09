@@ -1,0 +1,45 @@
+{
+  "tests": [
+    {
+      "name": "Get orders list",
+      "method": "GET",
+      "path": "/?resource=orders",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "orders": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get drivers list",
+      "method": "GET",
+      "path": "/?resource=drivers",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "drivers": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get vehicles list",
+      "method": "GET",
+      "path": "/?resource=vehicles",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "vehicles": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get statistics",
+      "method": "GET",
+      "path": "/?resource=stats",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "active_orders": "number",
+        "in_transit": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

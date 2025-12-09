@@ -1,90 +1,116 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Icon from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from 'sonner';
 
-const mockOrders = [
-  {
-    id: 1,
-    number: '2024-001',
-    client: 'ООО "Агропром"',
-    carrier: 'Транс-Логистик',
-    vehicle: 'А123ВС 77',
-    route: 'Москва - Санкт-Петербург',
-    orderDate: '15.12.2024',
-    status: 'В пути',
-    statusColor: 'bg-blue-500',
-    phone: '+7 (999) 123-45-67',
-    invoice: 'INV-2024-001',
-    overload: false,
-    fitoReady: true,
-    fitoReceived: '14.12.2024',
-    border: 'Торфяновка'
-  },
-  {
-    id: 2,
-    number: '2024-002',
-    client: 'ООО "ТрансЕвро"',
-    carrier: 'Быстрая доставка',
-    vehicle: 'В456ГД 99',
-    route: 'Казань - Екатеринбург',
-    orderDate: '14.12.2024',
-    status: 'Загрузка',
-    statusColor: 'bg-yellow-500',
-    phone: '+7 (999) 234-56-78',
-    invoice: 'INV-2024-002',
-    overload: true,
-    fitoReady: false,
-    fitoReceived: null,
-    border: 'Красная Горка'
-  },
-  {
-    id: 3,
-    number: '2024-003',
-    client: 'ИП Соколов',
-    carrier: 'Мега-Транс',
-    vehicle: 'Е789ЖЗ 50',
-    route: 'Новосибирск - Омск',
-    orderDate: '13.12.2024',
-    status: 'Доставлен',
-    statusColor: 'bg-green-500',
-    phone: '+7 (999) 345-67-89',
-    invoice: 'INV-2024-003',
-    overload: false,
-    fitoReady: true,
-    fitoReceived: '12.12.2024',
-    border: 'Ташанта'
-  }
-];
+const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44ca0e';
+const DOCS_URL = 'https://functions.poehali.dev/7a5d7ce6-72d6-4fb9-8c89-2adabbad28c2';
 
-const mockDrivers = [
-  { id: 1, name: 'Иванов Иван Иванович', phone: '+7 (999) 111-11-11', license: 'В123456789', status: 'Доступен' },
-  { id: 2, name: 'Петров Петр Петрович', phone: '+7 (999) 222-22-22', license: 'В987654321', status: 'В рейсе' },
-  { id: 3, name: 'Сидоров Сергей Сергеевич', phone: '+7 (999) 333-33-33', license: 'В456789123', status: 'Отдых' }
-];
-
-const mockVehicles = [
-  { id: 1, number: 'А123ВС 77', model: 'MAN TGX', capacity: '20т', status: 'В рейсе' },
-  { id: 2, number: 'В456ГД 99', model: 'Volvo FH', capacity: '22т', status: 'На базе' },
-  { id: 3, number: 'Е789ЖЗ 50', model: 'Scania R450', capacity: '24т', status: 'Техобслуживание' }
-];
+const statusMap: Record<string, { label: string; color: string }> = {
+  'pending': { label: 'Ожидание', color: 'bg-gray-500' },
+  'loading': { label: 'Загрузка', color: 'bg-yellow-500' },
+  'in_transit': { label: 'В пути', color: 'bg-blue-500' },
+  'delivered': { label: 'Доставлен', color: 'bg-green-500' }
+};
 
 const Index = () => {
   const [userRole, setUserRole] = useState<'logist' | 'buyer' | 'manager'>('logist');
   const [activeSection, setActiveSection] = useState('overview');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [stats, setStats] = useState({ active_orders: 0, in_transit: 0, total_drivers: 0, total_vehicles: 0 });
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [orderStages, setOrderStages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const stats = [
-    { title: 'Активные заказы', value: '23', icon: 'TruckIcon', color: 'text-blue-500' },
-    { title: 'В пути', value: '15', icon: 'Navigation', color: 'text-green-500' },
-    { title: 'Водители', value: '47', icon: 'Users', color: 'text-purple-500' },
-    { title: 'Автомобили', value: '32', icon: 'Truck', color: 'text-orange-500' }
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [ordersRes, driversRes, vehiclesRes, statsRes] = await Promise.all([
+        fetch(`${API_URL}?resource=orders`),
+        fetch(`${API_URL}?resource=drivers`),
+        fetch(`${API_URL}?resource=vehicles`),
+        fetch(`${API_URL}?resource=stats`)
+      ]);
+
+      const ordersData = await ordersRes.json();
+      const driversData = await driversRes.json();
+      const vehiclesData = await vehiclesRes.json();
+      const statsData = await statsRes.json();
+
+      setOrders(ordersData.orders || []);
+      setDrivers(driversData.drivers || []);
+      setVehicles(vehiclesData.vehicles || []);
+      setStats(statsData);
+    } catch (error) {
+      toast.error('Ошибка загрузки данных');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadOrderStages = async (orderId: number) => {
+    try {
+      const res = await fetch(`${API_URL}?resource=order_stages&order_id=${orderId}`);
+      const data = await res.json();
+      setOrderStages(data.stages || []);
+    } catch (error) {
+      toast.error('Ошибка загрузки этапов');
+    }
+  };
+
+  const updateStage = async (stageId: number, isCompleted: boolean) => {
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_stage',
+          stage_id: stageId,
+          is_completed: isCompleted,
+          completed_by: userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : 'Менеджер'
+        })
+      });
+      
+      toast.success('Этап обновлен');
+      if (selectedOrder) {
+        loadOrderStages(selectedOrder.id);
+      }
+      loadData();
+    } catch (error) {
+      toast.error('Ошибка обновления этапа');
+    }
+  };
+
+  const openOrderDetails = (order: any) => {
+    setSelectedOrder(order);
+    loadOrderStages(order.id);
+  };
+
+  const generateDocument = (orderId: number, docType: 'waybill' | 'power_of_attorney') => {
+    const url = `${DOCS_URL}?order_id=${orderId}&type=${docType}`;
+    window.open(url, '_blank');
+  };
+
+  const statsDisplay = [
+    { title: 'Активные заказы', value: stats.active_orders.toString(), icon: 'TruckIcon', color: 'text-blue-500' },
+    { title: 'В пути', value: stats.in_transit.toString(), icon: 'Navigation', color: 'text-green-500' },
+    { title: 'Водители', value: stats.total_drivers.toString(), icon: 'Users', color: 'text-purple-500' },
+    { title: 'Автомобили', value: stats.total_vehicles.toString(), icon: 'Truck', color: 'text-orange-500' }
   ];
 
   return (
@@ -203,56 +229,10 @@ const Index = () => {
                 </p>
               </div>
               <div className="flex items-center gap-4">
-                <Button variant="outline" size="sm">
-                  <Icon name="Bell" size={18} className="mr-2" />
-                  Уведомления
+                <Button variant="outline" size="sm" onClick={loadData}>
+                  <Icon name="RefreshCw" size={18} className="mr-2" />
+                  Обновить
                 </Button>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button size="sm">
-                      <Icon name="Plus" size={18} className="mr-2" />
-                      Создать заказ
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Создание нового заказа</DialogTitle>
-                      <DialogDescription>
-                        Заполните информацию о новом заказе
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-2 gap-4 py-4">
-                      <div className="space-y-2">
-                        <Label>Клиент</Label>
-                        <Input placeholder="Название компании" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Перевозчик</Label>
-                        <Input placeholder="Выберите перевозчика" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Маршрут</Label>
-                        <Input placeholder="Откуда - Куда" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Дата заказа</Label>
-                        <Input type="date" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Гос. номер</Label>
-                        <Input placeholder="А123ВС 77" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Телефон</Label>
-                        <Input placeholder="+7 (999) 123-45-67" />
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline">Отмена</Button>
-                      <Button>Создать</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
               </div>
             </div>
           </header>
@@ -261,7 +241,7 @@ const Index = () => {
             {activeSection === 'overview' && (
               <div className="space-y-6 animate-fade-in">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {stats.map((stat, index) => (
+                  {statsDisplay.map((stat, index) => (
                     <Card key={index} className="hover:shadow-lg transition-all duration-300 hover:scale-105 border-l-4 border-l-primary">
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
@@ -286,15 +266,15 @@ const Index = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {mockOrders.slice(0, 3).map((order) => (
-                          <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        {orders.slice(0, 3).map((order) => (
+                          <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100" onClick={() => openOrderDetails(order)}>
                             <div>
-                              <p className="font-semibold">{order.number}</p>
-                              <p className="text-sm text-gray-600">{order.route}</p>
-                              <p className="text-xs text-gray-500">{order.client}</p>
+                              <p className="font-semibold">{order.order_number}</p>
+                              <p className="text-sm text-gray-600">{order.route_from} - {order.route_to}</p>
+                              <p className="text-xs text-gray-500">{order.client_name}</p>
                             </div>
-                            <Badge className={`${order.statusColor} text-white`}>
-                              {order.status}
+                            <Badge className={`${statusMap[order.status]?.color} text-white`}>
+                              {statusMap[order.status]?.label}
                             </Badge>
                           </div>
                         ))}
@@ -309,10 +289,10 @@ const Index = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {mockVehicles.map((vehicle) => (
+                        {vehicles.slice(0, 3).map((vehicle) => (
                           <div key={vehicle.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                             <div>
-                              <p className="font-semibold">{vehicle.number}</p>
+                              <p className="font-semibold">{vehicle.license_plate}</p>
                               <p className="text-sm text-gray-600">{vehicle.model}</p>
                               <p className="text-xs text-gray-500">Грузоподъемность: {vehicle.capacity}</p>
                             </div>
@@ -337,9 +317,6 @@ const Index = () => {
                       </div>
                       <div className="flex gap-2">
                         <Input placeholder="Поиск заказа..." className="w-64" />
-                        <Button variant="outline">
-                          <Icon name="Filter" size={18} />
-                        </Button>
                       </div>
                     </div>
                   </CardHeader>
@@ -359,32 +336,29 @@ const Index = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {mockOrders.map((order) => (
+                        {orders.map((order) => (
                           <TableRow key={order.id} className="hover:bg-gray-50">
-                            <TableCell className="font-medium">{order.number}</TableCell>
-                            <TableCell>{order.client}</TableCell>
+                            <TableCell className="font-medium">{order.order_number}</TableCell>
+                            <TableCell>{order.client_name}</TableCell>
                             <TableCell>{order.carrier}</TableCell>
-                            <TableCell>{order.vehicle}</TableCell>
-                            <TableCell>{order.route}</TableCell>
-                            <TableCell>{order.orderDate}</TableCell>
+                            <TableCell>{order.license_plate}</TableCell>
+                            <TableCell>{order.route_from} - {order.route_to}</TableCell>
+                            <TableCell>{order.order_date}</TableCell>
                             <TableCell>
-                              <Badge className={`${order.statusColor} text-white`}>
-                                {order.status}
+                              <Badge className={`${statusMap[order.status]?.color} text-white`}>
+                                {statusMap[order.status]?.label}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              {order.fitoReady ? (
+                              {order.fito_ready ? (
                                 <Icon name="CheckCircle2" className="text-green-500" size={20} />
                               ) : (
                                 <Icon name="Clock" className="text-yellow-500" size={20} />
                               )}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => openOrderDetails(order)}>
                                 <Icon name="Eye" size={16} />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Icon name="Edit" size={16} />
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -405,10 +379,6 @@ const Index = () => {
                         <CardTitle>База водителей</CardTitle>
                         <CardDescription>Информация о водительском составе</CardDescription>
                       </div>
-                      <Button>
-                        <Icon name="UserPlus" size={18} className="mr-2" />
-                        Добавить водителя
-                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -419,25 +389,16 @@ const Index = () => {
                           <TableHead>Телефон</TableHead>
                           <TableHead>Водит. удостоверение</TableHead>
                           <TableHead>Статус</TableHead>
-                          <TableHead className="text-right">Действия</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {mockDrivers.map((driver) => (
+                        {drivers.map((driver) => (
                           <TableRow key={driver.id}>
-                            <TableCell className="font-medium">{driver.name}</TableCell>
+                            <TableCell className="font-medium">{driver.full_name}</TableCell>
                             <TableCell>{driver.phone}</TableCell>
-                            <TableCell>{driver.license}</TableCell>
+                            <TableCell>{driver.license_number}</TableCell>
                             <TableCell>
                               <Badge variant="outline">{driver.status}</Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button variant="ghost" size="sm">
-                                <Icon name="Eye" size={16} />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Icon name="Edit" size={16} />
-                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -457,19 +418,15 @@ const Index = () => {
                         <CardTitle>Автопарк компании</CardTitle>
                         <CardDescription>Управление транспортными средствами</CardDescription>
                       </div>
-                      <Button>
-                        <Icon name="Plus" size={18} className="mr-2" />
-                        Добавить автомобиль
-                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {mockVehicles.map((vehicle) => (
+                      {vehicles.map((vehicle) => (
                         <Card key={vehicle.id} className="hover:shadow-lg transition-all">
                           <CardHeader>
                             <div className="flex items-center justify-between">
-                              <CardTitle className="text-lg">{vehicle.number}</CardTitle>
+                              <CardTitle className="text-lg">{vehicle.license_plate}</CardTitle>
                               <Badge variant="outline">{vehicle.status}</Badge>
                             </div>
                             <CardDescription>{vehicle.model}</CardDescription>
@@ -479,16 +436,6 @@ const Index = () => {
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Грузоподъемность:</span>
                                 <span className="font-semibold">{vehicle.capacity}</span>
-                              </div>
-                              <div className="flex gap-2 pt-4">
-                                <Button variant="outline" size="sm" className="flex-1">
-                                  <Icon name="Eye" size={14} className="mr-1" />
-                                  Детали
-                                </Button>
-                                <Button variant="outline" size="sm" className="flex-1">
-                                  <Icon name="Edit" size={14} className="mr-1" />
-                                  Изменить
-                                </Button>
                               </div>
                             </div>
                           </CardContent>
@@ -500,7 +447,61 @@ const Index = () => {
               </div>
             )}
 
-            {(activeSection === 'routes' || activeSection === 'clients' || activeSection === 'documents' || activeSection === 'reports') && (
+            {activeSection === 'documents' && (
+              <div className="space-y-6 animate-fade-in">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Генерация документов</CardTitle>
+                    <CardDescription>Выберите заказ для создания документов</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>№ Заказа</TableHead>
+                          <TableHead>Клиент</TableHead>
+                          <TableHead>Маршрут</TableHead>
+                          <TableHead>Дата</TableHead>
+                          <TableHead className="text-right">Действия</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {orders.map((order) => (
+                          <TableRow key={order.id}>
+                            <TableCell className="font-medium">{order.order_number}</TableCell>
+                            <TableCell>{order.client_name}</TableCell>
+                            <TableCell>{order.route_from} → {order.route_to}</TableCell>
+                            <TableCell>{order.order_date}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex gap-2 justify-end">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => generateDocument(order.id, 'waybill')}
+                                >
+                                  <Icon name="FileText" size={16} className="mr-1" />
+                                  Накладная
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => generateDocument(order.id, 'power_of_attorney')}
+                                >
+                                  <Icon name="FileCheck" size={16} className="mr-1" />
+                                  Доверенность
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {(activeSection === 'routes' || activeSection === 'clients' || activeSection === 'reports') && (
               <div className="animate-fade-in">
                 <Card className="text-center py-16">
                   <CardContent>
@@ -509,7 +510,6 @@ const Index = () => {
                     <p className="text-gray-600">
                       Функционал "{activeSection === 'routes' && 'Маршруты'}
                       {activeSection === 'clients' && 'Клиенты'}
-                      {activeSection === 'documents' && 'Документы'}
                       {activeSection === 'reports' && 'Отчеты'}" будет доступен в следующей версии
                     </p>
                   </CardContent>
@@ -519,6 +519,98 @@ const Index = () => {
           </div>
         </main>
       </div>
+
+      <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Детали заказа {selectedOrder?.order_number}</DialogTitle>
+            <DialogDescription>
+              Поэтапный контроль выполнения заказа
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedOrder && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="text-sm text-gray-600">Клиент</p>
+                  <p className="font-semibold">{selectedOrder.client_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Перевозчик</p>
+                  <p className="font-semibold">{selectedOrder.carrier}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Маршрут</p>
+                  <p className="font-semibold">{selectedOrder.route_from} → {selectedOrder.route_to}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Автомобиль</p>
+                  <p className="font-semibold">{selectedOrder.license_plate} ({selectedOrder.vehicle_model})</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Водитель</p>
+                  <p className="font-semibold">{selectedOrder.driver_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Статус</p>
+                  <Badge className={`${statusMap[selectedOrder.status]?.color} text-white`}>
+                    {statusMap[selectedOrder.status]?.label}
+                  </Badge>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-lg mb-4">Этапы выполнения</h3>
+                <div className="space-y-3">
+                  {orderStages.map((stage) => (
+                    <div key={stage.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50">
+                      <Checkbox
+                        checked={stage.is_completed}
+                        onCheckedChange={(checked) => updateStage(stage.id, checked as boolean)}
+                        disabled={stage.is_completed}
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium">{stage.stage_name}</p>
+                        {stage.is_completed && stage.completed_by && (
+                          <p className="text-xs text-gray-500">
+                            Выполнил: {stage.completed_by} • {stage.completed_at}
+                          </p>
+                        )}
+                      </div>
+                      {stage.is_completed && (
+                        <Icon name="CheckCircle2" className="text-green-500" size={20} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-lg mb-4">Документы</h3>
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => generateDocument(selectedOrder.id, 'waybill')}
+                  >
+                    <Icon name="FileText" size={18} className="mr-2" />
+                    Транспортная накладная
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => generateDocument(selectedOrder.id, 'power_of_attorney')}
+                  >
+                    <Icon name="FileCheck" size={18} className="mr-2" />
+                    Доверенность
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
