@@ -558,7 +558,7 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
             <div>
               <Label>Вид ТС *</Label>
               <Select value={formData.vehicle_type} onValueChange={(val) => setFormData({ ...formData, vehicle_type: val })}>
-                <SelectTrigger>
+                <SelectTrigger className={errors.vehicle_type ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Выберите вид" />
                 </SelectTrigger>
                 <SelectContent>
@@ -568,6 +568,7 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
                   <SelectItem value="flatbed">Бортовой</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.vehicle_type && <p className="text-red-500 text-xs mt-1">{errors.vehicle_type}</p>}
             </div>
             <div>
               <Label>Марка ТС *</Label>
@@ -575,8 +576,9 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
                 value={formData.vehicle_brand || ''}
                 onChange={(e) => setFormData({ ...formData, vehicle_brand: e.target.value })}
                 placeholder="Mercedes-Benz Actros"
-                required
+                className={errors.vehicle_brand ? 'border-red-500' : ''}
               />
+              {errors.vehicle_brand && <p className="text-red-500 text-xs mt-1">{errors.vehicle_brand}</p>}
             </div>
           </div>
 
@@ -587,8 +589,9 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
                 value={formData.license_plate || ''}
                 onChange={(e) => setFormData({ ...formData, license_plate: e.target.value })}
                 placeholder="А123БВ777"
-                required
+                className={errors.license_plate ? 'border-red-500' : ''}
               />
+              {errors.license_plate && <p className="text-red-500 text-xs mt-1">{errors.license_plate}</p>}
             </div>
             <div>
               <Label>Прицеп</Label>
@@ -603,7 +606,7 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
           <div>
             <Label>Тип кузова *</Label>
             <Select value={formData.body_type} onValueChange={(val) => setFormData({ ...formData, body_type: val })}>
-              <SelectTrigger>
+              <SelectTrigger className={errors.body_type ? 'border-red-500' : ''}>
                 <SelectValue placeholder="Выберите тип" />
               </SelectTrigger>
               <SelectContent>
@@ -615,6 +618,7 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
                 <SelectItem value="tanker">Цистерна</SelectItem>
               </SelectContent>
             </Select>
+            {errors.body_type && <p className="text-red-500 text-xs mt-1">{errors.body_type}</p>}
           </div>
 
           <div>
@@ -623,8 +627,9 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
               value={formData.company_name || ''}
               onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
               placeholder="ООО Транспортная компания"
-              required
+              className={errors.company_name ? 'border-red-500' : ''}
             />
+            {errors.company_name && <p className="text-red-500 text-xs mt-1">{errors.company_name}</p>}
           </div>
 
           <div className="border-t pt-4 mt-4">
@@ -643,7 +648,7 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
                   setSelectedDriver(driver);
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className={errors.driver_id ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Выберите водителя" />
                 </SelectTrigger>
                 <SelectContent>
@@ -654,6 +659,7 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
                   ))}
                 </SelectContent>
               </Select>
+              {errors.driver_id && <p className="text-red-500 text-xs mt-1">{errors.driver_id}</p>}
             </div>
 
             {selectedDriver && (
@@ -680,8 +686,9 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
             <Input
               value={formData.name || ''}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
+              className={errors.name ? 'border-red-500' : ''}
             />
+            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
           </div>
           <div>
             <Label>Контактное лицо</Label>
@@ -695,8 +702,9 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
             <Input
               value={formData.phone || ''}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              required
+              className={errors.phone ? 'border-red-500' : ''}
             />
+            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
           </div>
           <div>
             <Label>Email</Label>

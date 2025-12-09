@@ -36,6 +36,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     delivery_address: '',
     overload: false
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (editOrder) {
@@ -73,10 +74,32 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         overload: false
       });
     }
+    setErrors({});
   }, [editOrder, open]);
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.order_number?.trim()) newErrors.order_number = 'Обязательное поле';
+    if (!formData.order_date) newErrors.order_date = 'Обязательное поле';
+    if (!formData.client_id) newErrors.client_id = 'Обязательное поле';
+    if (!formData.carrier?.trim()) newErrors.carrier = 'Обязательное поле';
+    if (!formData.vehicle_id) newErrors.vehicle_id = 'Обязательное поле';
+    if (!formData.driver_id) newErrors.driver_id = 'Обязательное поле';
+    if (!formData.route_from?.trim()) newErrors.route_from = 'Обязательное поле';
+    if (!formData.route_to?.trim()) newErrors.route_to = 'Обязательное поле';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      toast.error('Заполните все обязательные поля');
+      return;
+    }
 
     try {
       if (editOrder) {
@@ -108,6 +131,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
       onSuccess();
       onClose();
+      setErrors({});
     } catch (error) {
       toast.error('Ошибка при сохранении заказа');
       console.error(error);
@@ -129,8 +153,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 id="order_number"
                 value={formData.order_number}
                 onChange={(e) => setFormData({ ...formData, order_number: e.target.value })}
-                required
+                className={errors.order_number ? 'border-red-500' : ''}
               />
+              {errors.order_number && <p className="text-red-500 text-xs mt-1">{errors.order_number}</p>}
             </div>
 
             <div>
@@ -140,14 +165,15 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 type="date"
                 value={formData.order_date}
                 onChange={(e) => setFormData({ ...formData, order_date: e.target.value })}
-                required
+                className={errors.order_date ? 'border-red-500' : ''}
               />
+              {errors.order_date && <p className="text-red-500 text-xs mt-1">{errors.order_date}</p>}
             </div>
 
             <div>
               <Label htmlFor="client_id">Клиент *</Label>
               <Select value={formData.client_id.toString()} onValueChange={(val) => setFormData({ ...formData, client_id: val })}>
-                <SelectTrigger>
+                <SelectTrigger className={errors.client_id ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Выберите клиента" />
                 </SelectTrigger>
                 <SelectContent>
@@ -158,6 +184,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   ))}
                 </SelectContent>
               </Select>
+              {errors.client_id && <p className="text-red-500 text-xs mt-1">{errors.client_id}</p>}
             </div>
 
             <div>
@@ -166,14 +193,15 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 id="carrier"
                 value={formData.carrier}
                 onChange={(e) => setFormData({ ...formData, carrier: e.target.value })}
-                required
+                className={errors.carrier ? 'border-red-500' : ''}
               />
+              {errors.carrier && <p className="text-red-500 text-xs mt-1">{errors.carrier}</p>}
             </div>
 
             <div>
               <Label htmlFor="vehicle_id">Автомобиль *</Label>
               <Select value={formData.vehicle_id.toString()} onValueChange={(val) => setFormData({ ...formData, vehicle_id: val })}>
-                <SelectTrigger>
+                <SelectTrigger className={errors.vehicle_id ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Выберите автомобиль" />
                 </SelectTrigger>
                 <SelectContent>
@@ -184,12 +212,13 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   ))}
                 </SelectContent>
               </Select>
+              {errors.vehicle_id && <p className="text-red-500 text-xs mt-1">{errors.vehicle_id}</p>}
             </div>
 
             <div>
               <Label htmlFor="driver_id">Водитель *</Label>
               <Select value={formData.driver_id.toString()} onValueChange={(val) => setFormData({ ...formData, driver_id: val })}>
-                <SelectTrigger>
+                <SelectTrigger className={errors.driver_id ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Выберите водителя" />
                 </SelectTrigger>
                 <SelectContent>
@@ -200,6 +229,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   ))}
                 </SelectContent>
               </Select>
+              {errors.driver_id && <p className="text-red-500 text-xs mt-1">{errors.driver_id}</p>}
             </div>
 
             <div>
@@ -208,8 +238,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 id="route_from"
                 value={formData.route_from}
                 onChange={(e) => setFormData({ ...formData, route_from: e.target.value })}
-                required
+                className={errors.route_from ? 'border-red-500' : ''}
               />
+              {errors.route_from && <p className="text-red-500 text-xs mt-1">{errors.route_from}</p>}
             </div>
 
             <div>
@@ -218,8 +249,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 id="route_to"
                 value={formData.route_to}
                 onChange={(e) => setFormData({ ...formData, route_to: e.target.value })}
-                required
+                className={errors.route_to ? 'border-red-500' : ''}
               />
+              {errors.route_to && <p className="text-red-500 text-xs mt-1">{errors.route_to}</p>}
             </div>
 
             <div>
@@ -283,7 +315,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
             <Label htmlFor="overload">Перегруз</Label>
           </div>
 
-          <div className="flex gap-2 justify-end pt-4">
+          <div className="flex gap-2 justify-end pt-4 sticky bottom-0 bg-white border-t mt-4 -mx-6 px-6 py-3">
             <Button type="button" variant="outline" onClick={onClose}>
               Отмена
             </Button>
