@@ -119,77 +119,216 @@ def generate_waybill_html(order_data: Dict[str, Any]) -> str:
 '''
 
 def generate_power_of_attorney_html(order_data: Dict[str, Any]) -> str:
+    current_date = datetime.now().strftime('%d.%m.%Y')
     return f'''
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }}
-        .header {{ text-align: center; margin-bottom: 30px; }}
-        .header h1 {{ font-size: 20px; margin: 10px 0; }}
-        .content {{ margin-top: 20px; text-align: justify; }}
-        .row {{ margin: 15px 0; }}
-        .underline {{ border-bottom: 1px solid #000; display: inline-block; min-width: 200px; }}
-        .signature-block {{ margin-top: 80px; display: flex; justify-content: space-between; }}
-        .signature {{ text-align: center; }}
-        .signature-line {{ border-bottom: 1px solid #000; width: 200px; margin: 10px auto; }}
+        @page {{ margin: 20mm; }}
+        body {{ 
+            font-family: "Times New Roman", Times, serif; 
+            margin: 0; 
+            padding: 15px;
+            font-size: 11pt;
+            line-height: 1.3;
+        }}
+        .form-header {{
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 9pt;
+        }}
+        .form-number {{
+            text-align: right;
+        }}
+        .doc-title {{
+            text-align: center;
+            font-weight: bold;
+            font-size: 13pt;
+            margin: 20px 0 15px 0;
+        }}
+        .codes-table {{
+            float: right;
+            border-collapse: collapse;
+            margin-left: 10px;
+            margin-bottom: 10px;
+            font-size: 9pt;
+        }}
+        .codes-table td {{
+            border: 1px solid #000;
+            padding: 3px 8px;
+        }}
+        .content {{
+            clear: both;
+            text-align: justify;
+            font-size: 11pt;
+        }}
+        .field {{
+            border-bottom: 1px solid #000;
+            display: inline-block;
+            min-width: 150px;
+            padding: 0 5px;
+        }}
+        .section {{
+            margin: 15px 0;
+        }}
+        table.data-table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 10pt;
+        }}
+        table.data-table td, table.data-table th {{
+            border: 1px solid #000;
+            padding: 4px;
+        }}
+        .signature-section {{
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+        }}
+        .signature-block {{
+            width: 45%;
+        }}
+        .signature-line {{
+            border-bottom: 1px solid #000;
+            margin: 15px 0 5px 0;
+            height: 20px;
+        }}
+        .small-text {{
+            font-size: 8pt;
+            color: #666;
+        }}
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>ДОВЕРЕННОСТЬ</h1>
-        <p>№ {order_data['order_number']}-Д от {order_data['order_date']}</p>
-    </div>
-    
-    <div class="content">
-        <p>
-            Настоящая доверенность выдана <span class="underline">{order_data['driver_name']}</span>
-        </p>
-        <p>
-            Паспорт: <span class="underline">серия ____ № ________</span>, выдан <span class="underline">____________________</span>
-        </p>
-        <p>
-            Водительское удостоверение: <span class="underline">{order_data['driver_license']}</span>
-        </p>
-        <p style="margin-top: 30px;">
-            на право управления транспортным средством <span class="underline">{order_data['vehicle_model']}</span>,
-            государственный регистрационный знак <span class="underline">{order_data['license_plate']}</span>
-        </p>
-        <p style="margin-top: 30px;">
-            и на совершение следующих действий:
-        </p>
-        <ul>
-            <li>Получение груза от грузоотправителя <span class="underline">{order_data['client_name']}</span></li>
-            <li>Транспортировку груза по маршруту <span class="underline">{order_data['route_from']} → {order_data['route_to']}</span></li>
-            <li>Прохождение таможенного контроля на пункте пропуска <span class="underline">{order_data['border_crossing'] or '___________'}</span></li>
-            <li>Передачу груза грузополучателю</li>
-            <li>Подписание всех необходимых документов от имени перевозчика</li>
-        </ul>
-        
-        <p style="margin-top: 30px;">
-            Доверенность выдана сроком до <span class="underline">_________________</span> без права передоверия.
-        </p>
-        
-        <p style="margin-top: 20px;">
-            Инвойс: <span class="underline">{order_data['invoice_number']}</span>
-        </p>
-        <p>
-            Контактный телефон: <span class="underline">{order_data['driver_phone']}</span>
-        </p>
+    <div class="form-header">
+        <div>
+            <div>Типовая межотраслевая форма № М-2</div>
+            <div class="small-text">Утверждена постановлением</div>
+            <div class="small-text">Госкомстата России от 30.10.97 № 71а</div>
+        </div>
+        <table class="codes-table">
+            <tr><td colspan="2" style="text-align: center; font-weight: bold;">Коды</td></tr>
+            <tr><td>Форма по ОКУД</td><td>0315001</td></tr>
+            <tr><td>по ОКПО</td><td>64834458</td></tr>
+        </table>
     </div>
 
-    <div class="signature-block">
-        <div class="signature">
-            <p>Перевозчик: {order_data['carrier']}</p>
+    <div class="doc-title">ДОВЕРЕННОСТЬ № {order_data['order_number']}-Д</div>
+    
+    <div class="content">
+        <div class="section">
+            <strong>Организация</strong> <span class="field">{order_data['carrier']}</span>
+        </div>
+
+        <div class="section">
+            <strong>Доверенность выдана</strong> <span class="field">{order_data['driver_name']}</span>
+        </div>
+
+        <div class="section">
+            <strong>Документ, удостоверяющий личность:</strong><br>
+            Паспорт серия <span class="field" style="width: 80px;">____</span> 
+            № <span class="field" style="width: 120px;">________</span><br>
+            Выдан <span class="field" style="width: 400px;">____________________</span>
+        </div>
+
+        <div class="section">
+            <strong>Водительское удостоверение:</strong> <span class="field">{order_data['driver_license']}</span>
+        </div>
+
+        <div class="section">
+            <strong>на получение от</strong> <span class="field">{order_data['client_name']}</span>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 40%;">Наименование груза</th>
+                    <th style="width: 20%;">Номер документа</th>
+                    <th style="width: 20%;">Дата документа</th>
+                    <th style="width: 20%;">Количество</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Груз согласно инвойсу</td>
+                    <td>{order_data['invoice_number']}</td>
+                    <td>{order_data['order_date']}</td>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="height: 30px;">&nbsp;</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="section">
+            <strong>Транспортное средство:</strong><br>
+            Марка <span class="field">{order_data['vehicle_model']}</span><br>
+            Государственный регистрационный знак <span class="field">{order_data['license_plate']}</span>
+        </div>
+
+        <div class="section">
+            <strong>Маршрут перевозки:</strong><br>
+            <span class="field" style="width: 100%;">{order_data['route_from']} → {order_data['route_to']}</span>
+        </div>
+
+        <div class="section">
+            <strong>Пункт таможенного контроля:</strong> <span class="field">{order_data['border_crossing'] or '___________'}</span>
+        </div>
+
+        <div class="section">
+            <strong>Срок действия доверенности:</strong> 
+            с <span class="field">{current_date}</span> 
+            по <span class="field">_________________</span>
+        </div>
+
+        <div class="section">
+            <strong>Образец подписи лица, получившего доверенность:</strong>
             <div class="signature-line"></div>
-            <p style="font-size: 12px;">Директор / Печать</p>
+        </div>
+
+        <div class="signature-section">
+            <div class="signature-block">
+                <div><strong>Руководитель организации</strong></div>
+                <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                    <span style="width: 40%;">
+                        <div class="signature-line"></div>
+                        <div class="small-text" style="text-align: center;">подпись</div>
+                    </span>
+                    <span style="width: 55%;">
+                        <div class="signature-line"></div>
+                        <div class="small-text" style="text-align: center;">расшифровка подписи</div>
+                    </span>
+                </div>
+            </div>
+            
+            <div class="signature-block">
+                <div><strong>Главный бухгалтер</strong></div>
+                <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                    <span style="width: 40%;">
+                        <div class="signature-line"></div>
+                        <div class="small-text" style="text-align: center;">подпись</div>
+                    </span>
+                    <span style="width: 55%;">
+                        <div class="signature-line"></div>
+                        <div class="small-text" style="text-align: center;">расшифровка подписи</div>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" style="margin-top: 30px;">
+            М.П. (печать организации)
         </div>
     </div>
     
-    <p style="margin-top: 50px; font-size: 12px; color: #666;">
-        Документ создан автоматически системой TransHub {datetime.now().strftime('%d.%m.%Y %H:%M')}
-    </p>
+    <div style="margin-top: 50px; font-size: 8pt; color: #999; text-align: center;">
+        Документ сформирован {datetime.now().strftime('%d.%m.%Y %H:%M')} | TransHub
+    </div>
 </body>
 </html>
 '''
