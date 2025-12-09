@@ -8,6 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44ca0e';
@@ -26,7 +30,21 @@ export default function ResourceManager({ type, data, onRefresh }: ResourceManag
   const getEmptyForm = () => {
     switch (type) {
       case 'drivers':
-        return { full_name: '', phone: '', license_number: '', status: 'available' };
+        return { 
+          last_name: '', 
+          first_name: '', 
+          middle_name: '', 
+          phone: '', 
+          passport_series: '',
+          passport_number: '',
+          passport_issued_by: '',
+          passport_issue_date: '',
+          license_series: '',
+          license_number: '', 
+          license_issued_by: '',
+          license_issue_date: '',
+          status: 'available' 
+        };
       case 'vehicles':
         return { license_plate: '', model: '', capacity: '', status: 'available' };
       case 'clients':
@@ -255,31 +273,155 @@ export default function ResourceManager({ type, data, onRefresh }: ResourceManag
     if (type === 'drivers') {
       return (
         <>
-          <div>
-            <Label>ФИО *</Label>
-            <Input
-              value={formData.full_name || ''}
-              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              required
-            />
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label>Фамилия *</Label>
+              <Input
+                value={formData.last_name || ''}
+                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label>Имя *</Label>
+              <Input
+                value={formData.first_name || ''}
+                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label>Отчество</Label>
+              <Input
+                value={formData.middle_name || ''}
+                onChange={(e) => setFormData({ ...formData, middle_name: e.target.value })}
+              />
+            </div>
           </div>
+          
           <div>
-            <Label>Телефон *</Label>
+            <Label>Номер телефона *</Label>
             <Input
               value={formData.phone || ''}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              placeholder="+7 (___) ___-__-__"
               required
             />
           </div>
-          <div>
-            <Label>Водительское удостоверение *</Label>
-            <Input
-              value={formData.license_number || ''}
-              onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
-              required
-            />
+
+          <div className="border-t pt-4 mt-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Icon name="CreditCard" size={18} />
+              Паспорт
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Серия *</Label>
+                <Input
+                  value={formData.passport_series || ''}
+                  onChange={(e) => setFormData({ ...formData, passport_series: e.target.value })}
+                  placeholder="1234"
+                  maxLength={4}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Номер *</Label>
+                <Input
+                  value={formData.passport_number || ''}
+                  onChange={(e) => setFormData({ ...formData, passport_number: e.target.value })}
+                  placeholder="567890"
+                  maxLength={6}
+                  required
+                />
+              </div>
+            </div>
+            <div className="mt-4">
+              <Label>Кем выдан *</Label>
+              <Input
+                value={formData.passport_issued_by || ''}
+                onChange={(e) => setFormData({ ...formData, passport_issued_by: e.target.value })}
+                required
+              />
+            </div>
+            <div className="mt-4">
+              <Label>Дата выдачи *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <Icon name="Calendar" className="mr-2" size={16} />
+                    {formData.passport_issue_date ? format(new Date(formData.passport_issue_date), 'dd-MM-yyyy', { locale: ru }) : 'Выберите дату'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.passport_issue_date ? new Date(formData.passport_issue_date) : undefined}
+                    onSelect={(date) => setFormData({ ...formData, passport_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                    locale={ru}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
-          <div>
+
+          <div className="border-t pt-4 mt-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Icon name="Car" size={18} />
+              Водительское удостоверение
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Серия *</Label>
+                <Input
+                  value={formData.license_series || ''}
+                  onChange={(e) => setFormData({ ...formData, license_series: e.target.value })}
+                  placeholder="12 АА"
+                  required
+                />
+              </div>
+              <div>
+                <Label>Номер *</Label>
+                <Input
+                  value={formData.license_number || ''}
+                  onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
+                  placeholder="123456"
+                  required
+                />
+              </div>
+            </div>
+            <div className="mt-4">
+              <Label>Кем выдан *</Label>
+              <Input
+                value={formData.license_issued_by || ''}
+                onChange={(e) => setFormData({ ...formData, license_issued_by: e.target.value })}
+                required
+              />
+            </div>
+            <div className="mt-4">
+              <Label>Дата выдачи *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <Icon name="Calendar" className="mr-2" size={16} />
+                    {formData.license_issue_date ? format(new Date(formData.license_issue_date), 'dd-MM-yyyy', { locale: ru }) : 'Выберите дату'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.license_issue_date ? new Date(formData.license_issue_date) : undefined}
+                    onSelect={(date) => setFormData({ ...formData, license_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                    locale={ru}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          <div className="border-t pt-4 mt-4">
             <Label>Статус</Label>
             <Select value={formData.status} onValueChange={(val) => setFormData({ ...formData, status: val })}>
               <SelectTrigger>
