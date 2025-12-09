@@ -157,14 +157,6 @@ const Index = () => {
               Заказы
             </Button>
             <Button
-              variant={activeSection === 'vehicles' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => setActiveSection('vehicles')}
-            >
-              <Icon name="Truck" size={20} className="mr-3" />
-              Автомобили
-            </Button>
-            <Button
               variant={activeSection === 'drivers' ? 'default' : 'ghost'}
               className="w-full justify-start"
               onClick={() => setActiveSection('drivers')}
@@ -173,12 +165,12 @@ const Index = () => {
               Водители
             </Button>
             <Button
-              variant={activeSection === 'routes' ? 'default' : 'ghost'}
+              variant={activeSection === 'vehicles' ? 'default' : 'ghost'}
               className="w-full justify-start"
-              onClick={() => setActiveSection('routes')}
+              onClick={() => setActiveSection('vehicles')}
             >
-              <Icon name="MapPin" size={20} className="mr-3" />
-              Маршруты
+              <Icon name="Truck" size={20} className="mr-3" />
+              Автомобили
             </Button>
             <Button
               variant={activeSection === 'clients' ? 'default' : 'ghost'}
@@ -187,22 +179,6 @@ const Index = () => {
             >
               <Icon name="Briefcase" size={20} className="mr-3" />
               Клиенты
-            </Button>
-            <Button
-              variant={activeSection === 'documents' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => setActiveSection('documents')}
-            >
-              <Icon name="FileText" size={20} className="mr-3" />
-              Документы
-            </Button>
-            <Button
-              variant={activeSection === 'reports' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => setActiveSection('reports')}
-            >
-              <Icon name="BarChart3" size={20} className="mr-3" />
-              Отчеты
             </Button>
           </nav>
 
@@ -229,10 +205,7 @@ const Index = () => {
                   {activeSection === 'orders' && 'Управление заказами'}
                   {activeSection === 'vehicles' && 'Автопарк'}
                   {activeSection === 'drivers' && 'База водителей'}
-                  {activeSection === 'routes' && 'Маршруты'}
                   {activeSection === 'clients' && 'Клиенты'}
-                  {activeSection === 'documents' && 'Документы'}
-                  {activeSection === 'reports' && 'Отчеты'}
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
                   Роль: <span className="font-semibold capitalize">{userRole}</span>
