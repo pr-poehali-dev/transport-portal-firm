@@ -199,7 +199,7 @@ const Index = () => {
               onClick={() => { setActiveSection('clients'); setMobileMenuOpen(false); }}
             >
               <Icon name="Briefcase" size={20} className="mr-3" />
-              Клиенты
+              Перевозчик
             </Button>
           </nav>
 
@@ -226,7 +226,7 @@ const Index = () => {
                   {activeSection === 'orders' && 'Управление заказами'}
                   {activeSection === 'vehicles' && 'Автопарк'}
                   {activeSection === 'drivers' && 'База водителей'}
-                  {activeSection === 'clients' && 'Клиенты'}
+                  {activeSection === 'clients' && 'Перевозчик'}
                 </h2>
                 <p className="text-xs md:text-sm text-gray-500 mt-1">
                   Роль: <span className="font-semibold capitalize">{userRole}</span>
@@ -417,7 +417,7 @@ const Index = () => {
 
             {activeSection === 'vehicles' && (
               <div className="space-y-6 animate-fade-in">
-                <ResourceManager type="vehicles" data={vehicles} drivers={drivers} onRefresh={loadData} />
+                <ResourceManager type="vehicles" data={vehicles} drivers={drivers} clients={clients} onRefresh={loadData} />
               </div>
             )}
 
@@ -477,7 +477,7 @@ const Index = () => {
 
             {activeSection === 'clients' && (
               <div className="space-y-6 animate-fade-in">
-                <ResourceManager type="clients" data={clients} onRefresh={loadData} />
+                <ResourceManager type="clients" data={clients} clients={clients} onRefresh={loadData} />
               </div>
             )}
 

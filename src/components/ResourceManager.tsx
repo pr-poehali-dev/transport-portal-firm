@@ -20,10 +20,11 @@ interface ResourceManagerProps {
   type: 'drivers' | 'vehicles' | 'clients';
   data: any[];
   drivers?: any[];
+  clients?: any[];
   onRefresh: () => void;
 }
 
-export default function ResourceManager({ type, data, drivers = [], onRefresh }: ResourceManagerProps) {
+export default function ResourceManager({ type, data, drivers = [], clients = [], onRefresh }: ResourceManagerProps) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
@@ -193,7 +194,7 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
     switch (type) {
       case 'drivers': return 'Водители';
       case 'vehicles': return 'Автомобили';
-      case 'clients': return 'Клиенты';
+      case 'clients': return 'Перевозчик';
     }
   };
 
@@ -302,7 +303,7 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[150px]">Название</TableHead>
+                <TableHead className="min-w-[150px]">Название перевозчика</TableHead>
                 <TableHead className="min-w-[120px] hidden md:table-cell">Контактное лицо</TableHead>
                 <TableHead className="min-w-[120px]">Телефон</TableHead>
                 <TableHead className="min-w-[150px] hidden lg:table-cell">Email</TableHead>
@@ -623,12 +624,21 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
 
           <div>
             <Label>Фирма ТК *</Label>
-            <Input
-              value={formData.company_name || ''}
-              onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-              placeholder="ООО Транспортная компания"
-              className={errors.company_name ? 'border-red-500' : ''}
-            />
+            <Select 
+              value={formData.company_name || ''} 
+              onValueChange={(val) => setFormData({ ...formData, company_name: val })}
+            >
+              <SelectTrigger className={errors.company_name ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Выберите перевозчика" />
+              </SelectTrigger>
+              <SelectContent>
+                {clients.map((client) => (
+                  <SelectItem key={client.id} value={client.name}>
+                    {client.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {errors.company_name && <p className="text-red-500 text-xs mt-1">{errors.company_name}</p>}
           </div>
 
@@ -682,7 +692,7 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
       return (
         <>
           <div>
-            <Label>Название *</Label>
+            <Label>Название перевозчика *</Label>
             <Input
               value={formData.name || ''}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
