@@ -25,7 +25,7 @@ const statusMap: Record<string, { label: string; color: string }> = {
 };
 
 const Index = () => {
-  const [userRole, setUserRole] = useState<'logist' | 'buyer' | 'manager'>('logist');
+  const [userRole, setUserRole] = useState<'admin' | 'logist' | 'buyer' | 'manager' | 'director'>('admin');
   const [activeSection, setActiveSection] = useState('orders');
   const [orders, setOrders] = useState<any[]>([]);
   const [drivers, setDrivers] = useState<any[]>([]);
@@ -107,7 +107,7 @@ const Index = () => {
           action: 'update_stage',
           stage_id: stageId,
           is_completed: isCompleted,
-          completed_by: userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : 'Менеджер'
+          completed_by: userRole === 'admin' ? 'Администратор' : userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : userRole === 'manager' ? 'Менеджер' : 'Руководитель'
         })
       });
       
@@ -233,9 +233,11 @@ const Index = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="admin">Администратор</SelectItem>
                 <SelectItem value="logist">Логист</SelectItem>
                 <SelectItem value="buyer">Байер</SelectItem>
                 <SelectItem value="manager">Менеджер</SelectItem>
+                <SelectItem value="director">Руководитель</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -618,7 +620,7 @@ const Index = () => {
         clients={clients}
         drivers={drivers}
         vehicles={vehicles}
-        userRole={userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : 'Менеджер'}
+        userRole={userRole === 'admin' ? 'Администратор' : userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : userRole === 'manager' ? 'Менеджер' : 'Руководитель'}
       />
     </div>
   );
