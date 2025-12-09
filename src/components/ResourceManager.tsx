@@ -19,13 +19,15 @@ const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44c
 interface ResourceManagerProps {
   type: 'drivers' | 'vehicles' | 'clients';
   data: any[];
+  drivers?: any[];
   onRefresh: () => void;
 }
 
-export default function ResourceManager({ type, data, onRefresh }: ResourceManagerProps) {
+export default function ResourceManager({ type, data, drivers = [], onRefresh }: ResourceManagerProps) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
+  const [selectedDriver, setSelectedDriver] = useState<any>(null);
 
   const getEmptyForm = () => {
     switch (type) {
@@ -45,7 +47,16 @@ export default function ResourceManager({ type, data, onRefresh }: ResourceManag
           license_issue_date: ''
         };
       case 'vehicles':
-        return { license_plate: '', model: '', capacity: '', status: 'available' };
+        return { 
+          vehicle_type: '', 
+          vehicle_brand: '', 
+          license_plate: '', 
+          trailer_plate: '', 
+          body_type: '', 
+          company_name: '', 
+          driver_id: null,
+          display_name: ''
+        };
       case 'clients':
         return { name: '', contact_person: '', phone: '', email: '', address: '' };
     }
@@ -54,10 +65,28 @@ export default function ResourceManager({ type, data, onRefresh }: ResourceManag
   useEffect(() => {
     if (editItem) {
       setFormData(editItem);
+      if (editItem.driver_id && drivers) {
+        const driver = drivers.find(d => d.id === editItem.driver_id);
+        setSelectedDriver(driver);
+      }
     } else {
       setFormData(getEmptyForm());
+      setSelectedDriver(null);
     }
   }, [editItem, showForm]);
+
+  useEffect(() => {
+    if (type === 'vehicles') {
+      const displayName = [
+        formData.vehicle_brand,
+        formData.license_plate,
+        formData.trailer_plate ? `+ ${formData.trailer_plate}` : ''
+      ].filter(Boolean).join(' ');
+      if (displayName !== formData.display_name) {
+        setFormData({ ...formData, display_name: displayName });
+      }
+    }
+  }, [formData.vehicle_brand, formData.license_plate, formData.trailer_plate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -428,40 +457,128 @@ export default function ResourceManager({ type, data, onRefresh }: ResourceManag
       return (
         <>
           <div>
-            <Label>Гос. номер *</Label>
+            <Label>Транспорт</Label>
             <Input
-              value={formData.license_plate || ''}
-              onChange={(e) => setFormData({ ...formData, license_plate: e.target.value })}
-              required
+              value={formData.display_name || ''}
+              disabled
+              placeholder="Формируется автоматически"
+              className="bg-gray-50"
             />
           </div>
-          <div>
-            <Label>Модель *</Label>
-            <Input
-              value={formData.model || ''}
-              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-              required
-            />
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Вид ТС *</Label>
+              <Select value={formData.vehicle_type} onValueChange={(val) => setFormData({ ...formData, vehicle_type: val })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите вид" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="truck">Грузовой автомобиль</SelectItem>
+                  <SelectItem value="tractor">Седельный тягач</SelectItem>
+                  <SelectItem value="van">Фургон</SelectItem>
+                  <SelectItem value="flatbed">Бортовой</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Марка ТС *</Label>
+              <Input
+                value={formData.vehicle_brand || ''}
+                onChange={(e) => setFormData({ ...formData, vehicle_brand: e.target.value })}
+                placeholder="Mercedes-Benz Actros"
+                required
+              />
+            </div>
           </div>
-          <div>
-            <Label>Грузоподъемность *</Label>
-            <Input
-              value={formData.capacity || ''}
-              onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-              required
-            />
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Гос. номер *</Label>
+              <Input
+                value={formData.license_plate || ''}
+                onChange={(e) => setFormData({ ...formData, license_plate: e.target.value })}
+                placeholder="А123БВ777"
+                required
+              />
+            </div>
+            <div>
+              <Label>Прицеп</Label>
+              <Input
+                value={formData.trailer_plate || ''}
+                onChange={(e) => setFormData({ ...formData, trailer_plate: e.target.value })}
+                placeholder="АС1234"
+              />
+            </div>
           </div>
+
           <div>
-            <Label>Статус</Label>
-            <Select value={formData.status} onValueChange={(val) => setFormData({ ...formData, status: val })}>
+            <Label>Тип кузова *</Label>
+            <Select value={formData.body_type} onValueChange={(val) => setFormData({ ...formData, body_type: val })}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Выберите тип" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="available">Доступен</SelectItem>
-                <SelectItem value="in_use">В рейсе</SelectItem>
+                <SelectItem value="tent">Тент</SelectItem>
+                <SelectItem value="refrigerator">Рефрижератор</SelectItem>
+                <SelectItem value="isoterm">Изотерм</SelectItem>
+                <SelectItem value="container">Контейнер</SelectItem>
+                <SelectItem value="flatbed">Бортовой</SelectItem>
+                <SelectItem value="tanker">Цистерна</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div>
+            <Label>Фирма ТК *</Label>
+            <Input
+              value={formData.company_name || ''}
+              onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+              placeholder="ООО Транспортная компания"
+              required
+            />
+          </div>
+
+          <div className="border-t pt-4 mt-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Icon name="User" size={18} />
+              Водитель
+            </h3>
+            <div>
+              <Label>Водитель *</Label>
+              <Select 
+                value={formData.driver_id?.toString() || ''} 
+                onValueChange={(val) => {
+                  const driverId = parseInt(val);
+                  const driver = drivers.find(d => d.id === driverId);
+                  setFormData({ ...formData, driver_id: driverId });
+                  setSelectedDriver(driver);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите водителя" />
+                </SelectTrigger>
+                <SelectContent>
+                  {drivers.map((driver) => (
+                    <SelectItem key={driver.id} value={driver.id.toString()}>
+                      {driver.last_name} {driver.first_name} {driver.middle_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedDriver && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg space-y-2">
+                <p className="font-semibold text-sm text-blue-900">Водительское удостоверение:</p>
+                <div className="text-sm text-blue-800">
+                  <p><strong>Серия:</strong> {selectedDriver.license_series || 'Не указана'}</p>
+                  <p><strong>Номер:</strong> {selectedDriver.license_number || 'Не указан'}</p>
+                  <p><strong>Дата выдачи:</strong> {selectedDriver.license_issue_date ? format(new Date(selectedDriver.license_issue_date), 'dd.MM.yyyy', { locale: ru }) : 'Не указана'}</p>
+                  <p><strong>Кем выдано:</strong> {selectedDriver.license_issued_by || 'Не указано'}</p>
+                </div>
+              </div>
+            )}
           </div>
         </>
       );

@@ -396,7 +396,7 @@ const Index = () => {
 
             {activeSection === 'vehicles' && (
               <div className="space-y-6 animate-fade-in">
-                <ResourceManager type="vehicles" data={vehicles} onRefresh={loadData} />
+                <ResourceManager type="vehicles" data={vehicles} drivers={drivers} onRefresh={loadData} />
               </div>
             )}
 
