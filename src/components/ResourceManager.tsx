@@ -200,138 +200,144 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
   const renderTable = () => {
     if (type === 'drivers') {
       return (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ФИО</TableHead>
-              <TableHead>Телефон</TableHead>
-              <TableHead>Водительское удостоверение</TableHead>
-              <TableHead>Статус</TableHead>
-              <TableHead className="text-right">Действия</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.full_name}</TableCell>
-                <TableCell>{item.phone}</TableCell>
-                <TableCell>{item.license_number}</TableCell>
-                <TableCell>
-                  <Badge variant={item.status === 'available' ? 'default' : 'secondary'}>
-                    {item.status === 'available' ? 'Доступен' : 'Занят'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditItem(item);
-                        setShowForm(true);
-                      }}
-                    >
-                      <Icon name="Pencil" size={16} />
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDelete(item.id)}>
-                      <Icon name="Trash2" size={16} />
-                    </Button>
-                  </div>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[150px]">ФИО</TableHead>
+                <TableHead className="min-w-[120px]">Телефон</TableHead>
+                <TableHead className="min-w-[150px] hidden md:table-cell">Водительское удостоверение</TableHead>
+                <TableHead className="min-w-[100px] hidden lg:table-cell">Статус</TableHead>
+                <TableHead className="text-right min-w-[120px]">Действия</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {data.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium">{item.full_name || `${item.last_name} ${item.first_name}`}</TableCell>
+                  <TableCell className="text-sm">{item.phone}</TableCell>
+                  <TableCell className="hidden md:table-cell text-sm">{item.license_number}</TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <Badge variant={item.status === 'available' ? 'default' : 'secondary'}>
+                      {item.status === 'available' ? 'Доступен' : 'Занят'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditItem(item);
+                          setShowForm(true);
+                        }}
+                      >
+                        <Icon name="Pencil" size={16} />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleDelete(item.id)}>
+                        <Icon name="Trash2" size={16} />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       );
     }
 
     if (type === 'vehicles') {
       return (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Гос. номер</TableHead>
-              <TableHead>Модель</TableHead>
-              <TableHead>Грузоподъемность</TableHead>
-              <TableHead>Статус</TableHead>
-              <TableHead className="text-right">Действия</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.license_plate}</TableCell>
-                <TableCell>{item.model}</TableCell>
-                <TableCell>{item.capacity}</TableCell>
-                <TableCell>
-                  <Badge variant={item.status === 'available' ? 'default' : 'secondary'}>
-                    {item.status === 'available' ? 'Доступен' : 'В рейсе'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditItem(item);
-                        setShowForm(true);
-                      }}
-                    >
-                      <Icon name="Pencil" size={16} />
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDelete(item.id)}>
-                      <Icon name="Trash2" size={16} />
-                    </Button>
-                  </div>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[120px]">Гос. номер</TableHead>
+                <TableHead className="min-w-[150px]">Модель</TableHead>
+                <TableHead className="min-w-[120px] hidden md:table-cell">Грузоподъемность</TableHead>
+                <TableHead className="min-w-[100px] hidden lg:table-cell">Статус</TableHead>
+                <TableHead className="text-right min-w-[120px]">Действия</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {data.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium text-sm">{item.license_plate}</TableCell>
+                  <TableCell className="text-sm">{item.model || item.vehicle_brand}</TableCell>
+                  <TableCell className="hidden md:table-cell text-sm">{item.capacity}</TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <Badge variant={item.status === 'available' ? 'default' : 'secondary'}>
+                      {item.status === 'available' ? 'Доступен' : 'В рейсе'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditItem(item);
+                          setShowForm(true);
+                        }}
+                      >
+                        <Icon name="Pencil" size={16} />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleDelete(item.id)}>
+                        <Icon name="Trash2" size={16} />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       );
     }
 
     if (type === 'clients') {
       return (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Название</TableHead>
-              <TableHead>Контактное лицо</TableHead>
-              <TableHead>Телефон</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead className="text-right">Действия</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.name}</TableCell>
-                <TableCell>{item.contact_person}</TableCell>
-                <TableCell>{item.phone}</TableCell>
-                <TableCell>{item.email}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditItem(item);
-                        setShowForm(true);
-                      }}
-                    >
-                      <Icon name="Pencil" size={16} />
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDelete(item.id)}>
-                      <Icon name="Trash2" size={16} />
-                    </Button>
-                  </div>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[150px]">Название</TableHead>
+                <TableHead className="min-w-[120px] hidden md:table-cell">Контактное лицо</TableHead>
+                <TableHead className="min-w-[120px]">Телефон</TableHead>
+                <TableHead className="min-w-[150px] hidden lg:table-cell">Email</TableHead>
+                <TableHead className="text-right min-w-[120px]">Действия</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {data.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium text-sm">{item.name}</TableCell>
+                  <TableCell className="hidden md:table-cell text-sm">{item.contact_person}</TableCell>
+                  <TableCell className="text-sm">{item.phone}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-sm">{item.email}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditItem(item);
+                          setShowForm(true);
+                        }}
+                      >
+                        <Icon name="Pencil" size={16} />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleDelete(item.id)}>
+                        <Icon name="Trash2" size={16} />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       );
     }
   };
@@ -715,20 +721,20 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{getTitle()}</CardTitle>
-          <Button onClick={() => { setEditItem(null); setShowForm(true); }}>
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <CardTitle className="text-lg md:text-xl">{getTitle()}</CardTitle>
+          <Button onClick={() => { setEditItem(null); setShowForm(true); }} size="sm" className="w-full sm:w-auto">
             <Icon name="Plus" size={18} className="mr-2" />
             Добавить
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6">
           {renderTable()}
         </CardContent>
       </Card>
 
       <Dialog open={showForm} onOpenChange={(open) => { if (!open) { setShowForm(false); setEditItem(null); } }}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-3xl">
           <DialogHeader>
             <DialogTitle>{editItem ? 'Редактировать' : 'Создать'}</DialogTitle>
           </DialogHeader>
@@ -736,7 +742,7 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
           <form onSubmit={handleSubmit} className="space-y-4">
             {renderForm()}
 
-            <div className="flex gap-2 justify-end pt-4">
+            <div className="flex gap-2 justify-end pt-4 sticky bottom-0 bg-white border-t mt-4 -mx-6 px-6 py-3">
               <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditItem(null); }}>
                 Отмена
               </Button>

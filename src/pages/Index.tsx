@@ -38,6 +38,7 @@ const Index = () => {
   const [clients, setClients] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -125,9 +126,29 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="flex h-screen">
-        <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col shadow-xl">
-          <div className="p-6 border-b border-sidebar-border">
+      <div className="flex h-screen flex-col md:flex-row">
+        {/* Mobile Menu Button */}
+        <div className="md:hidden flex items-center justify-between bg-sidebar p-4 border-b">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Icon name="Truck" className="text-white" size={20} />
+            </div>
+            <h1 className="text-lg font-bold text-sidebar-foreground">TransHub</h1>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="text-sidebar-foreground"
+          >
+            <Icon name={mobileMenuOpen ? "X" : "Menu"} size={24} />
+          </Button>
+        </div>
+
+        <aside className={`w-64 bg-sidebar text-sidebar-foreground flex flex-col shadow-xl fixed md:relative z-50 h-full transition-transform duration-300 ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}>
+          <div className="hidden md:block p-6 border-b border-sidebar-border">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <Icon name="Truck" className="text-white" size={24} />
@@ -139,11 +160,11 @@ const Index = () => {
             </div>
           </div>
 
-          <nav className="flex-1 p-4 space-y-2">
+          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             <Button
               variant={activeSection === 'overview' ? 'default' : 'ghost'}
               className="w-full justify-start"
-              onClick={() => setActiveSection('overview')}
+              onClick={() => { setActiveSection('overview'); setMobileMenuOpen(false); }}
             >
               <Icon name="LayoutDashboard" size={20} className="mr-3" />
               Обзор
@@ -151,7 +172,7 @@ const Index = () => {
             <Button
               variant={activeSection === 'orders' ? 'default' : 'ghost'}
               className="w-full justify-start"
-              onClick={() => setActiveSection('orders')}
+              onClick={() => { setActiveSection('orders'); setMobileMenuOpen(false); }}
             >
               <Icon name="ClipboardList" size={20} className="mr-3" />
               Заказы
@@ -159,7 +180,7 @@ const Index = () => {
             <Button
               variant={activeSection === 'drivers' ? 'default' : 'ghost'}
               className="w-full justify-start"
-              onClick={() => setActiveSection('drivers')}
+              onClick={() => { setActiveSection('drivers'); setMobileMenuOpen(false); }}
             >
               <Icon name="Users" size={20} className="mr-3" />
               Водители
@@ -167,7 +188,7 @@ const Index = () => {
             <Button
               variant={activeSection === 'vehicles' ? 'default' : 'ghost'}
               className="w-full justify-start"
-              onClick={() => setActiveSection('vehicles')}
+              onClick={() => { setActiveSection('vehicles'); setMobileMenuOpen(false); }}
             >
               <Icon name="Truck" size={20} className="mr-3" />
               Автомобили
@@ -175,7 +196,7 @@ const Index = () => {
             <Button
               variant={activeSection === 'clients' ? 'default' : 'ghost'}
               className="w-full justify-start"
-              onClick={() => setActiveSection('clients')}
+              onClick={() => { setActiveSection('clients'); setMobileMenuOpen(false); }}
             >
               <Icon name="Briefcase" size={20} className="mr-3" />
               Клиенты
@@ -196,31 +217,31 @@ const Index = () => {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto">
-          <header className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-10 shadow-sm">
-            <div className="flex items-center justify-between">
+        <main className="flex-1 overflow-y-auto w-full">
+          <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 sticky top-0 z-10 shadow-sm">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900">
                   {activeSection === 'overview' && 'Панель управления'}
                   {activeSection === 'orders' && 'Управление заказами'}
                   {activeSection === 'vehicles' && 'Автопарк'}
                   {activeSection === 'drivers' && 'База водителей'}
                   {activeSection === 'clients' && 'Клиенты'}
                 </h2>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-xs md:text-sm text-gray-500 mt-1">
                   Роль: <span className="font-semibold capitalize">{userRole}</span>
                 </p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4">
                 <Button variant="outline" size="sm" onClick={loadData}>
-                  <Icon name="RefreshCw" size={18} className="mr-2" />
-                  Обновить
+                  <Icon name="RefreshCw" size={18} className="mr-0 md:mr-2" />
+                  <span className="hidden md:inline">Обновить</span>
                 </Button>
               </div>
             </div>
           </header>
 
-          <div className="p-8">
+          <div className="p-4 md:p-8">
             {activeSection === 'overview' && (
               <div className="space-y-6 animate-fade-in">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
