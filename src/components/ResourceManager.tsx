@@ -181,7 +181,12 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
         })
       });
 
-      if (!response.ok) throw new Error('Failed to delete');
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Ошибка при удалении');
+        return;
+      }
+      
       toast.success('Запись удалена');
       onRefresh();
     } catch (error) {

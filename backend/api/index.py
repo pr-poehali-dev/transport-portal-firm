@@ -405,10 +405,37 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 cur.execute('DELETE FROM order_stages WHERE order_id = %s', (item_id,))
                 cur.execute('DELETE FROM orders WHERE id = %s', (item_id,))
             elif resource == 'driver':
+                cur.execute('SELECT COUNT(*) FROM orders WHERE driver_id = %s', (item_id,))
+                count = cur.fetchone()[0]
+                if count > 0:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Невозможно удалить водителя. Он задействован в заказах.'}),
+                        'isBase64Encoded': False
+                    }
                 cur.execute('DELETE FROM drivers WHERE id = %s', (item_id,))
             elif resource == 'vehicle':
+                cur.execute('SELECT COUNT(*) FROM orders WHERE vehicle_id = %s', (item_id,))
+                count = cur.fetchone()[0]
+                if count > 0:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Невозможно удалить автомобиль. Он задействован в заказах.'}),
+                        'isBase64Encoded': False
+                    }
                 cur.execute('DELETE FROM vehicles WHERE id = %s', (item_id,))
             elif resource == 'client':
+                cur.execute('SELECT COUNT(*) FROM orders WHERE client_id = %s', (item_id,))
+                count = cur.fetchone()[0]
+                if count > 0:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Невозможно удалить перевозчика. Он задействован в заказах.'}),
+                        'isBase64Encoded': False
+                    }
                 cur.execute('DELETE FROM clients WHERE id = %s', (item_id,))
             
             conn.commit()
