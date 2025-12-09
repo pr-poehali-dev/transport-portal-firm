@@ -71,7 +71,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             elif resource == 'drivers':
-                cur.execute('SELECT id, full_name, phone, license_number, status FROM drivers ORDER BY full_name')
+                cur.execute('''
+                    SELECT id, full_name as last_name, '' as first_name, '' as middle_name, 
+                           phone, '' as passport_series, '' as passport_number, 
+                           '' as passport_issued_by, NULL as passport_issue_date,
+                           '' as license_series, license_number, 
+                           '' as license_issued_by, NULL as license_issue_date, 
+                           status 
+                    FROM drivers 
+                    ORDER BY full_name
+                ''')
                 columns = [desc[0] for desc in cur.description]
                 drivers = [dict(zip(columns, row)) for row in cur.fetchall()]
                 
@@ -83,7 +92,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             elif resource == 'vehicles':
-                cur.execute('SELECT id, license_plate, model, capacity, status FROM vehicles ORDER BY license_plate')
+                cur.execute('''
+                    SELECT id, license_plate, model, capacity, status, 
+                           '' as vehicle_type, model as vehicle_brand, 
+                           '' as trailer_plate, '' as body_type, 
+                           '' as company_name, NULL as driver_id, 
+                           license_plate as display_name
+                    FROM vehicles 
+                    ORDER BY license_plate
+                ''')
                 columns = [desc[0] for desc in cur.description]
                 vehicles = [dict(zip(columns, row)) for row in cur.fetchall()]
                 
@@ -246,11 +263,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             elif action == 'create_driver':
                 data = body_data.get('data', {})
+                full_name = f"{data.get('last_name', '')} {data.get('first_name', '')} {data.get('middle_name', '')}".strip()
+                license_num = f"{data.get('license_series', '')} {data.get('license_number', '')}".strip()
+                
                 cur.execute('''
                     INSERT INTO drivers (full_name, phone, license_number, status)
                     VALUES (%s, %s, %s, %s)
                     RETURNING id
-                ''', (data.get('full_name'), data.get('phone'), data.get('license_number'), 'available'))
+                ''', (full_name, data.get('phone'), license_num, 'available'))
                 
                 driver_id = cur.fetchone()[0]
                 conn.commit()
@@ -264,11 +284,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             elif action == 'create_vehicle':
                 data = body_data.get('data', {})
+                capacity = data.get('body_type', '')
+                
                 cur.execute('''
                     INSERT INTO vehicles (license_plate, model, capacity, status)
                     VALUES (%s, %s, %s, %s)
                     RETURNING id
-                ''', (data.get('license_plate'), data.get('model'), data.get('capacity'), 'available'))
+                ''', (data.get('license_plate'), data.get('vehicle_brand'), capacity, 'available'))
                 
                 vehicle_id = cur.fetchone()[0]
                 conn.commit()

@@ -28,6 +28,7 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
   const [editItem, setEditItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
   const [selectedDriver, setSelectedDriver] = useState<any>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const getEmptyForm = () => {
     switch (type) {
@@ -73,6 +74,7 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
       setFormData(getEmptyForm());
       setSelectedDriver(null);
     }
+    setErrors({});
   }, [editItem, showForm]);
 
   useEffect(() => {
@@ -88,8 +90,44 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
     }
   }, [formData.vehicle_brand, formData.license_plate, formData.trailer_plate]);
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    if (type === 'drivers') {
+      if (!formData.last_name?.trim()) newErrors.last_name = 'Обязательное поле';
+      if (!formData.first_name?.trim()) newErrors.first_name = 'Обязательное поле';
+      if (!formData.phone?.trim()) newErrors.phone = 'Обязательное поле';
+      if (!formData.passport_series?.trim()) newErrors.passport_series = 'Обязательное поле';
+      if (!formData.passport_number?.trim()) newErrors.passport_number = 'Обязательное поле';
+      if (!formData.passport_issued_by?.trim()) newErrors.passport_issued_by = 'Обязательное поле';
+      if (!formData.passport_issue_date) newErrors.passport_issue_date = 'Обязательное поле';
+      if (!formData.license_series?.trim()) newErrors.license_series = 'Обязательное поле';
+      if (!formData.license_number?.trim()) newErrors.license_number = 'Обязательное поле';
+      if (!formData.license_issued_by?.trim()) newErrors.license_issued_by = 'Обязательное поле';
+      if (!formData.license_issue_date) newErrors.license_issue_date = 'Обязательное поле';
+    } else if (type === 'vehicles') {
+      if (!formData.vehicle_type) newErrors.vehicle_type = 'Обязательное поле';
+      if (!formData.vehicle_brand?.trim()) newErrors.vehicle_brand = 'Обязательное поле';
+      if (!formData.license_plate?.trim()) newErrors.license_plate = 'Обязательное поле';
+      if (!formData.body_type) newErrors.body_type = 'Обязательное поле';
+      if (!formData.company_name?.trim()) newErrors.company_name = 'Обязательное поле';
+      if (!formData.driver_id) newErrors.driver_id = 'Обязательное поле';
+    } else if (type === 'clients') {
+      if (!formData.name?.trim()) newErrors.name = 'Обязательное поле';
+      if (!formData.phone?.trim()) newErrors.phone = 'Обязательное поле';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast.error('Заполните все обязательные поля');
+      return;
+    }
 
     try {
       if (editItem) {
@@ -121,6 +159,7 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
 
       setShowForm(false);
       setEditItem(null);
+      setErrors({});
       onRefresh();
     } catch (error) {
       toast.error('Ошибка при сохранении');
@@ -307,16 +346,18 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
               <Input
                 value={formData.last_name || ''}
                 onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                required
+                className={errors.last_name ? 'border-red-500' : ''}
               />
+              {errors.last_name && <p className="text-red-500 text-xs mt-1">{errors.last_name}</p>}
             </div>
             <div>
               <Label>Имя *</Label>
               <Input
                 value={formData.first_name || ''}
                 onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                required
+                className={errors.first_name ? 'border-red-500' : ''}
               />
+              {errors.first_name && <p className="text-red-500 text-xs mt-1">{errors.first_name}</p>}
             </div>
             <div>
               <Label>Отчество</Label>
@@ -333,8 +374,9 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
               value={formData.phone || ''}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               placeholder="+7 (___) ___-__-__"
-              required
+              className={errors.phone ? 'border-red-500' : ''}
             />
+            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
           </div>
 
           <div className="border-t pt-4 mt-4">
@@ -350,8 +392,9 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
                   onChange={(e) => setFormData({ ...formData, passport_series: e.target.value })}
                   placeholder="1234"
                   maxLength={4}
-                  required
+                  className={errors.passport_series ? 'border-red-500' : ''}
                 />
+                {errors.passport_series && <p className="text-red-500 text-xs mt-1">{errors.passport_series}</p>}
               </div>
               <div>
                 <Label>Номер *</Label>
@@ -360,8 +403,9 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
                   onChange={(e) => setFormData({ ...formData, passport_number: e.target.value })}
                   placeholder="567890"
                   maxLength={6}
-                  required
+                  className={errors.passport_number ? 'border-red-500' : ''}
                 />
+                {errors.passport_number && <p className="text-red-500 text-xs mt-1">{errors.passport_number}</p>}
               </div>
             </div>
             <div className="mt-4">
@@ -369,28 +413,46 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
               <Input
                 value={formData.passport_issued_by || ''}
                 onChange={(e) => setFormData({ ...formData, passport_issued_by: e.target.value })}
-                required
+                className={errors.passport_issued_by ? 'border-red-500' : ''}
               />
+              {errors.passport_issued_by && <p className="text-red-500 text-xs mt-1">{errors.passport_issued_by}</p>}
             </div>
             <div className="mt-4">
               <Label>Дата выдачи *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left font-normal">
-                    <Icon name="Calendar" className="mr-2" size={16} />
-                    {formData.passport_issue_date ? format(new Date(formData.passport_issue_date), 'dd-MM-yyyy', { locale: ru }) : 'Выберите дату'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.passport_issue_date ? new Date(formData.passport_issue_date) : undefined}
-                    onSelect={(date) => setFormData({ ...formData, passport_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
-                    locale={ru}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={formData.passport_issue_date ? format(new Date(formData.passport_issue_date), 'dd-MM-yyyy') : ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+                    if (match) {
+                      setFormData({ ...formData, passport_issue_date: `${match[3]}-${match[2]}-${match[1]}` });
+                    } else {
+                      setFormData({ ...formData, passport_issue_date: val });
+                    }
+                  }}
+                  placeholder="ДД-ММ-ГГГГ"
+                  className={errors.passport_issue_date ? 'border-red-500' : ''}
+                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Icon name="Calendar" size={16} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.passport_issue_date ? new Date(formData.passport_issue_date) : undefined}
+                      onSelect={(date) => setFormData({ ...formData, passport_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                      locale={ru}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {errors.passport_issue_date && <p className="text-red-500 text-xs mt-1">{errors.passport_issue_date}</p>}
             </div>
           </div>
 
@@ -406,8 +468,9 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
                   value={formData.license_series || ''}
                   onChange={(e) => setFormData({ ...formData, license_series: e.target.value })}
                   placeholder="12 АА"
-                  required
+                  className={errors.license_series ? 'border-red-500' : ''}
                 />
+                {errors.license_series && <p className="text-red-500 text-xs mt-1">{errors.license_series}</p>}
               </div>
               <div>
                 <Label>Номер *</Label>
@@ -415,8 +478,9 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
                   value={formData.license_number || ''}
                   onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
                   placeholder="123456"
-                  required
+                  className={errors.license_number ? 'border-red-500' : ''}
                 />
+                {errors.license_number && <p className="text-red-500 text-xs mt-1">{errors.license_number}</p>}
               </div>
             </div>
             <div className="mt-4">
@@ -424,28 +488,46 @@ export default function ResourceManager({ type, data, drivers = [], onRefresh }:
               <Input
                 value={formData.license_issued_by || ''}
                 onChange={(e) => setFormData({ ...formData, license_issued_by: e.target.value })}
-                required
+                className={errors.license_issued_by ? 'border-red-500' : ''}
               />
+              {errors.license_issued_by && <p className="text-red-500 text-xs mt-1">{errors.license_issued_by}</p>}
             </div>
             <div className="mt-4">
               <Label>Дата выдачи *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left font-normal">
-                    <Icon name="Calendar" className="mr-2" size={16} />
-                    {formData.license_issue_date ? format(new Date(formData.license_issue_date), 'dd-MM-yyyy', { locale: ru }) : 'Выберите дату'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.license_issue_date ? new Date(formData.license_issue_date) : undefined}
-                    onSelect={(date) => setFormData({ ...formData, license_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
-                    locale={ru}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={formData.license_issue_date ? format(new Date(formData.license_issue_date), 'dd-MM-yyyy') : ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+                    if (match) {
+                      setFormData({ ...formData, license_issue_date: `${match[3]}-${match[2]}-${match[1]}` });
+                    } else {
+                      setFormData({ ...formData, license_issue_date: val });
+                    }
+                  }}
+                  placeholder="ДД-ММ-ГГГГ"
+                  className={errors.license_issue_date ? 'border-red-500' : ''}
+                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Icon name="Calendar" size={16} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.license_issue_date ? new Date(formData.license_issue_date) : undefined}
+                      onSelect={(date) => setFormData({ ...formData, license_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                      locale={ru}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {errors.license_issue_date && <p className="text-red-500 text-xs mt-1">{errors.license_issue_date}</p>}
             </div>
           </div>
 
