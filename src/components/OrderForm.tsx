@@ -17,9 +17,10 @@ interface OrderFormProps {
   clients: any[];
   drivers: any[];
   vehicles: any[];
+  userRole?: string;
 }
 
-export default function OrderForm({ open, onClose, onSuccess, editOrder, clients, drivers, vehicles }: OrderFormProps) {
+export default function OrderForm({ open, onClose, onSuccess, editOrder, clients, drivers, vehicles, userRole = 'Пользователь' }: OrderFormProps) {
   const [formData, setFormData] = useState({
     order_number: '',
     client_id: '',
@@ -109,7 +110,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           body: JSON.stringify({
             resource: 'order',
             id: editOrder.id,
-            data: formData
+            data: formData,
+            user_role: userRole
           })
         });
 
@@ -121,7 +123,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'create_order',
-            data: formData
+            data: formData,
+            user_role: userRole
           })
         });
 

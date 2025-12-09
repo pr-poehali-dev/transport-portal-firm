@@ -25,7 +25,7 @@ const statusMap: Record<string, { label: string; color: string }> = {
 
 const Index = () => {
   const [userRole, setUserRole] = useState<'logist' | 'buyer' | 'manager'>('logist');
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeSection, setActiveSection] = useState('orders');
   const [orders, setOrders] = useState<any[]>([]);
   const [drivers, setDrivers] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -39,6 +39,8 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [selectedLogOrder, setSelectedLogOrder] = useState<number | null>(null);
 
   useEffect(() => {
     loadData();
@@ -47,12 +49,13 @@ const Index = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [ordersRes, driversRes, vehiclesRes, statsRes, clientsRes] = await Promise.all([
+      const [ordersRes, driversRes, vehiclesRes, statsRes, clientsRes, logsRes] = await Promise.all([
         fetch(`${API_URL}?resource=orders`),
         fetch(`${API_URL}?resource=drivers`),
         fetch(`${API_URL}?resource=vehicles`),
         fetch(`${API_URL}?resource=stats`),
-        fetch(`${API_URL}?resource=clients`)
+        fetch(`${API_URL}?resource=clients`),
+        fetch(`${API_URL}?resource=activity_log`)
       ]);
 
       const ordersData = await ordersRes.json();
@@ -60,12 +63,14 @@ const Index = () => {
       const clientsData = await clientsRes.json();
       const vehiclesData = await vehiclesRes.json();
       const statsData = await statsRes.json();
+      const logsData = await logsRes.json();
 
       setOrders(ordersData.orders || []);
       setDrivers(driversData.drivers || []);
       setVehicles(vehiclesData.vehicles || []);
       setStats(statsData);
       setClients(clientsData.clients || []);
+      setActivityLogs(logsData.logs || []);
     } catch (error) {
       toast.error('Ошибка загрузки данных');
       console.error(error);
@@ -162,14 +167,6 @@ const Index = () => {
 
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             <Button
-              variant={activeSection === 'overview' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => { setActiveSection('overview'); setMobileMenuOpen(false); }}
-            >
-              <Icon name="LayoutDashboard" size={20} className="mr-3" />
-              Обзор
-            </Button>
-            <Button
               variant={activeSection === 'orders' ? 'default' : 'ghost'}
               className="w-full justify-start"
               onClick={() => { setActiveSection('orders'); setMobileMenuOpen(false); }}
@@ -201,6 +198,14 @@ const Index = () => {
               <Icon name="Briefcase" size={20} className="mr-3" />
               Перевозчик
             </Button>
+            <Button
+              variant={activeSection === 'overview' ? 'default' : 'ghost'}
+              className="w-full justify-start"
+              onClick={() => { setActiveSection('overview'); setMobileMenuOpen(false); }}
+            >
+              <Icon name="Activity" size={20} className="mr-3" />
+              Обзор
+            </Button>
           </nav>
 
           <div className="p-4 border-t border-sidebar-border">
@@ -222,7 +227,7 @@ const Index = () => {
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
                 <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-                  {activeSection === 'overview' && 'Панель управления'}
+                  {activeSection === 'overview' && 'Журнал действий'}
                   {activeSection === 'orders' && 'Управление заказами'}
                   {activeSection === 'vehicles' && 'Автопарк'}
                   {activeSection === 'drivers' && 'База водителей'}
@@ -244,69 +249,59 @@ const Index = () => {
           <div className="p-4 md:p-8">
             {activeSection === 'overview' && (
               <div className="space-y-6 animate-fade-in">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {statsDisplay.map((stat, index) => (
-                    <Card key={index} className="hover:shadow-lg transition-all duration-300 hover:scale-105 border-l-4 border-l-primary">
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-sm font-medium text-gray-600">
-                            {stat.title}
-                          </CardTitle>
-                          <Icon name={stat.icon as any} className={stat.color} size={24} />
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Журнал действий</CardTitle>
+                    <CardDescription>История всех операций по заказам</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {activityLogs.map((log) => (
+                        <div key={log.id} className="border-l-4 border-primary pl-4 py-2">
+                          <div 
+                            className="flex items-start justify-between cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                            onClick={() => setSelectedLogOrder(selectedLogOrder === log.order_id ? null : log.order_id)}
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-1">
+                                <Badge variant="outline" className="text-xs">{log.order_number}</Badge>
+                                <span className="text-xs text-gray-500">{log.created_at}</span>
+                              </div>
+                              <p className="text-sm font-medium text-gray-900">{log.description}</p>
+                            </div>
+                            <Icon 
+                              name={selectedLogOrder === log.order_id ? "ChevronUp" : "ChevronDown"} 
+                              size={20} 
+                              className="text-gray-400 flex-shrink-0 ml-2"
+                            />
+                          </div>
+                          
+                          {selectedLogOrder === log.order_id && (
+                            <div className="mt-3 ml-2 space-y-2 animate-fade-in">
+                              {activityLogs
+                                .filter(l => l.order_id === log.order_id)
+                                .map(l => (
+                                  <div key={l.id} className="flex items-start gap-3 p-2 bg-gray-50 rounded">
+                                    <Icon name="Circle" size={8} className="text-primary mt-1.5" />
+                                    <div className="flex-1">
+                                      <p className="text-sm text-gray-700">{l.description}</p>
+                                      <p className="text-xs text-gray-500 mt-1">{l.created_at}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
                         </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold">{stat.value}</div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Последние заказы</CardTitle>
-                      <CardDescription>Актуальные перевозки</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {orders.slice(0, 3).map((order) => (
-                          <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100" onClick={() => openOrderDetails(order)}>
-                            <div>
-                              <p className="font-semibold">{order.order_number}</p>
-                              <p className="text-sm text-gray-600">{order.route_from} - {order.route_to}</p>
-                              <p className="text-xs text-gray-500">{order.client_name}</p>
-                            </div>
-                            <Badge className={`${statusMap[order.status]?.color} text-white`}>
-                              {statusMap[order.status]?.label}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Статус автопарка</CardTitle>
-                      <CardDescription>Текущее состояние транспорта</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {vehicles.slice(0, 3).map((vehicle) => (
-                          <div key={vehicle.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                            <div>
-                              <p className="font-semibold">{vehicle.license_plate}</p>
-                              <p className="text-sm text-gray-600">{vehicle.model}</p>
-                              <p className="text-xs text-gray-500">Грузоподъемность: {vehicle.capacity}</p>
-                            </div>
-                            <Badge variant="outline">{vehicle.status}</Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                      ))}
+                      {activityLogs.length === 0 && (
+                        <div className="text-center py-12 text-gray-500">
+                          <Icon name="Activity" size={48} className="mx-auto mb-3 text-gray-300" />
+                          <p>Пока нет записей в журнале</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
 
@@ -599,6 +594,7 @@ const Index = () => {
         clients={clients}
         drivers={drivers}
         vehicles={vehicles}
+        userRole={userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : 'Менеджер'}
       />
     </div>
   );

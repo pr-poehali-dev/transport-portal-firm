@@ -178,6 +178,39 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }),
                     'isBase64Encoded': False
                 }
+            
+            elif resource == 'activity_log':
+                order_id = query_params.get('order_id')
+                if order_id:
+                    cur.execute('''
+                        SELECT id, order_id, user_role, action_type, description, created_at
+                        FROM activity_log
+                        WHERE order_id = %s
+                        ORDER BY created_at DESC
+                    ''', (order_id,))
+                else:
+                    cur.execute('''
+                        SELECT al.id, al.order_id, al.user_role, al.action_type, al.description, al.created_at,
+                               o.order_number
+                        FROM activity_log al
+                        LEFT JOIN orders o ON al.order_id = o.id
+                        ORDER BY al.created_at DESC
+                        LIMIT 100
+                    ''')
+                
+                columns = [desc[0] for desc in cur.description]
+                logs = [dict(zip(columns, row)) for row in cur.fetchall()]
+                
+                for log in logs:
+                    if log.get('created_at'):
+                        log['created_at'] = log['created_at'].strftime('%d.%m.%Y %H:%M')
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'logs': logs}),
+                    'isBase64Encoded': False
+                }
         
         elif method == 'POST':
             body_data = json.loads(event.get('body', '{}'))
@@ -225,6 +258,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         VALUES (%s, %s, %s, %s)
                     ''', (order_id, stage_name, idx, False))
                 
+                user_role = body_data.get('user_role', 'Пользователь')
+                cur.execute('''
+                    INSERT INTO activity_log (order_id, user_role, action_type, description)
+                    VALUES (%s, %s, %s, %s)
+                ''', (order_id, user_role, 'create_order', f'{user_role} создал заказ {data.get("order_number")}'))
+                
                 conn.commit()
                 
                 return {
@@ -239,12 +278,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 is_completed = body_data.get('is_completed')
                 completed_by = body_data.get('completed_by', 'Пользователь')
                 
+                cur.execute('''
+                    SELECT os.stage_name, os.order_id, o.order_number
+                    FROM order_stages os
+                    JOIN orders o ON os.order_id = o.id
+                    WHERE os.id = %s
+                ''', (stage_id,))
+                stage_info = cur.fetchone()
+                
                 if is_completed:
                     cur.execute('''
                         UPDATE order_stages
                         SET is_completed = true, completed_by = %s, completed_at = CURRENT_TIMESTAMP
                         WHERE id = %s
                     ''', (completed_by, stage_id))
+                    
+                    if stage_info:
+                        stage_name, order_id, order_number = stage_info
+                        cur.execute('''
+                            INSERT INTO activity_log (order_id, user_role, action_type, description)
+                            VALUES (%s, %s, %s, %s)
+                        ''', (order_id, completed_by, 'update_stage', f'{completed_by} выполнил этап "{stage_name}" в заказе {order_number}'))
                 else:
                     cur.execute('''
                         UPDATE order_stages
@@ -328,6 +382,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             item_id = body_data.get('id')
             
             if resource == 'order':
+                cur.execute('SELECT order_number, driver_id, vehicle_id FROM orders WHERE id = %s', (item_id,))
+                old_data = cur.fetchone()
+                old_order_number, old_driver_id, old_vehicle_id = old_data if old_data else (None, None, None)
+                
                 cur.execute('''
                     UPDATE orders SET
                         order_number = %s, client_id = %s, carrier = %s, vehicle_id = %s,
@@ -342,6 +400,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     data.get('phone'), data.get('border_crossing'), data.get('delivery_address'),
                     data.get('overload'), item_id
                 ))
+                
+                user_role = body_data.get('user_role', 'Пользователь')
+                changes = []
+                if old_driver_id != data.get('driver_id'):
+                    cur.execute('SELECT full_name FROM drivers WHERE id = %s', (data.get('driver_id'),))
+                    driver_name = cur.fetchone()
+                    if driver_name:
+                        changes.append(f'назначил водителя {driver_name[0]}')
+                if old_vehicle_id != data.get('vehicle_id'):
+                    cur.execute('SELECT license_plate FROM vehicles WHERE id = %s', (data.get('vehicle_id'),))
+                    vehicle_plate = cur.fetchone()
+                    if vehicle_plate:
+                        changes.append(f'назначил автомобиль {vehicle_plate[0]}')
+                
+                if changes:
+                    description = f'{user_role} {" и ".join(changes)} в заказе {old_order_number}'
+                    cur.execute('''
+                        INSERT INTO activity_log (order_id, user_role, action_type, description)
+                        VALUES (%s, %s, %s, %s)
+                    ''', (item_id, user_role, 'update_order', description))
+                
                 conn.commit()
                 
                 return {
