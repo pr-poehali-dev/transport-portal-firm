@@ -48,6 +48,12 @@ const Index = () => {
   const [selectedLogOrder, setSelectedLogOrder] = useState<number | null>(null);
   const [userPermissions, setUserPermissions] = useState<any>({});
 
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadData();
+    }
+  }, [isLoggedIn]);
+
   const handleLogin = (role: string, uid: number) => {
     setUserRole(role as any);
     setUserId(uid);
@@ -58,16 +64,8 @@ const Index = () => {
     setIsLoggedIn(false);
     setUserId(null);
     setUserRole('admin');
-    setActiveSection('orders');
+    setActiveSection('dashboard');
   };
-
-  if (!isLoggedIn) {
-    return <LoginPage onLogin={handleLogin} />;
-  }
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -158,6 +156,10 @@ const Index = () => {
     { title: 'Водители', value: stats.total_drivers.toString(), icon: 'Users', color: 'text-purple-500' },
     { title: 'Автомобили', value: stats.total_vehicles.toString(), icon: 'Truck', color: 'text-orange-500' }
   ];
+
+  if (!isLoggedIn) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
