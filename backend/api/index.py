@@ -411,14 +411,40 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif action == 'login':
+                username = body_data.get('username')
+                password = body_data.get('password')
+                
+                cur.execute('''
+                    SELECT id, role, full_name FROM users 
+                    WHERE login = %s AND password = %s AND is_active = true
+                ''', (username, password))
+                
+                user = cur.fetchone()
+                
+                if not user:
+                    return {
+                        'statusCode': 401,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Неверный логин или пароль'}),
+                        'isBase64Encoded': False
+                    }
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'user_id': user[0], 'role': user[1], 'full_name': user[2]}),
+                    'isBase64Encoded': False
+                }
+            
             elif action == 'create_user':
                 data = body_data.get('data', {})
                 cur.execute('''
-                    INSERT INTO users (username, full_name, email, phone, role)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO users (username, full_name, email, phone, role, login, password, is_active)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 ''', (data.get('username'), data.get('full_name'), data.get('email'),
-                      data.get('phone'), data.get('role')))
+                      data.get('phone'), data.get('role'), data.get('login'), data.get('password'), True))
                 
                 user_id = cur.fetchone()[0]
                 conn.commit()

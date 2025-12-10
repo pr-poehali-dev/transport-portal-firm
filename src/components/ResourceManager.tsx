@@ -39,6 +39,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
           first_name: '', 
           middle_name: '', 
           phone: '', 
+          additional_phone: '',
           passport_series: '',
           passport_number: '',
           passport_issued_by: '',
@@ -389,6 +390,15 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
               className={errors.phone ? 'border-red-500' : ''}
             />
             {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+          </div>
+
+          <div>
+            <Label>Дополнительный телефон</Label>
+            <Input
+              value={formData.additional_phone || ''}
+              onChange={(e) => setFormData({ ...formData, additional_phone: e.target.value })}
+              placeholder="+7 (___) ___-__-__"
+            />
           </div>
 
           <div className="border-t pt-4 mt-4">

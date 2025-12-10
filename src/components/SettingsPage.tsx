@@ -31,6 +31,8 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
     email: '',
     phone: '',
     role: 'buyer',
+    login: '',
+    password: '',
     is_active: true
   });
 
@@ -343,6 +345,29 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Логин *</Label>
+                <Input
+                  value={userFormData.login}
+                  onChange={(e) => setUserFormData({ ...userFormData, login: e.target.value })}
+                  disabled={!!editUser}
+                  required
+                  placeholder="username"
+                />
+              </div>
+              <div>
+                <Label>Пароль *</Label>
+                <Input
+                  type="password"
+                  value={userFormData.password}
+                  onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
+                  required={!editUser}
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
 
             {editUser && (

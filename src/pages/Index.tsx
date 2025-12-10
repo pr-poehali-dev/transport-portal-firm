@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import OrderForm from '@/components/OrderForm';
 import ResourceManager from '@/components/ResourceManager';
 import SettingsPage from '@/components/SettingsPage';
+import LoginPage from '@/components/LoginPage';
+import Dashboard from '@/components/Dashboard';
 
 const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44ca0e';
 const DOCS_URL = 'https://functions.poehali.dev/7a5d7ce6-72d6-4fb9-8c89-2adabbad28c2';
@@ -25,8 +27,10 @@ const statusMap: Record<string, { label: string; color: string }> = {
 };
 
 const Index = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
   const [userRole, setUserRole] = useState<'admin' | 'logist' | 'buyer' | 'manager' | 'director'>('admin');
-  const [activeSection, setActiveSection] = useState('orders');
+  const [activeSection, setActiveSection] = useState('dashboard');
   const [orders, setOrders] = useState<any[]>([]);
   const [drivers, setDrivers] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -43,6 +47,23 @@ const Index = () => {
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [selectedLogOrder, setSelectedLogOrder] = useState<number | null>(null);
   const [userPermissions, setUserPermissions] = useState<any>({});
+
+  const handleLogin = (role: string, uid: number) => {
+    setUserRole(role as any);
+    setUserId(uid);
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUserId(null);
+    setUserRole('admin');
+    setActiveSection('orders');
+  };
+
+  if (!isLoggedIn) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
 
   useEffect(() => {
     loadData();
@@ -176,6 +197,14 @@ const Index = () => {
 
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             <Button
+              variant={activeSection === 'dashboard' ? 'default' : 'ghost'}
+              className="w-full justify-start"
+              onClick={() => { setActiveSection('dashboard'); setMobileMenuOpen(false); }}
+            >
+              <Icon name="LayoutDashboard" size={20} className="mr-3" />
+              Панель
+            </Button>
+            <Button
               variant={activeSection === 'orders' ? 'default' : 'ghost'}
               className="w-full justify-start"
               onClick={() => { setActiveSection('orders'); setMobileMenuOpen(false); }}
@@ -269,6 +298,16 @@ const Index = () => {
           </header>
 
           <div className="p-4 md:p-8">
+            {activeSection === 'dashboard' && (
+              <Dashboard 
+                orders={filteredOrders} 
+                onOrderClick={(order) => {
+                  setSelectedOrder(order);
+                  loadOrderStages(order.id);
+                }}
+              />
+            )}
+
             {activeSection === 'overview' && (
               <div className="space-y-6 animate-fade-in">
                 <Card>
