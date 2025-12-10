@@ -157,6 +157,13 @@ const Index = () => {
     { title: 'Автомобили', value: stats.total_vehicles.toString(), icon: 'Truck', color: 'text-orange-500' }
   ];
 
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = order.order_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.client_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   if (!isLoggedIn) {
     return <LoginPage onLogin={handleLogin} />;
   }
