@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import OrderForm from '@/components/OrderForm';
+import MultiStageOrderForm from '@/components/MultiStageOrderForm';
 import ResourceManager from '@/components/ResourceManager';
 import SettingsPage from '@/components/SettingsPage';
 import LoginPage from '@/components/LoginPage';
@@ -39,6 +40,7 @@ const Index = () => {
   const [orderStages, setOrderStages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showOrderForm, setShowOrderForm] = useState(false);
+  const [showMultiStageForm, setShowMultiStageForm] = useState(false);
   const [editOrder, setEditOrder] = useState<any>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -665,6 +667,16 @@ const Index = () => {
         onClose={() => { setShowOrderForm(false); setEditOrder(null); }}
         onSuccess={loadData}
         editOrder={editOrder}
+        clients={clients}
+        drivers={drivers}
+        vehicles={vehicles}
+        userRole={userRole === 'admin' ? 'Администратор' : userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : userRole === 'manager' ? 'Менеджер' : 'Руководитель'}
+      />
+
+      <MultiStageOrderForm
+        open={showMultiStageForm}
+        onClose={() => setShowMultiStageForm(false)}
+        onSuccess={loadData}
         clients={clients}
         drivers={drivers}
         vehicles={vehicles}

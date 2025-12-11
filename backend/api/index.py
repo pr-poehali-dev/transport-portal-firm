@@ -309,6 +309,79 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif action == 'create_multi_stage_order':
+                data = body_data.get('data', {})
+                order_data = data.get('order', {})
+                stages_data = data.get('stages', [])
+                customs_data = data.get('customs_points', [])
+                
+                cur.execute('''
+                    INSERT INTO orders (
+                        order_number, client_id, order_date, status
+                    ) VALUES (%s, %s, %s, %s)
+                    RETURNING id
+                ''', (
+                    order_data.get('order_number'),
+                    order_data.get('client_id'),
+                    order_data.get('order_date'),
+                    order_data.get('status', 'pending')
+                ))
+                
+                order_id = cur.fetchone()[0]
+                
+                for stage in stages_data:
+                    cur.execute('''
+                        INSERT INTO order_transport_stages (
+                            order_id, stage_number, vehicle_id, driver_id,
+                            from_location, to_location, planned_departure, planned_arrival,
+                            distance_km, notes, status
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        RETURNING id
+                    ''', (
+                        order_id,
+                        stage.get('stage_number'),
+                        stage.get('vehicle_id') if stage.get('vehicle_id') else None,
+                        stage.get('driver_id') if stage.get('driver_id') else None,
+                        stage.get('from_location'),
+                        stage.get('to_location'),
+                        stage.get('planned_departure') if stage.get('planned_departure') else None,
+                        stage.get('planned_arrival') if stage.get('planned_arrival') else None,
+                        stage.get('distance_km') if stage.get('distance_km') else None,
+                        stage.get('notes'),
+                        'planned'
+                    ))
+                    stage_id = cur.fetchone()[0]
+                    
+                    for customs in customs_data:
+                        if customs.get('customs_name'):
+                            cur.execute('''
+                                INSERT INTO order_customs_points (
+                                    order_id, stage_id, customs_name, country, crossing_date, notes
+                                ) VALUES (%s, %s, %s, %s, %s, %s)
+                            ''', (
+                                order_id,
+                                stage_id,
+                                customs.get('customs_name'),
+                                customs.get('country'),
+                                customs.get('crossing_date') if customs.get('crossing_date') else None,
+                                customs.get('notes')
+                            ))
+                
+                user_role = body_data.get('user_role', 'Пользователь')
+                cur.execute('''
+                    INSERT INTO activity_log (order_id, user_role, action_type, description)
+                    VALUES (%s, %s, %s, %s)
+                ''', (order_id, user_role, 'create_order', f'{user_role} создал многоэтапный заказ {order_data.get("order_number")}'))
+                
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'order_id': order_id}),
+                    'isBase64Encoded': False
+                }
+            
             elif action == 'update_stage':
                 stage_id = body_data.get('stage_id')
                 is_completed = body_data.get('is_completed')
