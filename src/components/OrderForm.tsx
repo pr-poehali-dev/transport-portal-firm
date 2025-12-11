@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import Icon from '@/components/ui/icon';
 
@@ -32,14 +33,28 @@ interface Stage {
   notes: string;
 }
 
+interface UploadedFile {
+  name: string;
+  url: string;
+  size: number;
+}
+
 export default function OrderForm({ open, onClose, onSuccess, editOrder, clients, drivers, vehicles, userRole = 'Пользователь' }: OrderFormProps) {
   const [orderInfo, setOrderInfo] = useState({
     order_number: '',
     client_id: '',
     order_date: new Date().toISOString().split('T')[0],
     cargo_type: '',
-    cargo_weight: ''
+    cargo_weight: '',
+    invoice: '',
+    track_number: '',
+    notes: ''
   });
+
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [orderCreated, setOrderCreated] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState<number | null>(null);
 
   const [stages, setStages] = useState<Stage[]>([{
     id: '1',
@@ -61,8 +76,14 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         client_id: '',
         order_date: new Date().toISOString().split('T')[0],
         cargo_type: '',
-        cargo_weight: ''
+        cargo_weight: '',
+        invoice: '',
+        track_number: '',
+        notes: ''
       });
+      setUploadedFiles([]);
+      setOrderCreated(false);
+      setCreatedOrderId(null);
       setStages([{
         id: '1',
         stage_number: 1,
@@ -76,6 +97,67 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       setErrors({});
     }
   }, [open, editOrder]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+
+        await new Promise<void>((resolve, reject) => {
+          reader.onload = async () => {
+            try {
+              const base64 = (reader.result as string).split(',')[1];
+              
+              const response = await fetch('https://functions.poehali.dev/c05ecff3-5595-441a-83b4-8b17d24a5ff4', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  file_name: file.name,
+                  file_data: base64,
+                  content_type: file.type || 'application/octet-stream'
+                })
+              });
+
+              if (!response.ok) throw new Error('Upload failed');
+
+              const data = await response.json();
+              
+              setUploadedFiles(prev => [...prev, {
+                name: file.name,
+                url: data.url,
+                size: file.size
+              }]);
+
+              resolve();
+            } catch (error) {
+              reject(error);
+            }
+          };
+
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      toast.success('Файлы загружены');
+    } catch (error) {
+      toast.error('Ошибка загрузки файлов');
+      console.error(error);
+    } finally {
+      setUploading(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   const addStage = () => {
     const newStage: Stage = {
@@ -103,12 +185,19 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     setStages(stages.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
-  const validateForm = (): boolean => {
+  const validateOrderInfo = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!orderInfo.order_number?.trim()) newErrors.order_number = 'Обязательное поле';
     if (!orderInfo.client_id) newErrors.client_id = 'Обязательное поле';
     if (!orderInfo.order_date) newErrors.order_date = 'Обязательное поле';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStages = (): boolean => {
+    const newErrors: Record<string, string> = {};
 
     stages.forEach((stage, idx) => {
       if (!stage.from_location?.trim()) newErrors[`stage_${idx}_from`] = 'Обязательное поле';
@@ -121,10 +210,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
+  const handleCreateOrder = async () => {
+    if (!validateOrderInfo()) {
       toast.error('Заполните все обязательные поля');
       return;
     }
@@ -143,33 +230,88 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               order_date: orderInfo.order_date,
               status: 'pending'
             },
-            stages: stages.map(stage => ({
-              stage_number: stage.stage_number,
-              vehicle_id: parseInt(stage.vehicle_id),
-              driver_id: parseInt(stage.driver_id),
-              from_location: stage.from_location,
-              to_location: stage.to_location,
-              notes: `Характер груза: ${orderInfo.cargo_type || '-'}, Вес: ${orderInfo.cargo_weight || '-'}${stage.notes ? ', ' + stage.notes : ''}`
-            })),
-            customs_points: stages
-              .filter(s => s.customs_name?.trim())
-              .map(s => ({
-                customs_name: s.customs_name,
-                country: '',
-                crossing_date: null,
-                notes: ''
-              }))
+            stages: [],
+            customs_points: []
           }
         })
       });
 
       if (!response.ok) throw new Error('Failed to create order');
       
-      toast.success('Заказ создан');
+      const result = await response.json();
+      
+      setOrderCreated(true);
+      setCreatedOrderId(result.order_id);
+      toast.success('Заказ создан! Теперь добавьте этапы');
+    } catch (error) {
+      toast.error('Ошибка при создании заказа');
+      console.error(error);
+    }
+  };
+
+  const handleAddStages = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateStages()) {
+      toast.error('Заполните все обязательные поля этапов');
+      return;
+    }
+
+    try {
+      for (const stage of stages) {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'add_order_stage',
+            order_id: createdOrderId,
+            stage: {
+              stage_number: stage.stage_number,
+              vehicle_id: parseInt(stage.vehicle_id),
+              driver_id: parseInt(stage.driver_id),
+              from_location: stage.from_location,
+              to_location: stage.to_location,
+              notes: `Инвойс: ${orderInfo.invoice || '-'}, Трак: ${orderInfo.track_number || '-'}, Характер груза: ${orderInfo.cargo_type || '-'}, Вес: ${orderInfo.cargo_weight || '-'}, Примечание: ${orderInfo.notes || '-'}${stage.notes ? ', ' + stage.notes : ''}`
+            }
+          })
+        });
+
+        if (stage.customs_name?.trim()) {
+          await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'add_customs_point',
+              order_id: createdOrderId,
+              customs: {
+                customs_name: stage.customs_name,
+                country: '',
+                crossing_date: null,
+                notes: ''
+              }
+            })
+          });
+        }
+      }
+
+      if (uploadedFiles.length > 0) {
+        const filesInfo = uploadedFiles.map(f => `${f.name}: ${f.url}`).join('\n');
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'add_order_note',
+            order_id: createdOrderId,
+            note: `Прикрепленные файлы:\n${filesInfo}`
+          })
+        });
+      }
+
+      toast.success('Этапы добавлены');
       onSuccess();
       onClose();
     } catch (error) {
-      toast.error('Ошибка при создании заказа');
+      toast.error('Ошибка при добавлении этапов');
       console.error(error);
     }
   };
@@ -178,186 +320,287 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editOrder ? 'Редактировать заказ' : 'Новый заказ'}</DialogTitle>
+          <DialogTitle>Новый заказ</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleAddStages} className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Информация о заказе</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Номер заказа *</Label>
-                <Input
-                  value={orderInfo.order_number}
-                  onChange={(e) => setOrderInfo({ ...orderInfo, order_number: e.target.value })}
-                  className={errors.order_number ? 'border-red-500' : ''}
-                  placeholder="2024-001"
-                />
-                {errors.order_number && <p className="text-red-500 text-xs mt-1">{errors.order_number}</p>}
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Номер заказа *</Label>
+                  <Input
+                    value={orderInfo.order_number}
+                    onChange={(e) => setOrderInfo({ ...orderInfo, order_number: e.target.value })}
+                    className={errors.order_number ? 'border-red-500' : ''}
+                    placeholder="2024-001"
+                    disabled={orderCreated}
+                  />
+                  {errors.order_number && <p className="text-red-500 text-xs mt-1">{errors.order_number}</p>}
+                </div>
+
+                <div>
+                  <Label>Дата заказа *</Label>
+                  <Input
+                    type="date"
+                    value={orderInfo.order_date}
+                    onChange={(e) => setOrderInfo({ ...orderInfo, order_date: e.target.value })}
+                    className={errors.order_date ? 'border-red-500' : ''}
+                    disabled={orderCreated}
+                  />
+                  {errors.order_date && <p className="text-red-500 text-xs mt-1">{errors.order_date}</p>}
+                </div>
+
+                <div>
+                  <Label>Клиент *</Label>
+                  <Select 
+                    value={orderInfo.client_id} 
+                    onValueChange={(val) => setOrderInfo({ ...orderInfo, client_id: val })}
+                    disabled={orderCreated}
+                  >
+                    <SelectTrigger className={errors.client_id ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Выберите клиента" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id.toString()}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.client_id && <p className="text-red-500 text-xs mt-1">{errors.client_id}</p>}
+                </div>
+
+                <div>
+                  <Label>Инвойс</Label>
+                  <Input
+                    value={orderInfo.invoice}
+                    onChange={(e) => setOrderInfo({ ...orderInfo, invoice: e.target.value })}
+                    placeholder="INV-2024-001"
+                    disabled={orderCreated}
+                  />
+                </div>
+
+                <div>
+                  <Label>Трак</Label>
+                  <Input
+                    value={orderInfo.track_number}
+                    onChange={(e) => setOrderInfo({ ...orderInfo, track_number: e.target.value })}
+                    placeholder="TRACK123456"
+                    disabled={orderCreated}
+                  />
+                </div>
+
+                <div>
+                  <Label>Характер груза</Label>
+                  <Input
+                    value={orderInfo.cargo_type}
+                    onChange={(e) => setOrderInfo({ ...orderInfo, cargo_type: e.target.value })}
+                    placeholder="Фрукты, овощи..."
+                    disabled={orderCreated}
+                  />
+                </div>
+
+                <div>
+                  <Label>Вес груза (кг)</Label>
+                  <Input
+                    type="number"
+                    value={orderInfo.cargo_weight}
+                    onChange={(e) => setOrderInfo({ ...orderInfo, cargo_weight: e.target.value })}
+                    placeholder="20000"
+                    disabled={orderCreated}
+                  />
+                </div>
               </div>
 
               <div>
-                <Label>Дата заказа *</Label>
-                <Input
-                  type="date"
-                  value={orderInfo.order_date}
-                  onChange={(e) => setOrderInfo({ ...orderInfo, order_date: e.target.value })}
-                  className={errors.order_date ? 'border-red-500' : ''}
-                />
-                {errors.order_date && <p className="text-red-500 text-xs mt-1">{errors.order_date}</p>}
-              </div>
-
-              <div>
-                <Label>Клиент *</Label>
-                <Select value={orderInfo.client_id} onValueChange={(val) => setOrderInfo({ ...orderInfo, client_id: val })}>
-                  <SelectTrigger className={errors.client_id ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Выберите клиента" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id.toString()}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.client_id && <p className="text-red-500 text-xs mt-1">{errors.client_id}</p>}
-              </div>
-
-              <div>
-                <Label>Характер груза</Label>
-                <Input
-                  value={orderInfo.cargo_type}
-                  onChange={(e) => setOrderInfo({ ...orderInfo, cargo_type: e.target.value })}
-                  placeholder="Фрукты, овощи..."
+                <Label>Примечание</Label>
+                <Textarea
+                  value={orderInfo.notes}
+                  onChange={(e) => setOrderInfo({ ...orderInfo, notes: e.target.value })}
+                  placeholder="Дополнительная информация о заказе..."
+                  rows={3}
+                  disabled={orderCreated}
                 />
               </div>
 
               <div>
-                <Label>Вес груза (кг)</Label>
-                <Input
-                  type="number"
-                  value={orderInfo.cargo_weight}
-                  onChange={(e) => setOrderInfo({ ...orderInfo, cargo_weight: e.target.value })}
-                  placeholder="20000"
-                />
+                <Label>Прикрепить файлы (накладные, заявки)</Label>
+                <div className="mt-2">
+                  <Input
+                    type="file"
+                    multiple
+                    onChange={handleFileUpload}
+                    disabled={uploading || orderCreated}
+                    className="cursor-pointer"
+                  />
+                  {uploading && <p className="text-sm text-blue-500 mt-2">Загрузка...</p>}
+                </div>
+
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm font-medium">Загруженные файлы:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {uploadedFiles.map((file, idx) => (
+                        <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 rounded border">
+                          <Icon name="File" size={16} className="text-blue-500" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm truncate">{file.name}</p>
+                            <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                          </div>
+                          {!orderCreated && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFile(idx)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Icon name="X" size={14} />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {!orderCreated && (
+                <Button type="button" onClick={handleCreateOrder} className="w-full">
+                  Создать заказ
+                </Button>
+              )}
             </CardContent>
           </Card>
 
-          {stages.map((stage, idx) => (
-            <Card key={stage.id} className="relative">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">Этап {stage.stage_number}</CardTitle>
-                {stages.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeStage(stage.id)}
-                    className="text-red-500"
-                  >
-                    <Icon name="Trash2" size={16} />
-                  </Button>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Откуда *</Label>
-                    <Input
-                      value={stage.from_location}
-                      onChange={(e) => updateStage(stage.id, 'from_location', e.target.value)}
-                      className={errors[`stage_${idx}_from`] ? 'border-red-500' : ''}
-                      placeholder="Москва"
-                    />
-                    {errors[`stage_${idx}_from`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_from`]}</p>}
-                  </div>
+          {orderCreated && (
+            <>
+              {stages.map((stage, idx) => (
+                <Card key={stage.id} className="relative">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-lg">Этап {stage.stage_number}</CardTitle>
+                    {stages.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeStage(stage.id)}
+                        className="text-red-500"
+                      >
+                        <Icon name="Trash2" size={16} />
+                      </Button>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Откуда *</Label>
+                        <Input
+                          value={stage.from_location}
+                          onChange={(e) => updateStage(stage.id, 'from_location', e.target.value)}
+                          className={errors[`stage_${idx}_from`] ? 'border-red-500' : ''}
+                          placeholder="Москва"
+                        />
+                        {errors[`stage_${idx}_from`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_from`]}</p>}
+                      </div>
 
-                  <div>
-                    <Label>Куда *</Label>
-                    <Input
-                      value={stage.to_location}
-                      onChange={(e) => updateStage(stage.id, 'to_location', e.target.value)}
-                      className={errors[`stage_${idx}_to`] ? 'border-red-500' : ''}
-                      placeholder="Санкт-Петербург"
-                    />
-                    {errors[`stage_${idx}_to`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_to`]}</p>}
-                  </div>
+                      <div>
+                        <Label>Куда *</Label>
+                        <Input
+                          value={stage.to_location}
+                          onChange={(e) => updateStage(stage.id, 'to_location', e.target.value)}
+                          className={errors[`stage_${idx}_to`] ? 'border-red-500' : ''}
+                          placeholder="Санкт-Петербург"
+                        />
+                        {errors[`stage_${idx}_to`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_to`]}</p>}
+                      </div>
 
-                  <div>
-                    <Label>Водитель *</Label>
-                    <Select value={stage.driver_id} onValueChange={(val) => updateStage(stage.id, 'driver_id', val)}>
-                      <SelectTrigger className={errors[`stage_${idx}_driver`] ? 'border-red-500' : ''}>
-                        <SelectValue placeholder="Выберите водителя" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {drivers.map((driver) => (
-                          <SelectItem key={driver.id} value={driver.id.toString()}>
-                            {driver.full_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors[`stage_${idx}_driver`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_driver`]}</p>}
-                  </div>
+                      <div>
+                        <Label>Водитель *</Label>
+                        <Select value={stage.driver_id} onValueChange={(val) => updateStage(stage.id, 'driver_id', val)}>
+                          <SelectTrigger className={errors[`stage_${idx}_driver`] ? 'border-red-500' : ''}>
+                            <SelectValue placeholder="Выберите водителя" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {drivers.map((driver) => (
+                              <SelectItem key={driver.id} value={driver.id.toString()}>
+                                {driver.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors[`stage_${idx}_driver`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_driver`]}</p>}
+                      </div>
 
-                  <div>
-                    <Label>Автомобиль *</Label>
-                    <Select value={stage.vehicle_id} onValueChange={(val) => updateStage(stage.id, 'vehicle_id', val)}>
-                      <SelectTrigger className={errors[`stage_${idx}_vehicle`] ? 'border-red-500' : ''}>
-                        <SelectValue placeholder="Выберите автомобиль" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {vehicles.map((vehicle) => (
-                          <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
-                            {vehicle.license_plate} - {vehicle.model}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors[`stage_${idx}_vehicle`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_vehicle`]}</p>}
-                  </div>
+                      <div>
+                        <Label>Автомобиль *</Label>
+                        <Select value={stage.vehicle_id} onValueChange={(val) => updateStage(stage.id, 'vehicle_id', val)}>
+                          <SelectTrigger className={errors[`stage_${idx}_vehicle`] ? 'border-red-500' : ''}>
+                            <SelectValue placeholder="Выберите автомобиль" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {vehicles.map((vehicle) => (
+                              <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
+                                {vehicle.license_plate} - {vehicle.model}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors[`stage_${idx}_vehicle`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_vehicle`]}</p>}
+                      </div>
 
-                  <div>
-                    <Label>Таможня</Label>
-                    <Input
-                      value={stage.customs_name}
-                      onChange={(e) => updateStage(stage.id, 'customs_name', e.target.value)}
-                      placeholder="Торфяновка"
-                    />
-                  </div>
+                      <div>
+                        <Label>Таможня</Label>
+                        <Input
+                          value={stage.customs_name}
+                          onChange={(e) => updateStage(stage.id, 'customs_name', e.target.value)}
+                          placeholder="Торфяновка"
+                        />
+                      </div>
 
-                  <div>
-                    <Label>Примечания</Label>
-                    <Input
-                      value={stage.notes}
-                      onChange={(e) => updateStage(stage.id, 'notes', e.target.value)}
-                      placeholder="Дополнительная информация"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                      <div>
+                        <Label>Примечания этапа</Label>
+                        <Input
+                          value={stage.notes}
+                          onChange={(e) => updateStage(stage.id, 'notes', e.target.value)}
+                          placeholder="Дополнительная информация"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
 
-          <div className="flex gap-3">
-            <Button type="button" variant="outline" onClick={addStage} className="flex-1">
-              <Icon name="Plus" size={18} className="mr-2" />
-              Добавить перегруз / продолжить маршрут
-            </Button>
-          </div>
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" onClick={addStage} className="flex-1">
+                  <Icon name="Plus" size={18} className="mr-2" />
+                  Добавить перегруз / продолжить маршрут
+                </Button>
+              </div>
 
-          <div className="flex gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
-              Отмена
-            </Button>
-            <Button type="submit" className="flex-1">
-              Создать заказ
-            </Button>
-          </div>
+              <div className="flex gap-3 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+                  Отмена
+                </Button>
+                <Button type="submit" className="flex-1">
+                  Добавить этапы
+                </Button>
+              </div>
+            </>
+          )}
+
+          {!orderCreated && (
+            <div className="flex gap-3 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={onClose} className="w-full">
+                Отмена
+              </Button>
+            </div>
+          )}
         </form>
       </DialogContent>
     </Dialog>
