@@ -118,13 +118,38 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         if (!response.ok) throw new Error('Failed to update order');
         toast.success('Заказ обновлен');
       } else {
+        // Создаем простой заказ с одним этапом
         const response = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'create_order',
-            data: formData,
-            user_role: userRole
+            action: 'create_multi_stage_order',
+            user_role: userRole,
+            data: {
+              order: {
+                order_number: formData.order_number,
+                client_id: parseInt(formData.client_id),
+                order_date: formData.order_date,
+                status: formData.status
+              },
+              stages: [{
+                stage_number: 1,
+                vehicle_id: parseInt(formData.vehicle_id),
+                driver_id: parseInt(formData.driver_id),
+                from_location: formData.route_from,
+                to_location: formData.route_to,
+                planned_departure: null,
+                planned_arrival: null,
+                distance_km: null,
+                notes: `Перевозчик: ${formData.carrier}${formData.phone ? ', Тел: ' + formData.phone : ''}${formData.border_crossing ? ', Граница: ' + formData.border_crossing : ''}${formData.delivery_address ? ', Адрес: ' + formData.delivery_address : ''}`
+              }],
+              customs_points: formData.border_crossing ? [{
+                customs_name: formData.border_crossing,
+                country: '',
+                crossing_date: null,
+                notes: ''
+              }] : []
+            }
           })
         });
 

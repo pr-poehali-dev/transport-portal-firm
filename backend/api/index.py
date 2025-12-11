@@ -39,18 +39,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if resource == 'orders':
                 cur.execute('''
                     SELECT 
-                        o.id, o.order_number, o.order_date, o.status, o.invoice_number,
-                        o.route_from, o.route_to, o.carrier, o.phone, o.border_crossing,
-                        o.delivery_address, o.overload,
+                        o.id, o.order_number, o.order_date, o.status,
                         c.name as client_name,
-                        v.license_plate, v.model as vehicle_model,
-                        d.full_name as driver_name,
-                        p.is_ready as fito_ready, p.received_date as fito_received
+                        c.id as client_id
                     FROM orders o
                     LEFT JOIN clients c ON o.client_id = c.id
-                    LEFT JOIN vehicles v ON o.vehicle_id = v.id
-                    LEFT JOIN drivers d ON o.driver_id = d.id
-                    LEFT JOIN phytosanitary_docs p ON o.id = p.order_id
                     ORDER BY o.order_date DESC
                 ''')
                 
@@ -60,8 +53,51 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 for order in orders:
                     if order.get('order_date'):
                         order['order_date'] = order['order_date'].strftime('%d.%m.%Y')
-                    if order.get('fito_received'):
-                        order['fito_received'] = order['fito_received'].strftime('%d.%m.%Y')
+                    
+                    # Получаем первый этап для обратной совместимости
+                    cur.execute('''
+                        SELECT 
+                            s.from_location, s.to_location, s.notes,
+                            v.license_plate, v.model as vehicle_model, v.id as vehicle_id,
+                            d.full_name as driver_name, d.id as driver_id
+                        FROM order_transport_stages s
+                        LEFT JOIN vehicles v ON s.vehicle_id = v.id
+                        LEFT JOIN drivers d ON s.driver_id = d.id
+                        WHERE s.order_id = %s
+                        ORDER BY s.stage_number
+                        LIMIT 1
+                    ''', (order['id'],))
+                    
+                    stage = cur.fetchone()
+                    if stage:
+                        stage_cols = [desc[0] for desc in cur.description]
+                        stage_data = dict(zip(stage_cols, stage))
+                        order['route_from'] = stage_data.get('from_location')
+                        order['route_to'] = stage_data.get('to_location')
+                        order['license_plate'] = stage_data.get('license_plate')
+                        order['vehicle_model'] = stage_data.get('vehicle_model')
+                        order['vehicle_id'] = stage_data.get('vehicle_id')
+                        order['driver_name'] = stage_data.get('driver_name')
+                        order['driver_id'] = stage_data.get('driver_id')
+                        
+                        notes = stage_data.get('notes', '')
+                        if notes:
+                            if 'Перевозчик:' in notes:
+                                carrier_part = notes.split('Перевозчик:')[1].split(',')[0].strip()
+                                order['carrier'] = carrier_part
+                            if 'Тел:' in notes:
+                                phone_part = notes.split('Тел:')[1].split(',')[0].strip()
+                                order['phone'] = phone_part
+                            if 'Граница:' in notes:
+                                border_part = notes.split('Граница:')[1].split(',')[0].strip()
+                                order['border_crossing'] = border_part
+                    
+                    # Получаем количество этапов
+                    cur.execute('''
+                        SELECT COUNT(*) FROM order_transport_stages WHERE order_id = %s
+                    ''', (order['id'],))
+                    stage_count = cur.fetchone()[0]
+                    order['stage_count'] = stage_count
                 
                 return {
                     'statusCode': 200,
