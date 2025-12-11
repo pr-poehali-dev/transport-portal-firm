@@ -428,6 +428,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 if order:
                     order_number = order[0]
                     
+                    cur.execute('DELETE FROM order_documents WHERE order_id = %s', (order_id,))
+                    cur.execute('DELETE FROM phytosanitary_docs WHERE order_id = %s', (order_id,))
                     cur.execute('DELETE FROM order_customs_points WHERE order_id = %s', (order_id,))
                     cur.execute('DELETE FROM order_transport_stages WHERE order_id = %s', (order_id,))
                     cur.execute('DELETE FROM order_stages WHERE order_id = %s', (order_id,))
