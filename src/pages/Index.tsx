@@ -465,6 +465,37 @@ const Index = () => {
                                 <Button variant="ghost" size="sm" onClick={() => { setEditOrder(order); setShowOrderForm(true); }}>
                                   <Icon name="Pencil" size={16} />
                                 </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={async () => {
+                                    if (confirm(`Удалить заказ ${order.order_number}?`)) {
+                                      try {
+                                        const res = await fetch(API_URL, {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            action: 'delete_order',
+                                            order_id: order.id,
+                                            user_role: userRole
+                                          })
+                                        });
+                                        const result = await res.json();
+                                        if (result.success) {
+                                          toast.success('Заказ удален');
+                                          loadData();
+                                        } else {
+                                          toast.error('Ошибка удаления');
+                                        }
+                                      } catch (error) {
+                                        toast.error('Ошибка удаления');
+                                      }
+                                    }
+                                  }}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Icon name="Trash2" size={16} />
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>

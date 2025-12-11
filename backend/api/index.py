@@ -418,6 +418,38 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif action == 'delete_order':
+                order_id = body_data.get('order_id')
+                user_role = body_data.get('user_role', 'Пользователь')
+                
+                cur.execute('SELECT order_number FROM orders WHERE id = %s', (order_id,))
+                order = cur.fetchone()
+                
+                if order:
+                    order_number = order[0]
+                    
+                    cur.execute('DELETE FROM order_customs_points WHERE order_id = %s', (order_id,))
+                    cur.execute('DELETE FROM order_transport_stages WHERE order_id = %s', (order_id,))
+                    cur.execute('DELETE FROM order_stages WHERE order_id = %s', (order_id,))
+                    cur.execute('DELETE FROM activity_log WHERE order_id = %s', (order_id,))
+                    cur.execute('DELETE FROM orders WHERE id = %s', (order_id,))
+                    
+                    conn.commit()
+                    
+                    return {
+                        'statusCode': 200,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': True, 'message': f'Заказ {order_number} удален'}),
+                        'isBase64Encoded': False
+                    }
+                
+                return {
+                    'statusCode': 404,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': False, 'message': 'Заказ не найден'}),
+                    'isBase64Encoded': False
+                }
+            
             elif action == 'update_stage':
                 stage_id = body_data.get('stage_id')
                 is_completed = body_data.get('is_completed')
