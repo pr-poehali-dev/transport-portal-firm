@@ -114,7 +114,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
             try {
               const base64 = (reader.result as string).split(',')[1];
               
-              const response = await fetch('https://functions.poehali.dev/c05ecff3-5595-441a-83b4-8b17d24a5ff4', {
+              const response = await fetch('https://functions.poehali.dev/c8289536-b13d-4104-b248-c9fc80a716ed', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

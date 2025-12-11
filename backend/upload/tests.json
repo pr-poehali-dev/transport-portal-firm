@@ -1,0 +1,21 @@
+{
+  "tests": [
+    {
+      "name": "Upload file test",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "file_name": "test.txt",
+        "file_data": "SGVsbG8gV29ybGQ=",
+        "content_type": "text/plain"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "url": "string",
+        "filename": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
