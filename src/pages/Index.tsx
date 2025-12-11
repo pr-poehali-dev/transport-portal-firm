@@ -266,21 +266,6 @@ const Index = () => {
               </Button>
             )}
           </nav>
-
-          <div className="p-4 border-t border-sidebar-border">
-            <Select value={userRole} onValueChange={(value: any) => setUserRole(value)}>
-              <SelectTrigger className="bg-sidebar-accent">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Администратор</SelectItem>
-                <SelectItem value="logist">Логист</SelectItem>
-                <SelectItem value="buyer">Байер</SelectItem>
-                <SelectItem value="manager">Менеджер</SelectItem>
-                <SelectItem value="director">Руководитель</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </aside>
 
         <main className="flex-1 overflow-y-auto w-full">
