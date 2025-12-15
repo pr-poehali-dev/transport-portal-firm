@@ -480,7 +480,7 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
       </Tabs>
 
       <Dialog open={showUserForm} onOpenChange={(open) => { if (!open) { setShowUserForm(false); setEditUser(null); } }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editUser ? 'Редактировать пользователя' : 'Новый пользователь'}</DialogTitle>
           </DialogHeader>
