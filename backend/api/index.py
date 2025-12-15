@@ -9,7 +9,7 @@ def get_db_connection():
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    API для управления транспортным порталом: заказы, водители, автомобили, клиенты
+    API для управления транспортным порталом: заказы, водители, автомобили, клиенты, настройки Telegram бота
     '''
     method = event.get('httpMethod', 'GET')
     
