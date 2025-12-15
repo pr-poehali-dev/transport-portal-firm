@@ -318,6 +318,31 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'customers': customers}),
                     'isBase64Encoded': False
                 }
+            
+            elif resource == 'telegram_settings':
+                cur.execute('''
+                    SELECT bot_token, chat_id, is_active
+                    FROM telegram_bot_settings
+                    ORDER BY id DESC
+                    LIMIT 1
+                ''')
+                row = cur.fetchone()
+                
+                if row:
+                    settings = {
+                        'bot_token': row[0],
+                        'chat_id': row[1],
+                        'is_active': row[2]
+                    }
+                else:
+                    settings = {'bot_token': '', 'chat_id': '', 'is_active': False}
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'settings': settings}),
+                    'isBase64Encoded': False
+                }
         
         elif method == 'POST':
             body_data = json.loads(event.get('body', '{}'))
@@ -450,6 +475,54 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 conn.commit()
                 
+                # Отправка уведомления в Telegram
+                try:
+                    customer_display = ''
+                    if customer_items:
+                        customer_names = []
+                        for item in customer_items:
+                            cur.execute('SELECT nickname FROM customers WHERE id = %s', (item.get('customer_id'),))
+                            customer = cur.fetchone()
+                            if customer:
+                                note = f" ({item['note']})" if item.get('note') else ''
+                                customer_names.append(f"{customer[0]}{note}")
+                        customer_display = ', '.join(customer_names)
+                    
+                    carrier_name = ''
+                    if order_data.get('client_id'):
+                        cur.execute('SELECT name FROM clients WHERE id = %s', (order_data.get('client_id'),))
+                        carrier = cur.fetchone()
+                        if carrier:
+                            carrier_name = carrier[0]
+                    
+                    route = ''
+                    if stages_data:
+                        first_stage = stages_data[0]
+                        last_stage = stages_data[-1]
+                        route = f"{first_stage.get('from_location', 'N/A')} → {last_stage.get('to_location', 'N/A')}"
+                    
+                    import urllib.request
+                    import urllib.parse
+                    
+                    telegram_payload = {
+                        'event_type': 'order_created',
+                        'order_data': {
+                            'order_id': order_id,
+                            'order_number': order_data.get('order_number'),
+                            'order_date': order_data.get('order_date'),
+                            'customers': customer_display or 'Не указано',
+                            'carrier': carrier_name or 'Не указан',
+                            'route': route or 'Не указан'
+                        }
+                    }
+                    
+                    telegram_url = 'https://functions.poehali.dev/a5ca5f70-a100-4290-9d7c-54189ae3319e'
+                    telegram_data = json.dumps(telegram_payload).encode('utf-8')
+                    telegram_req = urllib.request.Request(telegram_url, data=telegram_data, headers={'Content-Type': 'application/json'})
+                    urllib.request.urlopen(telegram_req, timeout=5)
+                except:
+                    pass
+                
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -517,6 +590,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             INSERT INTO activity_log (order_id, user_role, action_type, description)
                             VALUES (%s, %s, %s, %s)
                         ''', (order_id, completed_by, 'update_stage', f'{completed_by} выполнил этап "{stage_name}" в заказе {order_number}'))
+                        
+                        # Отправка уведомления в Telegram о выполнении этапа
+                        try:
+                            import urllib.request
+                            
+                            telegram_payload = {
+                                'event_type': 'stage_completed',
+                                'order_data': {
+                                    'order_id': order_id,
+                                    'order_number': order_number,
+                                    'stage_name': stage_name,
+                                    'completed_by': completed_by
+                                }
+                            }
+                            
+                            telegram_url = 'https://functions.poehali.dev/a5ca5f70-a100-4290-9d7c-54189ae3319e'
+                            telegram_data = json.dumps(telegram_payload).encode('utf-8')
+                            telegram_req = urllib.request.Request(telegram_url, data=telegram_data, headers={'Content-Type': 'application/json'})
+                            urllib.request.urlopen(telegram_req, timeout=5)
+                        except:
+                            pass
                 else:
                     cur.execute('''
                         UPDATE order_stages
@@ -677,6 +771,78 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'success': True}),
                     'isBase64Encoded': False
                 }
+            
+            elif action == 'save_telegram_settings':
+                data = body_data.get('data', {})
+                
+                cur.execute('SELECT COUNT(*) FROM telegram_bot_settings')
+                count = cur.fetchone()[0]
+                
+                if count > 0:
+                    cur.execute('''
+                        UPDATE telegram_bot_settings
+                        SET bot_token = %s, chat_id = %s, is_active = %s, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = (SELECT id FROM telegram_bot_settings ORDER BY id DESC LIMIT 1)
+                    ''', (data.get('bot_token'), data.get('chat_id'), data.get('is_active')))
+                else:
+                    cur.execute('''
+                        INSERT INTO telegram_bot_settings (bot_token, chat_id, is_active)
+                        VALUES (%s, %s, %s)
+                    ''', (data.get('bot_token'), data.get('chat_id'), data.get('is_active')))
+                
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'test_telegram_bot':
+                data = body_data.get('data', {})
+                bot_token = data.get('bot_token')
+                chat_id = data.get('chat_id')
+                
+                import urllib.request
+                import urllib.parse
+                
+                message = "✅ Тестовое сообщение от TransHub!\n\nПодключение к боту работает корректно."
+                
+                url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
+                payload = {
+                    'chat_id': chat_id,
+                    'text': message,
+                    'parse_mode': 'HTML'
+                }
+                
+                try:
+                    data_encoded = urllib.parse.urlencode(payload).encode('utf-8')
+                    req = urllib.request.Request(url, data=data_encoded)
+                    with urllib.request.urlopen(req, timeout=10) as response:
+                        result = json.loads(response.read().decode('utf-8'))
+                        
+                        if result.get('ok'):
+                            return {
+                                'statusCode': 200,
+                                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                                'body': json.dumps({'success': True}),
+                                'isBase64Encoded': False
+                            }
+                        else:
+                            return {
+                                'statusCode': 400,
+                                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                                'body': json.dumps({'success': False, 'error': result.get('description', 'Unknown error')}),
+                                'isBase64Encoded': False
+                            }
+                except Exception as e:
+                    return {
+                        'statusCode': 500,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': False, 'error': str(e)}),
+                        'isBase64Encoded': False
+                    }
         
         elif method == 'PUT':
             body_data = json.loads(event.get('body', '{}'))

@@ -36,8 +36,16 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
     is_active: true
   });
 
+  const [telegramSettings, setTelegramSettings] = useState({
+    bot_token: '',
+    chat_id: '',
+    is_active: false
+  });
+  const [testingBot, setTestingBot] = useState(false);
+
   useEffect(() => {
     loadData();
+    loadTelegramSettings();
   }, []);
 
   const loadData = async () => {
@@ -55,6 +63,75 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
     } catch (error) {
       toast.error('Ошибка загрузки данных');
       console.error(error);
+    }
+  };
+
+  const loadTelegramSettings = async () => {
+    try {
+      const response = await fetch(`${API_URL}?resource=telegram_settings`);
+      const data = await response.json();
+      
+      if (data.settings) {
+        setTelegramSettings(data.settings);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки настроек Telegram:', error);
+    }
+  };
+
+  const handleSaveTelegramSettings = async () => {
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_telegram_settings',
+          data: telegramSettings
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to save settings');
+      
+      toast.success('Настройки Telegram сохранены');
+      loadTelegramSettings();
+    } catch (error) {
+      toast.error('Ошибка при сохранении настроек');
+      console.error(error);
+    }
+  };
+
+  const handleTestTelegramBot = async () => {
+    if (!telegramSettings.bot_token || !telegramSettings.chat_id) {
+      toast.error('Укажите токен бота и Chat ID');
+      return;
+    }
+
+    setTestingBot(true);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'test_telegram_bot',
+          data: {
+            bot_token: telegramSettings.bot_token,
+            chat_id: telegramSettings.chat_id
+          }
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success('Тестовое сообщение отправлено в Telegram!');
+      } else {
+        toast.error(`Ошибка: ${result.error || 'Не удалось отправить сообщение'}`);
+      }
+    } catch (error) {
+      toast.error('Ошибка подключения к боту');
+      console.error(error);
+    } finally {
+      setTestingBot(false);
     }
   };
 
@@ -172,7 +249,7 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
   return (
     <div className="space-y-6 animate-fade-in">
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="users">
             <Icon name="Users" size={18} className="mr-2" />
             Пользователи
@@ -180,6 +257,10 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
           <TabsTrigger value="permissions">
             <Icon name="Shield" size={18} className="mr-2" />
             Права доступа
+          </TabsTrigger>
+          <TabsTrigger value="telegram">
+            <Icon name="Send" size={18} className="mr-2" />
+            Telegram Бот
           </TabsTrigger>
         </TabsList>
 
@@ -280,6 +361,121 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="telegram" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Настройка Telegram Бота</CardTitle>
+              <CardDescription>
+                Подключите бота для получения уведомлений о заказах, этапах и событиях в системе
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bot_token">Токен бота *</Label>
+                    <Input
+                      id="bot_token"
+                      type="password"
+                      placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+                      value={telegramSettings.bot_token}
+                      onChange={(e) => setTelegramSettings({ ...telegramSettings, bot_token: e.target.value })}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Получите токен у <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">@BotFather</a>
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="chat_id">Chat ID *</Label>
+                    <Input
+                      id="chat_id"
+                      placeholder="-1001234567890"
+                      value={telegramSettings.chat_id}
+                      onChange={(e) => setTelegramSettings({ ...telegramSettings, chat_id: e.target.value })}
+                    />
+                    <p className="text-xs text-gray-500">
+                      ID чата или группы для уведомлений. Узнайте у <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">@userinfobot</a>
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="is_active"
+                      checked={telegramSettings.is_active}
+                      onCheckedChange={(checked) => setTelegramSettings({ ...telegramSettings, is_active: checked })}
+                    />
+                    <Label htmlFor="is_active" className="cursor-pointer">
+                      Включить уведомления
+                    </Label>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleTestTelegramBot}
+                    disabled={testingBot || !telegramSettings.bot_token || !telegramSettings.chat_id}
+                  >
+                    <Icon name="Send" size={18} className="mr-2" />
+                    {testingBot ? 'Отправка...' : 'Проверить подключение'}
+                  </Button>
+                  <Button onClick={handleSaveTelegramSettings}>
+                    <Icon name="Save" size={18} className="mr-2" />
+                    Сохранить настройки
+                  </Button>
+                </div>
+              </div>
+
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold mb-4">Типы уведомлений</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium">Создание заказа</p>
+                      <p className="text-sm text-gray-500">Уведомление при создании нового заказа</p>
+                    </div>
+                    <Badge variant="outline">Включено</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium">Загрузка груза</p>
+                      <p className="text-sm text-gray-500">Уведомление о начале погрузки</p>
+                    </div>
+                    <Badge variant="outline">Включено</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium">В пути</p>
+                      <p className="text-sm text-gray-500">Информация о маршруте и автомобиле</p>
+                    </div>
+                    <Badge variant="outline">Включено</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium">Доставка</p>
+                      <p className="text-sm text-gray-500">Уведомление о завершении доставки</p>
+                    </div>
+                    <Badge variant="outline">Включено</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium">Этапы заказа</p>
+                      <p className="text-sm text-gray-500">Уведомление о выполнении этапов</p>
+                    </div>
+                    <Badge variant="outline">Включено</Badge>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 mt-4">
+                  <Icon name="Info" size={14} className="inline mr-1" />
+                  В будущем здесь можно будет настроить, какие роли получают какие уведомления
+                </p>
               </div>
             </CardContent>
           </Card>

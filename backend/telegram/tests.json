@@ -1,0 +1,22 @@
+{
+  "tests": [
+    {
+      "name": "Test order created notification",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "event_type": "order_created",
+        "order_data": {
+          "order_id": 1,
+          "order_number": "2024-001",
+          "order_date": "15.12.2024",
+          "customers": "Компания А (7 тонн)",
+          "carrier": "Транспорт Экспресс",
+          "route": "Москва → Санкт-Петербург"
+        }
+      },
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
