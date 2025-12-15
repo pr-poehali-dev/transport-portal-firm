@@ -803,6 +803,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             elif action == 'test_telegram_bot':
+                import urllib.request as req_module
+                import urllib.parse as parse_module
+                import urllib.error as error_module
+                
                 data = body_data.get('data', {})
                 bot_token = data.get('bot_token', '').strip()
                 chat_id = str(data.get('chat_id', '')).strip()
@@ -823,9 +827,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
                 
                 try:
-                    data_encoded = urllib.parse.urlencode(payload).encode('utf-8')
-                    req = urllib.request.Request(url, data=data_encoded)
-                    with urllib.request.urlopen(req, timeout=10) as response:
+                    data_encoded = parse_module.urlencode(payload).encode('utf-8')
+                    req = req_module.Request(url, data=data_encoded)
+                    with req_module.urlopen(req, timeout=10) as response:
                         result = json.loads(response.read().decode('utf-8'))
                         
                         if result.get('ok'):
@@ -850,7 +854,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                 'body': json.dumps({'success': False, 'error': error_msg}),
                                 'isBase64Encoded': False
                             }
-                except urllib.error.HTTPError as e:
+                except error_module.HTTPError as e:
                     error_body = e.read().decode('utf-8')
                     try:
                         error_json = json.loads(error_body)
