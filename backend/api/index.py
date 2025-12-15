@@ -267,7 +267,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             elif resource == 'users':
                 cur.execute('''
-                    SELECT id, username, full_name, email, phone, role, is_active, created_at
+                    SELECT id, username, full_name, email, phone, role, is_active, created_at,
+                           invite_code, telegram_chat_id, telegram_connected_at
                     FROM users
                     ORDER BY created_at DESC
                 ''')
@@ -277,6 +278,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 for user in users:
                     if user.get('created_at'):
                         user['created_at'] = user['created_at'].strftime('%d.%m.%Y %H:%M')
+                    if user.get('telegram_connected_at'):
+                        user['telegram_connected_at'] = user['telegram_connected_at'].strftime('%d.%m.%Y %H:%M')
+                    user['telegram_connected'] = bool(user.get('telegram_chat_id'))
                 
                 return {
                     'statusCode': 200,
@@ -875,6 +879,47 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'statusCode': 500,
                         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                         'body': json.dumps({'success': False, 'error': f'Ошибка отправки: {str(e)}'}),
+                        'isBase64Encoded': False
+                    }
+            
+            elif action == 'regenerate_invite_code':
+                import hashlib
+                import time
+                
+                user_id = body_data.get('user_id')
+                
+                if not user_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': False, 'error': 'user_id обязателен'}),
+                        'isBase64Encoded': False
+                    }
+                
+                new_code = 'INV_' + hashlib.md5(f'{user_id}{time.time()}'.encode()).hexdigest()[:8].upper()
+                
+                cur.execute('''
+                    UPDATE users 
+                    SET invite_code = %s, telegram_chat_id = NULL, telegram_connected_at = NULL
+                    WHERE id = %s
+                    RETURNING invite_code
+                ''', (new_code, user_id))
+                
+                result = cur.fetchone()
+                conn.commit()
+                
+                if result:
+                    return {
+                        'statusCode': 200,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': True, 'invite_code': result[0]}),
+                        'isBase64Encoded': False
+                    }
+                else:
+                    return {
+                        'statusCode': 404,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': False, 'error': 'Пользователь не найден'}),
                         'isBase64Encoded': False
                     }
         

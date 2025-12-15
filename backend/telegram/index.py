@@ -45,27 +45,74 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     try:
         cur.execute('''
-            SELECT bot_token, chat_id, is_active
+            SELECT bot_token
             FROM telegram_bot_settings
+            WHERE is_active = true
             ORDER BY id DESC
             LIMIT 1
         ''')
         
-        settings = cur.fetchone()
+        bot_settings = cur.fetchone()
         
-        if not settings or not settings[2]:
+        if not bot_settings:
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'success': False, 'message': 'Telegram bot is not active'}),
+                'body': json.dumps({'success': False, 'message': 'Telegram bot is not configured'}),
                 'isBase64Encoded': False
             }
         
-        bot_token, chat_id, is_active = settings
+        bot_token = bot_settings[0]
+        
+        event_type_map = {
+            'order_created': 'order_created',
+            'order_loaded': 'order_loaded',
+            'order_in_transit': 'order_in_transit',
+            'order_delivered': 'order_delivered',
+            'stage_completed': 'stage_completed'
+        }
+        
+        notification_key = event_type_map.get(event_type)
+        
+        if not notification_key:
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'success': False, 'error': 'Unknown event type'}),
+                'isBase64Encoded': False
+            }
+        
+        cur.execute(f'''
+            SELECT u.telegram_chat_id, u.full_name, u.role
+            FROM users u
+            JOIN roles r ON u.role = r.role_name
+            WHERE u.telegram_chat_id IS NOT NULL 
+              AND u.is_active = true
+              AND r.permissions->'telegram_notifications'->>'{notification_key}' = 'true'
+        ''')
+        
+        recipients = cur.fetchall()
+        
+        if not recipients:
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'success': True, 'message': 'No recipients for this event type', 'sent': 0}),
+                'isBase64Encoded': False
+            }
         
         message = format_message(event_type, order_data)
         
-        if message:
+        if not message:
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'success': False, 'error': 'Could not format message'}),
+                'isBase64Encoded': False
+            }
+        
+        sent_count = 0
+        for chat_id, full_name, role in recipients:
             result = send_telegram_message(bot_token, chat_id, message)
             
             cur.execute('''
@@ -79,14 +126,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 result['success'],
                 result.get('error')
             ))
-            conn.commit()
             
-            return {
-                'statusCode': 200,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps(result),
-                'isBase64Encoded': False
-            }
+            if result['success']:
+                sent_count += 1
+        
+        conn.commit()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'success': True, 'sent': sent_count, 'total_recipients': len(recipients)}),
+            'isBase64Encoded': False
+        }
         
         return {
             'statusCode': 400,

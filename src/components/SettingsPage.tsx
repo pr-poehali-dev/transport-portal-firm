@@ -135,6 +135,34 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
     }
   };
 
+  const handleRegenerateInviteCode = async (userId: number) => {
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'regenerate_invite_code',
+          user_id: userId
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success('Новый код сгенерирован! Telegram отключен.');
+        loadData();
+        if (editUser && editUser.id === userId) {
+          setEditUser({ ...editUser, invite_code: result.invite_code, telegram_connected: false });
+        }
+      } else {
+        toast.error('Ошибка генерации кода');
+      }
+    } catch (error) {
+      toast.error('Ошибка при генерации кода');
+      console.error(error);
+    }
+  };
+
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -286,6 +314,7 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                       <TableHead>Email</TableHead>
                       <TableHead>Телефон</TableHead>
                       <TableHead>Роль</TableHead>
+                      <TableHead>Telegram</TableHead>
                       <TableHead>Статус</TableHead>
                       <TableHead className="text-right">Действия</TableHead>
                     </TableRow>
@@ -299,6 +328,19 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                         <TableCell className="text-sm">{user.phone || '-'}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{getRoleDisplayName(user.role)}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.telegram_connected ? (
+                            <Badge variant="default" className="bg-green-500">
+                              <Icon name="Check" size={12} className="mr-1" />
+                              Подключен
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">
+                              <Icon name="X" size={12} className="mr-1" />
+                              Не подключен
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge variant={user.is_active ? 'default' : 'secondary'}>
@@ -522,12 +564,77 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
             </div>
 
             {editUser && (
-              <div className="flex items-center gap-3">
-                <Switch
-                  checked={userFormData.is_active}
-                  onCheckedChange={(checked) => setUserFormData({ ...userFormData, is_active: checked })}
-                />
-                <Label>Активный пользователь</Label>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={userFormData.is_active}
+                    onCheckedChange={(checked) => setUserFormData({ ...userFormData, is_active: checked })}
+                  />
+                  <Label>Активный пользователь</Label>
+                </div>
+
+                <div className="border rounded-lg p-4 bg-blue-50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <Icon name="Send" size={16} />
+                        Telegram подключение
+                      </h4>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {editUser.telegram_connected 
+                          ? `Подключен: ${editUser.telegram_connected_at || 'дата неизвестна'}`
+                          : 'Не подключен к Telegram'}
+                      </p>
+                    </div>
+                    {editUser.telegram_connected ? (
+                      <Badge variant="default" className="bg-green-500">
+                        <Icon name="Check" size={12} className="mr-1" />
+                        Активен
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">
+                        <Icon name="X" size={12} className="mr-1" />
+                        Не активен
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">Код приглашения:</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        value={editUser.invite_code || 'Генерируется...'}
+                        readOnly
+                        className="font-mono text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(editUser.invite_code || '');
+                          toast.success('Код скопирован!');
+                        }}
+                      >
+                        <Icon name="Copy" size={14} />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      Отправьте пользователю: <code className="bg-white px-2 py-1 rounded">/start {editUser.invite_code}</code>
+                    </p>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRegenerateInviteCode(editUser.id)}
+                    className="w-full"
+                  >
+                    <Icon name="RefreshCw" size={14} className="mr-2" />
+                    Сгенерировать новый код (отключит текущий Telegram)
+                  </Button>
+                </div>
               </div>
             )}
 
