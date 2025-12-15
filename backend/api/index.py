@@ -801,8 +801,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             elif action == 'test_telegram_bot':
                 data = body_data.get('data', {})
-                bot_token = data.get('bot_token')
-                chat_id = data.get('chat_id')
+                bot_token = data.get('bot_token', '').strip()
+                chat_id = str(data.get('chat_id', '')).strip()
                 
                 if not bot_token or not chat_id:
                     return {
@@ -815,8 +815,52 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 import urllib.request
                 import urllib.parse
                 
-                message = "✅ Подключение работает!\n\nВаш бот TransHub успешно настроен."
+                # Сначала проверим, что бот вообще видит этот чат
+                check_url = f'https://api.telegram.org/bot{bot_token}/getUpdates'
+                try:
+                    check_req = urllib.request.Request(check_url)
+                    with urllib.request.urlopen(check_req, timeout=10) as check_response:
+                        updates = json.loads(check_response.read().decode('utf-8'))
+                        
+                        if not updates.get('ok'):
+                            return {
+                                'statusCode': 400,
+                                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                                'body': json.dumps({'success': False, 'error': 'Неверный токен бота'}),
+                                'isBase64Encoded': False
+                            }
+                        
+                        # Проверим, есть ли сообщения от пользователя
+                        found_chat = False
+                        if updates.get('result'):
+                            for update in updates['result']:
+                                if update.get('message', {}).get('chat', {}).get('id') == int(chat_id):
+                                    found_chat = True
+                                    break
+                        
+                        if not found_chat and updates.get('result'):
+                            return {
+                                'statusCode': 400,
+                                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                                'body': json.dumps({
+                                    'success': False, 
+                                    'error': f'Бот не видит чат {chat_id}. Напишите боту /start в личке, затем попробуйте снова.'
+                                }),
+                                'isBase64Encoded': False
+                            }
                 
+                except urllib.error.HTTPError:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': False, 'error': 'Неверный токен бота'}),
+                        'isBase64Encoded': False
+                    }
+                except Exception:
+                    pass
+                
+                # Пробуем отправить сообщение
+                message = "✅ Подключение работает!\n\nВаш бот TransHub успешно настроен."
                 url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
                 payload = {
                     'chat_id': chat_id,
@@ -839,11 +883,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         else:
                             error_msg = result.get('description', 'Неизвестная ошибка')
                             if 'chat not found' in error_msg.lower():
-                                error_msg = 'Chat ID не найден. Напишите боту /start и используйте @userinfobot для получения ID'
+                                error_msg = 'Вы не написали боту. Откройте бота в Telegram и отправьте ему /start'
                             elif 'bot was blocked' in error_msg.lower():
-                                error_msg = 'Вы заблокировали бота. Разблокируйте и попробуйте снова'
+                                error_msg = 'Вы заблокировали бота. Разблокируйте его в Telegram'
                             elif 'unauthorized' in error_msg.lower():
-                                error_msg = 'Неверный токен бота. Проверьте токен в @BotFather'
+                                error_msg = 'Неверный токен бота'
                             
                             return {
                                 'statusCode': 400,
@@ -856,6 +900,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     try:
                         error_json = json.loads(error_body)
                         error_msg = error_json.get('description', str(e))
+                        if 'chat not found' in error_msg.lower():
+                            error_msg = 'Вы не написали боту. Откройте бота в Telegram и отправьте ему /start'
                     except:
                         error_msg = f'HTTP {e.code}: {e.reason}'
                     
