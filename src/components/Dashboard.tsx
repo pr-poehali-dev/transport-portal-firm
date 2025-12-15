@@ -1,6 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import { generateOrderPDF } from './DocumentGenerator';
 
 interface DashboardProps {
   orders: any[];
@@ -66,6 +68,18 @@ export default function Dashboard({ orders, onOrderClick }: DashboardProps) {
             <span className="truncate">{order.driver_name}</span>
           </div>
         )}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full mt-2"
+          onClick={(e) => {
+            e.stopPropagation();
+            generateOrderPDF(order);
+          }}
+        >
+          <Icon name="Download" size={14} className="mr-1" />
+          Скачать PDF
+        </Button>
       </CardContent>
     </Card>
   );

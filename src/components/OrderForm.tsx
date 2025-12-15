@@ -35,8 +35,9 @@ interface Stage {
 
 interface UploadedFile {
   name: string;
-  url: string;
+  data: string;
   size: number;
+  type: string;
 }
 
 export default function OrderForm({ open, onClose, onSuccess, editOrder, clients, drivers, vehicles, userRole = 'Пользователь' }: OrderFormProps) {
@@ -110,34 +111,17 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         const reader = new FileReader();
 
         await new Promise<void>((resolve, reject) => {
-          reader.onload = async () => {
-            try {
-              const base64 = (reader.result as string).split(',')[1];
-              
-              const response = await fetch('https://functions.poehali.dev/c8289536-b13d-4104-b248-c9fc80a716ed', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  file_name: file.name,
-                  file_data: base64,
-                  content_type: file.type || 'application/octet-stream'
-                })
-              });
+          reader.onload = () => {
+            const base64 = reader.result as string;
+            
+            setUploadedFiles(prev => [...prev, {
+              name: file.name,
+              data: base64,
+              size: file.size,
+              type: file.type || 'application/octet-stream'
+            }]);
 
-              if (!response.ok) throw new Error('Upload failed');
-
-              const data = await response.json();
-              
-              setUploadedFiles(prev => [...prev, {
-                name: file.name,
-                url: data.url,
-                size: file.size
-              }]);
-
-              resolve();
-            } catch (error) {
-              reject(error);
-            }
+            resolve();
           };
 
           reader.onerror = reject;
@@ -145,7 +129,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         });
       }
 
-      toast.success('Файлы загружены');
+      toast.success('Файлы добавлены');
     } catch (error) {
       toast.error('Ошибка загрузки файлов');
       console.error(error);
@@ -228,7 +212,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               order_number: orderInfo.order_number,
               client_id: parseInt(orderInfo.client_id),
               order_date: orderInfo.order_date,
-              status: 'pending'
+              status: 'pending',
+              attachments: uploadedFiles
             },
             stages: [],
             customs_points: []

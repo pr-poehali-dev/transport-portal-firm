@@ -350,17 +350,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 order_data = data.get('order', {})
                 stages_data = data.get('stages', [])
                 customs_data = data.get('customs_points', [])
+                attachments = order_data.get('attachments', [])
                 
                 cur.execute('''
                     INSERT INTO orders (
-                        order_number, client_id, order_date, status
-                    ) VALUES (%s, %s, %s, %s)
+                        order_number, client_id, order_date, status, attachments
+                    ) VALUES (%s, %s, %s, %s, %s::jsonb)
                     RETURNING id
                 ''', (
                     order_data.get('order_number'),
                     order_data.get('client_id'),
                     order_data.get('order_date'),
-                    order_data.get('status', 'pending')
+                    order_data.get('status', 'pending'),
+                    json.dumps(attachments)
                 ))
                 
                 order_id = cur.fetchone()[0]

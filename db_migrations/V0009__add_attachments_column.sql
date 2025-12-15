@@ -1,0 +1,1 @@
+ALTER TABLE orders ADD COLUMN attachments JSONB DEFAULT '[]'::jsonb;
