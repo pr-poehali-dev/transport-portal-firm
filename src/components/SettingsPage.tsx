@@ -100,24 +100,6 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
     }
   };
 
-  const handleGetChatId = () => {
-    if (!telegramSettings.bot_token) {
-      toast.error('Сначала укажите токен бота');
-      return;
-    }
-    
-    const botUsername = telegramSettings.bot_token.split(':')[0];
-    const instructions = `
-Инструкция:
-1. Откройте бота в Telegram
-2. Напишите /start
-3. Скопируйте Chat ID из ответа бота
-4. Вставьте его в поле выше`;
-    
-    toast.info(instructions, { duration: 8000 });
-    window.open(`https://t.me/bot${botUsername}`, '_blank');
-  };
-
   const handleTestTelegramBot = async () => {
     if (!telegramSettings.bot_token || !telegramSettings.chat_id) {
       toast.error('Укажите токен бота и Chat ID');
@@ -429,28 +411,10 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                     </p>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="is_active"
-                      checked={telegramSettings.is_active}
-                      onCheckedChange={(checked) => setTelegramSettings({ ...telegramSettings, is_active: checked })}
-                    />
-                    <Label htmlFor="is_active" className="cursor-pointer">
-                      Включить уведомления
-                    </Label>
-                  </div>
+
                 </div>
 
                 <div className="flex gap-3 pt-4 border-t">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleGetChatId}
-                    disabled={!telegramSettings.bot_token}
-                  >
-                    <Icon name="MessageCircle" size={18} className="mr-2" />
-                    Получить мой Chat ID
-                  </Button>
                   <Button
                     type="button"
                     variant="outline"
@@ -467,50 +431,7 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                 </div>
               </div>
 
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold mb-4">Типы уведомлений</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium">Создание заказа</p>
-                      <p className="text-sm text-gray-500">Уведомление при создании нового заказа</p>
-                    </div>
-                    <Badge variant="outline">Включено</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium">Загрузка груза</p>
-                      <p className="text-sm text-gray-500">Уведомление о начале погрузки</p>
-                    </div>
-                    <Badge variant="outline">Включено</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium">В пути</p>
-                      <p className="text-sm text-gray-500">Информация о маршруте и автомобиле</p>
-                    </div>
-                    <Badge variant="outline">Включено</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium">Доставка</p>
-                      <p className="text-sm text-gray-500">Уведомление о завершении доставки</p>
-                    </div>
-                    <Badge variant="outline">Включено</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium">Этапы заказа</p>
-                      <p className="text-sm text-gray-500">Уведомление о выполнении этапов</p>
-                    </div>
-                    <Badge variant="outline">Включено</Badge>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-500 mt-4">
-                  <Icon name="Info" size={14} className="inline mr-1" />
-                  В будущем здесь можно будет настроить, какие роли получают какие уведомления
-                </p>
-              </div>
+
             </CardContent>
           </Card>
         </TabsContent>
@@ -759,6 +680,65 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                     </TableRow>
                   </TableBody>
                 </Table>
+              </div>
+
+              <div className="mt-6">
+                <h4 className="text-md font-semibold mb-3 flex items-center gap-2">
+                  <Icon name="Bell" size={18} />
+                  Telegram уведомления
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Создание заказа</p>
+                      <p className="text-xs text-gray-500">Уведомление при создании нового заказа</p>
+                    </div>
+                    <Switch
+                      checked={selectedRole.permissions?.telegram_notifications?.order_created || false}
+                      onCheckedChange={() => togglePermission('telegram_notifications', 'order_created')}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Загрузка груза</p>
+                      <p className="text-xs text-gray-500">Уведомление о начале погрузки</p>
+                    </div>
+                    <Switch
+                      checked={selectedRole.permissions?.telegram_notifications?.order_loaded || false}
+                      onCheckedChange={() => togglePermission('telegram_notifications', 'order_loaded')}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">В пути</p>
+                      <p className="text-xs text-gray-500">Информация о маршруте и автомобиле</p>
+                    </div>
+                    <Switch
+                      checked={selectedRole.permissions?.telegram_notifications?.order_in_transit || false}
+                      onCheckedChange={() => togglePermission('telegram_notifications', 'order_in_transit')}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Доставка</p>
+                      <p className="text-xs text-gray-500">Уведомление о завершении доставки</p>
+                    </div>
+                    <Switch
+                      checked={selectedRole.permissions?.telegram_notifications?.order_delivered || false}
+                      onCheckedChange={() => togglePermission('telegram_notifications', 'order_delivered')}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Этапы заказа</p>
+                      <p className="text-xs text-gray-500">Уведомление о выполнении этапов</p>
+                    </div>
+                    <Switch
+                      checked={selectedRole.permissions?.telegram_notifications?.stage_completed || false}
+                      onCheckedChange={() => togglePermission('telegram_notifications', 'stage_completed')}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="bg-blue-50 p-4 rounded-lg">
