@@ -100,6 +100,24 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
     }
   };
 
+  const handleGetChatId = () => {
+    if (!telegramSettings.bot_token) {
+      toast.error('Сначала укажите токен бота');
+      return;
+    }
+    
+    const botUsername = telegramSettings.bot_token.split(':')[0];
+    const instructions = `
+Инструкция:
+1. Откройте бота в Telegram
+2. Напишите /start
+3. Скопируйте Chat ID из ответа бота
+4. Вставьте его в поле выше`;
+    
+    toast.info(instructions, { duration: 8000 });
+    window.open(`https://t.me/bot${botUsername}`, '_blank');
+  };
+
   const handleTestTelegramBot = async () => {
     if (!telegramSettings.bot_token || !telegramSettings.chat_id) {
       toast.error('Укажите токен бота и Chat ID');
@@ -424,6 +442,15 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                 </div>
 
                 <div className="flex gap-3 pt-4 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGetChatId}
+                    disabled={!telegramSettings.bot_token}
+                  >
+                    <Icon name="MessageCircle" size={18} className="mr-2" />
+                    Получить мой Chat ID
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
