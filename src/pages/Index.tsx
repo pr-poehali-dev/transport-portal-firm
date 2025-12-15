@@ -702,6 +702,7 @@ const Index = () => {
         onSuccess={loadData}
         editOrder={editOrder}
         clients={clients}
+        customers={customers}
         drivers={drivers}
         vehicles={vehicles}
         userRole={userRole === 'admin' ? 'Администратор' : userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : userRole === 'manager' ? 'Менеджер' : 'Руководитель'}

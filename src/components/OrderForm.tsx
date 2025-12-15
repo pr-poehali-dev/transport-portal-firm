@@ -11,12 +11,18 @@ import Icon from '@/components/ui/icon';
 
 const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44ca0e';
 
+interface CustomerItem {
+  customer_id: string;
+  note: string;
+}
+
 interface OrderFormProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   editOrder?: any;
   clients: any[];
+  customers: any[];
   drivers: any[];
   vehicles: any[];
   userRole?: string;
@@ -40,7 +46,7 @@ interface UploadedFile {
   type: string;
 }
 
-export default function OrderForm({ open, onClose, onSuccess, editOrder, clients, drivers, vehicles, userRole = 'Пользователь' }: OrderFormProps) {
+export default function OrderForm({ open, onClose, onSuccess, editOrder, clients, customers, drivers, vehicles, userRole = 'Пользователь' }: OrderFormProps) {
   const [orderInfo, setOrderInfo] = useState({
     order_number: '',
     client_id: '',
@@ -51,6 +57,11 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     track_number: '',
     notes: ''
   });
+
+  const [customerItems, setCustomerItems] = useState<CustomerItem[]>([{
+    customer_id: '',
+    note: ''
+  }]);
 
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -85,6 +96,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       setUploadedFiles([]);
       setOrderCreated(false);
       setCreatedOrderId(null);
+      setCustomerItems([{ customer_id: '', note: '' }]);
       setStages([{
         id: '1',
         stage_number: 1,
@@ -143,6 +155,20 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const addCustomerItem = () => {
+    setCustomerItems([...customerItems, { customer_id: '', note: '' }]);
+  };
+
+  const removeCustomerItem = (index: number) => {
+    setCustomerItems(customerItems.filter((_, i) => i !== index));
+  };
+
+  const updateCustomerItem = (index: number, field: keyof CustomerItem, value: string) => {
+    const newItems = [...customerItems];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setCustomerItems(newItems);
+  };
+
   const addStage = () => {
     const newStage: Stage = {
       id: Date.now().toString(),
@@ -175,6 +201,10 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     if (!orderInfo.order_number?.trim()) newErrors.order_number = 'Обязательное поле';
     if (!orderInfo.client_id) newErrors.client_id = 'Обязательное поле';
     if (!orderInfo.order_date) newErrors.order_date = 'Обязательное поле';
+    
+    customerItems.forEach((item, i) => {
+      if (!item.customer_id) newErrors[`customer_${i}_id`] = 'Выберите заказчика';
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -213,7 +243,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               client_id: parseInt(orderInfo.client_id),
               order_date: orderInfo.order_date,
               status: 'pending',
-              attachments: uploadedFiles
+              attachments: uploadedFiles,
+              customer_items: customerItems
             },
             stages: [],
             customs_points: []
@@ -340,14 +371,14 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 </div>
 
                 <div>
-                  <Label>Клиент *</Label>
+                  <Label>Перевозчик *</Label>
                   <Select 
                     value={orderInfo.client_id} 
                     onValueChange={(val) => setOrderInfo({ ...orderInfo, client_id: val })}
                     disabled={orderCreated}
                   >
                     <SelectTrigger className={errors.client_id ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Выберите клиента" />
+                      <SelectValue placeholder="Выберите перевозчика" />
                     </SelectTrigger>
                     <SelectContent>
                       {clients.map((client) => (
@@ -359,7 +390,69 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   </Select>
                   {errors.client_id && <p className="text-red-500 text-xs mt-1">{errors.client_id}</p>}
                 </div>
+              </div>
 
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Заказчики *</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addCustomerItem}
+                    disabled={orderCreated}
+                  >
+                    <Icon name="Plus" size={14} className="mr-1" />
+                    Добавить заказчика
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {customerItems.map((item, index) => (
+                    <div key={index} className="flex gap-2 items-start">
+                      <div className="flex-1">
+                        <Select 
+                          value={item.customer_id} 
+                          onValueChange={(val) => updateCustomerItem(index, 'customer_id', val)}
+                          disabled={orderCreated}
+                        >
+                          <SelectTrigger className={errors[`customer_${index}_id`] ? 'border-red-500' : ''}>
+                            <SelectValue placeholder="Выберите заказчика" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {customers.map((customer) => (
+                              <SelectItem key={customer.id} value={customer.id.toString()}>
+                                {customer.nickname} - {customer.company_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors[`customer_${index}_id`] && <p className="text-red-500 text-xs mt-1">{errors[`customer_${index}_id`]}</p>}
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Примечание (7 тонн, 5 паллет)"
+                          value={item.note}
+                          onChange={(e) => updateCustomerItem(index, 'note', e.target.value)}
+                          disabled={orderCreated}
+                        />
+                      </div>
+                      {customerItems.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeCustomerItem(index)}
+                          disabled={orderCreated}
+                        >
+                          <Icon name="Trash2" size={16} className="text-red-500" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Инвойс</Label>
                   <Input
