@@ -224,6 +224,14 @@ const Index = () => {
               Заказы
             </Button>
             <Button
+              variant={activeSection === 'clients' ? 'default' : 'ghost'}
+              className="w-full justify-start"
+              onClick={() => { setActiveSection('clients'); setMobileMenuOpen(false); }}
+            >
+              <Icon name="Briefcase" size={20} className="mr-3" />
+              Перевозчик
+            </Button>
+            <Button
               variant={activeSection === 'drivers' ? 'default' : 'ghost'}
               className="w-full justify-start"
               onClick={() => { setActiveSection('drivers'); setMobileMenuOpen(false); }}
@@ -238,14 +246,6 @@ const Index = () => {
             >
               <Icon name="Truck" size={20} className="mr-3" />
               Автомобили
-            </Button>
-            <Button
-              variant={activeSection === 'clients' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => { setActiveSection('clients'); setMobileMenuOpen(false); }}
-            >
-              <Icon name="Briefcase" size={20} className="mr-3" />
-              Перевозчик
             </Button>
             <Button
               variant={activeSection === 'overview' ? 'default' : 'ghost'}
