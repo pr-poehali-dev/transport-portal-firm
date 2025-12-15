@@ -16,6 +16,7 @@ import ResourceManager from '@/components/ResourceManager';
 import SettingsPage from '@/components/SettingsPage';
 import LoginPage from '@/components/LoginPage';
 import Dashboard from '@/components/Dashboard';
+import CustomersPage from './CustomersPage';
 
 const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44ca0e';
 const DOCS_URL = 'https://functions.poehali.dev/7a5d7ce6-72d6-4fb9-8c89-2adabbad28c2';
@@ -43,6 +44,7 @@ const Index = () => {
   const [showMultiStageForm, setShowMultiStageForm] = useState(false);
   const [editOrder, setEditOrder] = useState<any>(null);
   const [clients, setClients] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -72,13 +74,14 @@ const Index = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [ordersRes, driversRes, vehiclesRes, statsRes, clientsRes, logsRes] = await Promise.all([
+      const [ordersRes, driversRes, vehiclesRes, statsRes, clientsRes, logsRes, customersRes] = await Promise.all([
         fetch(`${API_URL}?resource=orders`),
         fetch(`${API_URL}?resource=drivers`),
         fetch(`${API_URL}?resource=vehicles`),
         fetch(`${API_URL}?resource=stats`),
         fetch(`${API_URL}?resource=clients`),
-        fetch(`${API_URL}?resource=activity_log`)
+        fetch(`${API_URL}?resource=activity_log`),
+        fetch(`${API_URL}?resource=customers`)
       ]);
 
       const ordersData = await ordersRes.json();
@@ -87,6 +90,7 @@ const Index = () => {
       const vehiclesData = await vehiclesRes.json();
       const statsData = await statsRes.json();
       const logsData = await logsRes.json();
+      const customersData = await customersRes.json();
 
       setOrders(ordersData.orders || []);
       setDrivers(driversData.drivers || []);
@@ -94,6 +98,7 @@ const Index = () => {
       setStats(statsData);
       setClients(clientsData.clients || []);
       setActivityLogs(logsData.logs || []);
+      setCustomers(customersData.customers || []);
       
       const rolesRes = await fetch(`${API_URL}?resource=roles`);
       const rolesData = await rolesRes.json();
@@ -248,6 +253,14 @@ const Index = () => {
               Автомобили
             </Button>
             <Button
+              variant={activeSection === 'customers' ? 'default' : 'ghost'}
+              className="w-full justify-start"
+              onClick={() => { setActiveSection('customers'); setMobileMenuOpen(false); }}
+            >
+              <Icon name="Building2" size={20} className="mr-3" />
+              Заказчики
+            </Button>
+            <Button
               variant={activeSection === 'overview' ? 'default' : 'ghost'}
               className="w-full justify-start"
               onClick={() => { setActiveSection('overview'); setMobileMenuOpen(false); }}
@@ -278,6 +291,7 @@ const Index = () => {
                   {activeSection === 'vehicles' && 'Автопарк'}
                   {activeSection === 'drivers' && 'База водителей'}
                   {activeSection === 'clients' && 'Перевозчик'}
+                  {activeSection === 'customers' && 'Заказчики'}
                   {activeSection === 'settings' && 'Настройки'}
                 </h2>
                 <p className="text-xs md:text-sm text-gray-500 mt-1">
@@ -562,6 +576,10 @@ const Index = () => {
               <div className="space-y-6 animate-fade-in">
                 <ResourceManager type="clients" data={clients} clients={clients} onRefresh={loadData} />
               </div>
+            )}
+
+            {activeSection === 'customers' && (
+              <CustomersPage customers={customers} onRefresh={loadData} />
             )}
 
             {activeSection === 'settings' && userPermissions?.settings?.view && (

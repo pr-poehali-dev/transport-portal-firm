@@ -283,6 +283,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'roles': roles}),
                     'isBase64Encoded': False
                 }
+            
+            elif resource == 'customers':
+                cur.execute('''
+                    SELECT id, company_name, inn, kpp, legal_address, director_name, 
+                           delivery_address, nickname, contact_person, phone, email, created_at
+                    FROM customers
+                    ORDER BY company_name
+                ''')
+                columns = [desc[0] for desc in cur.description]
+                customers = [dict(zip(columns, row)) for row in cur.fetchall()]
+                
+                for customer in customers:
+                    if customer.get('created_at'):
+                        customer['created_at'] = customer['created_at'].strftime('%d.%m.%Y')
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'customers': customers}),
+                    'isBase64Encoded': False
+                }
         
         elif method == 'POST':
             body_data = json.loads(event.get('body', '{}'))
@@ -556,6 +577,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif action == 'create_customer':
+                data = body_data.get('data', {})
+                cur.execute('''
+                    INSERT INTO customers (company_name, inn, kpp, legal_address, director_name, 
+                                         delivery_address, nickname, contact_person, phone, email)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                ''', (data.get('company_name'), data.get('inn'), data.get('kpp'), 
+                      data.get('legal_address'), data.get('director_name'), data.get('delivery_address'),
+                      data.get('nickname'), data.get('contact_person'), data.get('phone'), data.get('email')))
+                
+                customer_id = cur.fetchone()[0]
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'id': customer_id}),
+                    'isBase64Encoded': False
+                }
+            
             elif action == 'login':
                 username = body_data.get('username')
                 password = body_data.get('password')
@@ -705,6 +747,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif resource == 'customer':
+                cur.execute('''
+                    UPDATE customers SET company_name = %s, inn = %s, kpp = %s, legal_address = %s,
+                                       director_name = %s, delivery_address = %s, nickname = %s,
+                                       contact_person = %s, phone = %s, email = %s
+                    WHERE id = %s
+                ''', (data.get('company_name'), data.get('inn'), data.get('kpp'), 
+                      data.get('legal_address'), data.get('director_name'), data.get('delivery_address'),
+                      data.get('nickname'), data.get('contact_person'), data.get('phone'), 
+                      data.get('email'), item_id))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
             elif resource == 'client':
                 cur.execute('''
                     UPDATE clients SET name = %s, contact_person = %s, phone = %s, email = %s, address = %s
@@ -776,6 +837,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'isBase64Encoded': False
                     }
                 cur.execute('DELETE FROM clients WHERE id = %s', (item_id,))
+            elif resource == 'customer':
+                cur.execute('DELETE FROM customers WHERE id = %s', (item_id,))
             
             conn.commit()
             
