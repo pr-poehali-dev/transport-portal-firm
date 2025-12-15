@@ -371,10 +371,20 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
             <CardHeader>
               <CardTitle>Настройка Telegram Бота</CardTitle>
               <CardDescription>
-                Подключите бота для получения уведомлений о заказах, этапах и событиях в системе
+                Получайте уведомления о событиях заказов в личный чат с ботом
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                <p className="text-sm font-medium text-blue-900">📱 Как настроить:</p>
+                <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside ml-2">
+                  <li>Создайте бота через <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="underline font-medium">@BotFather</a> и скопируйте токен</li>
+                  <li>Напишите боту любое сообщение (например, /start)</li>
+                  <li>Узнайте свой Chat ID через <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="underline font-medium">@userinfobot</a></li>
+                  <li>Введите данные ниже и проверьте подключение</li>
+                </ol>
+              </div>
+
               <div className="space-y-4">
                 <div className="grid gap-4">
                   <div className="space-y-2">
@@ -386,21 +396,18 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                       value={telegramSettings.bot_token}
                       onChange={(e) => setTelegramSettings({ ...telegramSettings, bot_token: e.target.value })}
                     />
-                    <p className="text-xs text-gray-500">
-                      Получите токен у <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">@BotFather</a>
-                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="chat_id">Chat ID *</Label>
+                    <Label htmlFor="chat_id">Ваш Chat ID *</Label>
                     <Input
                       id="chat_id"
-                      placeholder="-1001234567890"
+                      placeholder="123456789"
                       value={telegramSettings.chat_id}
                       onChange={(e) => setTelegramSettings({ ...telegramSettings, chat_id: e.target.value })}
                     />
                     <p className="text-xs text-gray-500">
-                      ID чата или группы для уведомлений. Узнайте у <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">@userinfobot</a>
+                      Ваш личный ID (обычно положительное число, без минуса)
                     </p>
                   </div>
 
