@@ -804,16 +804,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 bot_token = data.get('bot_token')
                 chat_id = data.get('chat_id')
                 
+                if not bot_token or not chat_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': False, 'error': 'Токен бота и Chat ID обязательны'}),
+                        'isBase64Encoded': False
+                    }
+                
                 import urllib.request
                 import urllib.parse
                 
-                message = "✅ Тестовое сообщение от TransHub!\n\nПодключение к боту работает корректно."
+                message = "✅ Подключение работает!\n\nВаш бот TransHub успешно настроен."
                 
                 url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
                 payload = {
                     'chat_id': chat_id,
-                    'text': message,
-                    'parse_mode': 'HTML'
+                    'text': message
                 }
                 
                 try:
@@ -826,21 +833,43 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             return {
                                 'statusCode': 200,
                                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                                'body': json.dumps({'success': True}),
+                                'body': json.dumps({'success': True, 'message': 'Сообщение отправлено в ваш чат!'}),
                                 'isBase64Encoded': False
                             }
                         else:
+                            error_msg = result.get('description', 'Неизвестная ошибка')
+                            if 'chat not found' in error_msg.lower():
+                                error_msg = 'Chat ID не найден. Напишите боту /start и используйте @userinfobot для получения ID'
+                            elif 'bot was blocked' in error_msg.lower():
+                                error_msg = 'Вы заблокировали бота. Разблокируйте и попробуйте снова'
+                            elif 'unauthorized' in error_msg.lower():
+                                error_msg = 'Неверный токен бота. Проверьте токен в @BotFather'
+                            
                             return {
                                 'statusCode': 400,
                                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                                'body': json.dumps({'success': False, 'error': result.get('description', 'Unknown error')}),
+                                'body': json.dumps({'success': False, 'error': error_msg}),
                                 'isBase64Encoded': False
                             }
+                except urllib.error.HTTPError as e:
+                    error_body = e.read().decode('utf-8')
+                    try:
+                        error_json = json.loads(error_body)
+                        error_msg = error_json.get('description', str(e))
+                    except:
+                        error_msg = f'HTTP {e.code}: {e.reason}'
+                    
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': False, 'error': error_msg}),
+                        'isBase64Encoded': False
+                    }
                 except Exception as e:
                     return {
                         'statusCode': 500,
                         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                        'body': json.dumps({'success': False, 'error': str(e)}),
+                        'body': json.dumps({'success': False, 'error': f'Ошибка отправки: {str(e)}'}),
                         'isBase64Encoded': False
                     }
         
