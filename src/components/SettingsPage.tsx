@@ -563,7 +563,7 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
               </div>
             </div>
 
-            {editUser && (
+            {editUser ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <Switch
@@ -635,6 +635,17 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                     Сгенерировать новый код (отключит текущий Telegram)
                   </Button>
                 </div>
+              </div>
+            ) : (
+              <div className="border rounded-lg p-4 bg-blue-50 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Icon name="Send" size={16} />
+                  <h4 className="font-semibold text-sm">Telegram подключение</h4>
+                </div>
+                <p className="text-xs text-gray-600">
+                  После создания пользователя будет автоматически сгенерирован код приглашения для подключения Telegram.
+                  Код можно будет найти в разделе редактирования пользователя.
+                </p>
               </div>
             )}
 
