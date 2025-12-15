@@ -759,12 +759,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             elif action == 'create_user':
                 data = body_data.get('data', {})
+                login = data.get('login')
                 cur.execute('''
                     INSERT INTO users (username, full_name, email, phone, role, login, password, is_active)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
-                ''', (data.get('username'), data.get('full_name'), data.get('email'),
-                      data.get('phone'), data.get('role'), data.get('login'), data.get('password'), True))
+                ''', (login, data.get('full_name'), data.get('email'),
+                      data.get('phone'), data.get('role'), login, data.get('password'), True))
                 
                 user_id = cur.fetchone()[0]
                 conn.commit()

@@ -26,7 +26,6 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<any>(null);
   const [userFormData, setUserFormData] = useState({
-    username: '',
     full_name: '',
     email: '',
     phone: '',
@@ -249,21 +248,23 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
     if (user) {
       setEditUser(user);
       setUserFormData({
-        username: user.username,
         full_name: user.full_name,
         email: user.email || '',
         phone: user.phone || '',
         role: user.role,
+        login: '',
+        password: '',
         is_active: user.is_active
       });
     } else {
       setEditUser(null);
       setUserFormData({
-        username: '',
         full_name: '',
         email: '',
         phone: '',
         role: 'buyer',
+        login: '',
+        password: '',
         is_active: true
       });
     }
@@ -310,7 +311,6 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Имя пользователя</TableHead>
                       <TableHead>ФИО</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Телефон</TableHead>
@@ -323,8 +323,7 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                   <TableBody>
                     {users.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.username}</TableCell>
-                        <TableCell>{user.full_name}</TableCell>
+                        <TableCell className="font-medium">{user.full_name}</TableCell>
                         <TableCell className="text-sm">{user.email || '-'}</TableCell>
                         <TableCell className="text-sm">{user.phone || '-'}</TableCell>
                         <TableCell>
@@ -487,24 +486,14 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
           </DialogHeader>
 
           <form onSubmit={handleSaveUser} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Имя пользователя *</Label>
-                <Input
-                  value={userFormData.username}
-                  onChange={(e) => setUserFormData({ ...userFormData, username: e.target.value })}
-                  disabled={!!editUser}
-                  required
-                />
-              </div>
-              <div>
-                <Label>ФИО *</Label>
-                <Input
-                  value={userFormData.full_name}
-                  onChange={(e) => setUserFormData({ ...userFormData, full_name: e.target.value })}
-                  required
-                />
-              </div>
+            <div>
+              <Label>ФИО *</Label>
+              <Input
+                value={userFormData.full_name}
+                onChange={(e) => setUserFormData({ ...userFormData, full_name: e.target.value })}
+                required
+                placeholder="Иванов Иван Иванович"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
