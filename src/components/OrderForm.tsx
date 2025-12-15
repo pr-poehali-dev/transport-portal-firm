@@ -199,7 +199,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     const newErrors: Record<string, string> = {};
 
     if (!orderInfo.order_number?.trim()) newErrors.order_number = 'Обязательное поле';
-    if (!orderInfo.client_id) newErrors.client_id = 'Обязательное поле';
     if (!orderInfo.order_date) newErrors.order_date = 'Обязательное поле';
     
     customerItems.forEach((item, i) => {
@@ -240,7 +239,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           data: {
             order: {
               order_number: orderInfo.order_number,
-              client_id: parseInt(orderInfo.client_id),
+              client_id: null,
               order_date: orderInfo.order_date,
               status: 'pending',
               attachments: uploadedFiles,
@@ -368,27 +367,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     disabled={orderCreated}
                   />
                   {errors.order_date && <p className="text-red-500 text-xs mt-1">{errors.order_date}</p>}
-                </div>
-
-                <div>
-                  <Label>Перевозчик *</Label>
-                  <Select 
-                    value={orderInfo.client_id} 
-                    onValueChange={(val) => setOrderInfo({ ...orderInfo, client_id: val })}
-                    disabled={orderCreated}
-                  >
-                    <SelectTrigger className={errors.client_id ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Выберите перевозчика" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id.toString()}>
-                          {client.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.client_id && <p className="text-red-500 text-xs mt-1">{errors.client_id}</p>}
                 </div>
               </div>
 
