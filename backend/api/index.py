@@ -4,6 +4,7 @@ import psycopg2
 from typing import Dict, Any
 import urllib.request
 import urllib.parse
+import urllib.error
 
 def get_db_connection():
     dsn = os.environ['DATABASE_URL']
