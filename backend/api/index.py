@@ -336,13 +336,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 row = cur.fetchone()
                 
                 if row:
+                    bot_token = row[0]
+                    bot_username = None
+                    
+                    if bot_token:
+                        try:
+                            import urllib.request as req_module
+                            url = f'https://api.telegram.org/bot{bot_token}/getMe'
+                            req = req_module.Request(url)
+                            with req_module.urlopen(req, timeout=5) as response:
+                                result = json.loads(response.read().decode('utf-8'))
+                                if result.get('ok'):
+                                    bot_username = result.get('result', {}).get('username')
+                        except:
+                            pass
+                    
                     settings = {
-                        'bot_token': row[0],
+                        'bot_token': bot_token,
                         'chat_id': row[1],
-                        'is_active': row[2]
+                        'is_active': row[2],
+                        'bot_username': bot_username
                     }
                 else:
-                    settings = {'bot_token': '', 'chat_id': '', 'is_active': False}
+                    settings = {'bot_token': '', 'chat_id': '', 'is_active': False, 'bot_username': None}
                 
                 return {
                     'statusCode': 200,

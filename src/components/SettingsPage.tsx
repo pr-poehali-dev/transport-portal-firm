@@ -39,7 +39,8 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
   const [telegramSettings, setTelegramSettings] = useState({
     bot_token: '',
     chat_id: '',
-    is_active: false
+    is_active: false,
+    bot_username: null as string | null
   });
   const [testingBot, setTestingBot] = useState(false);
 
@@ -619,9 +620,39 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                         <Icon name="Copy" size={14} />
                       </Button>
                     </div>
-                    <p className="text-xs text-gray-600">
-                      Отправьте пользователю: <code className="bg-white px-2 py-1 rounded">/start {editUser.invite_code}</code>
-                    </p>
+                    {telegramSettings.bot_username ? (
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-600">
+                          Отправьте пользователю эту ссылку:
+                        </p>
+                        <div className="flex gap-2">
+                          <Input
+                            value={`https://t.me/${telegramSettings.bot_username}?start=${editUser.invite_code}`}
+                            readOnly
+                            className="font-mono text-xs"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const link = `https://t.me/${telegramSettings.bot_username}?start=${editUser.invite_code}`;
+                              navigator.clipboard.writeText(link);
+                              toast.success('Ссылка скопирована!');
+                            }}
+                          >
+                            <Icon name="Copy" size={14} />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-green-600">
+                          ✓ При переходе по ссылке бот автоматически подключится
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-600">
+                        Отправьте пользователю: <code className="bg-white px-2 py-1 rounded">/start {editUser.invite_code}</code>
+                      </p>
+                    )}
                   </div>
 
                   <Button
