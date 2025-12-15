@@ -41,7 +41,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     SELECT 
                         o.id, o.order_number, o.order_date, o.status,
                         c.name as client_name,
-                        c.id as client_id
+                        c.id as client_id,
+                        o.customer_items
                     FROM orders o
                     LEFT JOIN clients c ON o.client_id = c.id
                     ORDER BY o.order_date DESC
@@ -53,6 +54,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 for order in orders:
                     if order.get('order_date'):
                         order['order_date'] = order['order_date'].strftime('%d.%m.%Y')
+                    
+                    if order.get('customer_items'):
+                        customer_items = order['customer_items']
+                        customer_names = []
+                        for item in customer_items:
+                            cur.execute('SELECT nickname, company_name FROM customers WHERE id = %s', (item.get('customer_id'),))
+                            customer = cur.fetchone()
+                            if customer:
+                                note = f" ({item['note']})" if item.get('note') else ''
+                                customer_names.append(f"{customer[0]}{note}")
+                        order['customer_display'] = ', '.join(customer_names) if customer_names else '—'
+                    else:
+                        order['customer_display'] = '—'
                     
                     # Получаем первый этап для обратной совместимости
                     cur.execute('''
@@ -372,18 +386,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 stages_data = data.get('stages', [])
                 customs_data = data.get('customs_points', [])
                 attachments = order_data.get('attachments', [])
+                customer_items = order_data.get('customer_items', [])
                 
                 cur.execute('''
                     INSERT INTO orders (
-                        order_number, client_id, order_date, status, attachments
-                    ) VALUES (%s, %s, %s, %s, %s::jsonb)
+                        order_number, client_id, order_date, status, attachments, customer_items
+                    ) VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb)
                     RETURNING id
                 ''', (
                     order_data.get('order_number'),
                     order_data.get('client_id'),
                     order_data.get('order_date'),
                     order_data.get('status', 'pending'),
-                    json.dumps(attachments)
+                    json.dumps(attachments),
+                    json.dumps(customer_items)
                 ))
                 
                 order_id = cur.fetchone()[0]

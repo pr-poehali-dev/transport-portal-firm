@@ -33,17 +33,23 @@ interface CustomsPoint {
   notes: string;
 }
 
+interface CustomerItem {
+  customer_id: string;
+  note: string;
+}
+
 interface OrderFormProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   clients: any[];
+  customers: any[];
   drivers: any[];
   vehicles: any[];
   userRole?: string;
 }
 
-export default function MultiStageOrderForm({ open, onClose, onSuccess, clients, drivers, vehicles, userRole = 'Пользователь' }: OrderFormProps) {
+export default function MultiStageOrderForm({ open, onClose, onSuccess, clients, customers, drivers, vehicles, userRole = 'Пользователь' }: OrderFormProps) {
   const [formData, setFormData] = useState({
     order_number: '',
     client_id: '',
@@ -55,6 +61,11 @@ export default function MultiStageOrderForm({ open, onClose, onSuccess, clients,
     total_price: '',
     status: 'pending'
   });
+
+  const [customerItems, setCustomerItems] = useState<CustomerItem[]>([{
+    customer_id: '',
+    note: ''
+  }]);
 
   const [stages, setStages] = useState<TransportStage[]>([{
     stage_number: 1,
@@ -70,6 +81,20 @@ export default function MultiStageOrderForm({ open, onClose, onSuccess, clients,
 
   const [customsPoints, setCustomsPoints] = useState<CustomsPoint[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const addCustomerItem = () => {
+    setCustomerItems([...customerItems, { customer_id: '', note: '' }]);
+  };
+
+  const removeCustomerItem = (index: number) => {
+    setCustomerItems(customerItems.filter((_, i) => i !== index));
+  };
+
+  const updateCustomerItem = (index: number, field: keyof CustomerItem, value: string) => {
+    const newItems = [...customerItems];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setCustomerItems(newItems);
+  };
 
   useEffect(() => {
     if (!open) {
@@ -96,6 +121,7 @@ export default function MultiStageOrderForm({ open, onClose, onSuccess, clients,
         notes: ''
       }]);
       setCustomsPoints([]);
+      setCustomerItems([{ customer_id: '', note: '' }]);
       setErrors({});
     }
   }, [open]);
@@ -158,6 +184,10 @@ export default function MultiStageOrderForm({ open, onClose, onSuccess, clients,
     if (!formData.planned_route?.trim()) newErrors.planned_route = 'Обязательное поле';
     if (!formData.cargo_description?.trim()) newErrors.cargo_description = 'Обязательное поле';
     
+    customerItems.forEach((item, i) => {
+      if (!item.customer_id) newErrors[`customer_${i}_id`] = 'Выберите заказчика';
+    });
+    
     stages.forEach((stage, i) => {
       if (!stage.from_location?.trim()) newErrors[`stage_${i}_from`] = 'Укажите откуда';
       if (!stage.to_location?.trim()) newErrors[`stage_${i}_to`] = 'Укажите куда';
@@ -184,7 +214,7 @@ export default function MultiStageOrderForm({ open, onClose, onSuccess, clients,
         body: JSON.stringify({
           action: 'create_multi_stage_order',
           data: {
-            order: formData,
+            order: { ...formData, customer_items: customerItems },
             stages: stages,
             customs_points: customsPoints
           },
@@ -239,10 +269,10 @@ export default function MultiStageOrderForm({ open, onClose, onSuccess, clients,
                 </div>
 
                 <div>
-                  <Label htmlFor="client_id">Клиент *</Label>
+                  <Label htmlFor="client_id">Перевозчик *</Label>
                   <Select value={formData.client_id} onValueChange={(val) => setFormData({ ...formData, client_id: val })}>
                     <SelectTrigger className={errors.client_id ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Выберите клиента" />
+                      <SelectValue placeholder="Выберите перевозчика" />
                     </SelectTrigger>
                     <SelectContent>
                       {clients.map((client) => (
@@ -253,6 +283,62 @@ export default function MultiStageOrderForm({ open, onClose, onSuccess, clients,
                     </SelectContent>
                   </Select>
                   {errors.client_id && <p className="text-red-500 text-xs mt-1">{errors.client_id}</p>}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Заказчики *</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addCustomerItem}
+                  >
+                    <Icon name="Plus" size={14} className="mr-1" />
+                    Добавить заказчика
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {customerItems.map((item, index) => (
+                    <div key={index} className="flex gap-2 items-start">
+                      <div className="flex-1">
+                        <Select 
+                          value={item.customer_id} 
+                          onValueChange={(val) => updateCustomerItem(index, 'customer_id', val)}
+                        >
+                          <SelectTrigger className={errors[`customer_${index}_id`] ? 'border-red-500' : ''}>
+                            <SelectValue placeholder="Выберите заказчика" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {customers.map((customer) => (
+                              <SelectItem key={customer.id} value={customer.id.toString()}>
+                                {customer.nickname} - {customer.company_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors[`customer_${index}_id`] && <p className="text-red-500 text-xs mt-1">{errors[`customer_${index}_id`]}</p>}
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Примечание (7 тонн, 5 паллет)"
+                          value={item.note}
+                          onChange={(e) => updateCustomerItem(index, 'note', e.target.value)}
+                        />
+                      </div>
+                      {customerItems.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeCustomerItem(index)}
+                        >
+                          <Icon name="Trash2" size={16} className="text-red-500" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
 

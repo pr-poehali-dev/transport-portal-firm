@@ -416,7 +416,7 @@ const Index = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>№</TableHead>
-                          <TableHead>Клиент</TableHead>
+                          <TableHead>Заказчики</TableHead>
                           <TableHead>Перевозчик</TableHead>
                           <TableHead>Гос номер</TableHead>
                           <TableHead>Маршрут</TableHead>
@@ -439,8 +439,8 @@ const Index = () => {
                           .map((order) => (
                           <TableRow key={order.id} className="hover:bg-gray-50">
                             <TableCell className="font-medium">{order.order_number}</TableCell>
+                            <TableCell>{order.customer_display || '—'}</TableCell>
                             <TableCell>{order.client_name}</TableCell>
-                            <TableCell>{order.carrier}</TableCell>
                             <TableCell>{order.license_plate}</TableCell>
                             <TableCell>{order.route_from} - {order.route_to}</TableCell>
                             <TableCell>{order.order_date}</TableCell>
@@ -712,6 +712,7 @@ const Index = () => {
         onClose={() => setShowMultiStageForm(false)}
         onSuccess={loadData}
         clients={clients}
+        customers={customers}
         drivers={drivers}
         vehicles={vehicles}
         userRole={userRole === 'admin' ? 'Администратор' : userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : userRole === 'manager' ? 'Менеджер' : 'Руководитель'}
