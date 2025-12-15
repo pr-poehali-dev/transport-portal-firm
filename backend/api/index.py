@@ -2,6 +2,8 @@ import json
 import os
 import psycopg2
 from typing import Dict, Any
+import urllib.request
+import urllib.parse
 
 def get_db_connection():
     dsn = os.environ['DATABASE_URL']
@@ -812,54 +814,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'isBase64Encoded': False
                     }
                 
-                import urllib.request
-                import urllib.parse
-                
-                # Сначала проверим, что бот вообще видит этот чат
-                check_url = f'https://api.telegram.org/bot{bot_token}/getUpdates'
-                try:
-                    check_req = urllib.request.Request(check_url)
-                    with urllib.request.urlopen(check_req, timeout=10) as check_response:
-                        updates = json.loads(check_response.read().decode('utf-8'))
-                        
-                        if not updates.get('ok'):
-                            return {
-                                'statusCode': 400,
-                                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                                'body': json.dumps({'success': False, 'error': 'Неверный токен бота'}),
-                                'isBase64Encoded': False
-                            }
-                        
-                        # Проверим, есть ли сообщения от пользователя
-                        found_chat = False
-                        if updates.get('result'):
-                            for update in updates['result']:
-                                if update.get('message', {}).get('chat', {}).get('id') == int(chat_id):
-                                    found_chat = True
-                                    break
-                        
-                        if not found_chat and updates.get('result'):
-                            return {
-                                'statusCode': 400,
-                                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                                'body': json.dumps({
-                                    'success': False, 
-                                    'error': f'Бот не видит чат {chat_id}. Напишите боту /start в личке, затем попробуйте снова.'
-                                }),
-                                'isBase64Encoded': False
-                            }
-                
-                except urllib.error.HTTPError:
-                    return {
-                        'statusCode': 400,
-                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                        'body': json.dumps({'success': False, 'error': 'Неверный токен бота'}),
-                        'isBase64Encoded': False
-                    }
-                except Exception:
-                    pass
-                
-                # Пробуем отправить сообщение
                 message = "✅ Подключение работает!\n\nВаш бот TransHub успешно настроен."
                 url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
                 payload = {
