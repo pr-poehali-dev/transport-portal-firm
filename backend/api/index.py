@@ -1261,39 +1261,106 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 cur.execute('DELETE FROM order_stages WHERE order_id = %s', (item_id,))
                 cur.execute('DELETE FROM orders WHERE id = %s', (item_id,))
             elif resource == 'driver':
+                # Проверка связи с заказами
                 cur.execute('SELECT COUNT(*) FROM orders WHERE driver_id = %s', (item_id,))
-                count = cur.fetchone()[0]
-                if count > 0:
+                orders_count = cur.fetchone()[0]
+                if orders_count > 0:
                     return {
                         'statusCode': 400,
                         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                         'body': json.dumps({'error': 'Невозможно удалить водителя. Он задействован в заказах.'}),
                         'isBase64Encoded': False
                     }
+                
+                # Проверка связи с автомобилями
+                cur.execute('SELECT COUNT(*) FROM vehicles WHERE driver_id = %s', (item_id,))
+                vehicles_count = cur.fetchone()[0]
+                if vehicles_count > 0:
+                    cur.execute('SELECT license_plate FROM vehicles WHERE driver_id = %s LIMIT 3', (item_id,))
+                    vehicles = [row[0] for row in cur.fetchall()]
+                    vehicles_str = ', '.join(vehicles)
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': f'Невозможно удалить водителя. Он привязан к автомобилям: {vehicles_str}'}),
+                        'isBase64Encoded': False
+                    }
+                
                 cur.execute('DELETE FROM drivers WHERE id = %s', (item_id,))
             elif resource == 'vehicle':
+                # Проверка связи с заказами
                 cur.execute('SELECT COUNT(*) FROM orders WHERE vehicle_id = %s', (item_id,))
-                count = cur.fetchone()[0]
-                if count > 0:
+                orders_count = cur.fetchone()[0]
+                if orders_count > 0:
+                    cur.execute('SELECT order_number FROM orders WHERE vehicle_id = %s LIMIT 3', (item_id,))
+                    orders = [row[0] for row in cur.fetchall()]
+                    orders_str = ', '.join(orders)
                     return {
                         'statusCode': 400,
                         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                        'body': json.dumps({'error': 'Невозможно удалить автомобиль. Он задействован в заказах.'}),
+                        'body': json.dumps({'error': f'Невозможно удалить автомобиль. Он задействован в заказах: {orders_str}'}),
                         'isBase64Encoded': False
                     }
+                
+                # Проверка связи с этапами заказов
+                cur.execute('SELECT COUNT(*) FROM order_transport_stages WHERE vehicle_id = %s', (item_id,))
+                stages_count = cur.fetchone()[0]
+                if stages_count > 0:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Невозможно удалить автомобиль. Он используется в этапах доставки заказов.'}),
+                        'isBase64Encoded': False
+                    }
+                
                 cur.execute('DELETE FROM vehicles WHERE id = %s', (item_id,))
             elif resource == 'client':
+                # Проверка связи с заказами
                 cur.execute('SELECT COUNT(*) FROM orders WHERE client_id = %s', (item_id,))
-                count = cur.fetchone()[0]
-                if count > 0:
+                orders_count = cur.fetchone()[0]
+                if orders_count > 0:
+                    cur.execute('SELECT order_number FROM orders WHERE client_id = %s LIMIT 3', (item_id,))
+                    orders = [row[0] for row in cur.fetchall()]
+                    orders_str = ', '.join(orders)
                     return {
                         'statusCode': 400,
                         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                        'body': json.dumps({'error': 'Невозможно удалить перевозчика. Он задействован в заказах.'}),
+                        'body': json.dumps({'error': f'Невозможно удалить перевозчика. Он задействован в заказах: {orders_str}'}),
                         'isBase64Encoded': False
                     }
+                
+                # Проверка связи с автомобилями
+                cur.execute('SELECT COUNT(*) FROM vehicles WHERE company_name = (SELECT name FROM clients WHERE id = %s)', (item_id,))
+                vehicles_count = cur.fetchone()[0]
+                if vehicles_count > 0:
+                    cur.execute('SELECT license_plate FROM vehicles WHERE company_name = (SELECT name FROM clients WHERE id = %s) LIMIT 3', (item_id,))
+                    vehicles = [row[0] for row in cur.fetchall()]
+                    vehicles_str = ', '.join(vehicles)
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': f'Невозможно удалить перевозчика. К нему привязаны автомобили: {vehicles_str}'}),
+                        'isBase64Encoded': False
+                    }
+                
                 cur.execute('DELETE FROM clients WHERE id = %s', (item_id,))
             elif resource == 'customer':
+                # Проверка связи с заказами через customer_items
+                cur.execute('''
+                    SELECT COUNT(*) FROM orders 
+                    WHERE customer_items::text LIKE %s
+                ''', (f'%"customer_id": {item_id}%',))
+                orders_count = cur.fetchone()[0]
+                if orders_count > 0:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Невозможно удалить заказчика. Он используется в заказах.'}),
+                        'isBase64Encoded': False
+                    }
+                
+                # Удаляем связанные адреса доставки
+                cur.execute('DELETE FROM customer_delivery_addresses WHERE customer_id = %s', (item_id,))
                 cur.execute('DELETE FROM customers WHERE id = %s', (item_id,))
             elif resource == 'customer_address':
                 cur.execute('DELETE FROM customer_delivery_addresses WHERE id = %s', (item_id,))
