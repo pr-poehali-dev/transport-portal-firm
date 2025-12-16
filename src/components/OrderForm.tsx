@@ -500,21 +500,24 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
     try {
       for (const stage of stages) {
+        console.log('Saving stage:', stage);
+        const stagePayload = {
+          action: 'add_order_stage',
+          order_id: createdOrderId,
+          stage: {
+            stage_number: stage.stage_number,
+            vehicle_id: parseInt(stage.vehicle_id),
+            driver_id: parseInt(stage.driver_id),
+            from_location: stage.from_location,
+            to_location: stage.to_location,
+            notes: `Инвойс: ${orderInfo.invoice || '-'}, Трак: ${orderInfo.track_number || '-'}, Характер груза: ${orderInfo.cargo_type || '-'}, Вес: ${orderInfo.cargo_weight || '-'}, Примечание: ${orderInfo.notes || '-'}${stage.notes ? ', ' + stage.notes : ''}`
+          }
+        };
+        console.log('Stage payload:', stagePayload);
         await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'add_order_stage',
-            order_id: createdOrderId,
-            stage: {
-              stage_number: stage.stage_number,
-              vehicle_id: parseInt(stage.vehicle_id),
-              driver_id: parseInt(stage.driver_id),
-              from_location: stage.from_location,
-              to_location: stage.to_location,
-              notes: `Инвойс: ${orderInfo.invoice || '-'}, Трак: ${orderInfo.track_number || '-'}, Характер груза: ${orderInfo.cargo_type || '-'}, Вес: ${orderInfo.cargo_weight || '-'}, Примечание: ${orderInfo.notes || '-'}${stage.notes ? ', ' + stage.notes : ''}`
-            }
-          })
+          body: JSON.stringify(stagePayload)
         });
 
         for (const customs of stage.customs) {

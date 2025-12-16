@@ -464,6 +464,7 @@ const Index = () => {
                                 <Button variant="ghost" size="sm" onClick={async () => { 
                                   const stagesRes = await fetch(`${API_URL}?resource=order_stages&order_id=${order.id}`);
                                   const stagesData = await stagesRes.json();
+                                  console.log('Loaded stages for order:', order.id, stagesData);
                                   setEditOrder({...order, stages: stagesData.stages || []}); 
                                   setShowOrderForm(true); 
                                 }}>
