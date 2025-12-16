@@ -81,6 +81,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
   }]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [autoRoute, setAutoRoute] = useState('');
 
   useEffect(() => {
     if (open && !editOrder) {
@@ -195,6 +196,31 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
   const updateStage = (id: string, field: keyof Stage, value: string) => {
     setStages(stages.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
+
+  // Автоматическое формирование маршрута из этапов
+  useEffect(() => {
+    if (stages.length === 0) {
+      setAutoRoute('');
+      return;
+    }
+
+    const routeParts: string[] = [];
+    
+    // Добавляем начальную точку первого этапа
+    if (stages[0]?.from_location) {
+      routeParts.push(stages[0].from_location);
+    }
+    
+    // Добавляем конечные точки всех этапов
+    stages.forEach((stage) => {
+      if (stage.to_location) {
+        routeParts.push(stage.to_location);
+      }
+    });
+    
+    const route = routeParts.filter(Boolean).join(' → ');
+    setAutoRoute(route);
+  }, [stages]);
 
   const validateOrderInfo = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -377,6 +403,16 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   />
                   {errors.order_date && <p className="text-red-500 text-xs mt-1">{errors.order_date}</p>}
                 </div>
+              </div>
+
+              <div>
+                <Label>Маршрут</Label>
+                <Input
+                  value={autoRoute}
+                  disabled
+                  placeholder="Формируется автоматически из этапов"
+                  className="bg-gray-50"
+                />
               </div>
 
               <div>
