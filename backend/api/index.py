@@ -158,10 +158,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             elif resource == 'vehicles':
                 cur.execute('''
                     SELECT id, license_plate, model, capacity, status, 
-                           '' as vehicle_type, model as vehicle_brand, 
-                           '' as trailer_plate, '' as body_type, 
-                           '' as company_name, NULL as driver_id, 
-                           license_plate as display_name
+                           vehicle_brand, trailer_plate, body_type, 
+                           company_name, driver_id, 
+                           COALESCE(
+                               vehicle_brand || ' ' || license_plate || 
+                               CASE WHEN trailer_plate IS NOT NULL AND trailer_plate != '' 
+                                    THEN ' + ' || trailer_plate 
+                                    ELSE '' 
+                               END,
+                               license_plate
+                           ) as display_name
                     FROM vehicles 
                     ORDER BY license_plate
                 ''')
@@ -732,13 +738,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             elif action == 'create_vehicle':
                 data = body_data.get('data', {})
-                capacity = data.get('body_type', '')
                 
                 cur.execute('''
-                    INSERT INTO vehicles (license_plate, model, capacity, status)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO vehicles (
+                        license_plate, model, capacity, status,
+                        vehicle_brand, trailer_plate, body_type, company_name, driver_id
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
-                ''', (data.get('license_plate'), data.get('vehicle_brand'), capacity, 'available'))
+                ''', (
+                    data.get('license_plate'), 
+                    data.get('vehicle_brand'), 
+                    data.get('body_type', ''),
+                    'available',
+                    data.get('vehicle_brand'),
+                    data.get('trailer_plate'),
+                    data.get('body_type'),
+                    data.get('company_name'),
+                    data.get('driver_id')
+                ))
                 
                 vehicle_id = cur.fetchone()[0]
                 conn.commit()
@@ -1085,10 +1103,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             elif resource == 'vehicle':
                 cur.execute('''
-                    UPDATE vehicles SET license_plate = %s, model = %s, capacity = %s, status = %s
+                    UPDATE vehicles SET 
+                        license_plate = %s, 
+                        model = %s, 
+                        capacity = %s, 
+                        status = %s,
+                        vehicle_brand = %s,
+                        trailer_plate = %s,
+                        body_type = %s,
+                        company_name = %s,
+                        driver_id = %s,
+                        updated_at = CURRENT_TIMESTAMP
                     WHERE id = %s
-                ''', (data.get('license_plate'), data.get('model'), data.get('capacity'), 
-                      data.get('status'), item_id))
+                ''', (
+                    data.get('license_plate'), 
+                    data.get('vehicle_brand'), 
+                    data.get('body_type', ''), 
+                    data.get('status', 'available'),
+                    data.get('vehicle_brand'),
+                    data.get('trailer_plate'),
+                    data.get('body_type'),
+                    data.get('company_name'),
+                    data.get('driver_id'),
+                    item_id
+                ))
                 conn.commit()
                 
                 return {
