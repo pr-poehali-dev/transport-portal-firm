@@ -461,7 +461,12 @@ const Index = () => {
                                 <Button variant="ghost" size="sm" onClick={() => openOrderDetails(order)}>
                                   <Icon name="Eye" size={16} />
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => { setEditOrder(order); setShowOrderForm(true); }}>
+                                <Button variant="ghost" size="sm" onClick={async () => { 
+                                  const stagesRes = await fetch(`${API_URL}?resource=order_stages&order_id=${order.id}`);
+                                  const stagesData = await stagesRes.json();
+                                  setEditOrder({...order, stages: stagesData.stages || []}); 
+                                  setShowOrderForm(true); 
+                                }}>
                                   <Icon name="Pencil" size={16} />
                                 </Button>
                                 <Button 
