@@ -54,7 +54,6 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
         };
       case 'vehicles':
         return { 
-          vehicle_type: '', 
           vehicle_brand: '', 
           license_plate: '', 
           trailer_plate: '', 
@@ -111,7 +110,6 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
       if (!formData.license_issued_by?.trim()) newErrors.license_issued_by = 'Обязательное поле';
       if (!formData.license_issue_date) newErrors.license_issue_date = 'Обязательное поле';
     } else if (type === 'vehicles') {
-      if (!formData.vehicle_type) newErrors.vehicle_type = 'Обязательное поле';
       if (!formData.vehicle_brand?.trim()) newErrors.vehicle_brand = 'Обязательное поле';
       if (!formData.license_plate?.trim()) newErrors.license_plate = 'Обязательное поле';
       if (!formData.body_type) newErrors.body_type = 'Обязательное поле';
@@ -589,32 +587,15 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Вид ТС *</Label>
-              <Select value={formData.vehicle_type} onValueChange={(val) => setFormData({ ...formData, vehicle_type: val })}>
-                <SelectTrigger className={errors.vehicle_type ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Выберите вид" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="truck">Грузовой автомобиль</SelectItem>
-                  <SelectItem value="tractor">Седельный тягач</SelectItem>
-                  <SelectItem value="van">Фургон</SelectItem>
-                  <SelectItem value="flatbed">Бортовой</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.vehicle_type && <p className="text-red-500 text-xs mt-1">{errors.vehicle_type}</p>}
-            </div>
-            <div>
-              <Label>Марка ТС *</Label>
-              <Input
-                value={formData.vehicle_brand || ''}
-                onChange={(e) => setFormData({ ...formData, vehicle_brand: e.target.value })}
-                placeholder="Mercedes-Benz Actros"
-                className={errors.vehicle_brand ? 'border-red-500' : ''}
-              />
-              {errors.vehicle_brand && <p className="text-red-500 text-xs mt-1">{errors.vehicle_brand}</p>}
-            </div>
+          <div>
+            <Label>Марка ТС *</Label>
+            <Input
+              value={formData.vehicle_brand || ''}
+              onChange={(e) => setFormData({ ...formData, vehicle_brand: e.target.value })}
+              placeholder="Mercedes-Benz Actros"
+              className={errors.vehicle_brand ? 'border-red-500' : ''}
+            />
+            {errors.vehicle_brand && <p className="text-red-500 text-xs mt-1">{errors.vehicle_brand}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
