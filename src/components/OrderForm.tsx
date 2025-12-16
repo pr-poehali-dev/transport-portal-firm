@@ -105,7 +105,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           track_number: editOrder.track_number || '',
           notes: editOrder.notes || ''
         });
-        setOrderCreated(false);
+        setOrderCreated(true);
         setCreatedOrderId(editOrder.id);
         
         if (editOrder.customer_items && editOrder.customer_items.length > 0) {
@@ -115,6 +115,43 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           })));
         } else {
           setCustomerItems([{ customer_id: '', note: '' }]);
+        }
+
+        // Загружаем этапы из editOrder
+        if (editOrder.stages && editOrder.stages.length > 0) {
+          setStages(editOrder.stages.map((stage: any, idx: number) => {
+            const vehicle = vehicles.find(v => v.id === stage.vehicle_id);
+            const driver = drivers.find(d => d.id === stage.driver_id);
+            
+            return {
+              id: stage.id?.toString() || Date.now().toString() + idx,
+              stage_number: stage.stage_number || idx + 1,
+              from_location: stage.from_location || '',
+              to_location: stage.to_location || '',
+              vehicle_id: stage.vehicle_id?.toString() || '',
+              driver_id: stage.driver_id?.toString() || '',
+              driver_phone: driver?.phone || '',
+              driver_additional_phone: driver?.additional_phone || '',
+              customs: stage.customs_points ? stage.customs_points.map((cp: any) => ({
+                id: cp.id?.toString() || Date.now().toString(),
+                customs_name: cp.customs_name || ''
+              })) : [],
+              notes: stage.notes || ''
+            };
+          }));
+        } else {
+          setStages([{
+            id: '1',
+            stage_number: 1,
+            from_location: '',
+            to_location: '',
+            vehicle_id: '',
+            driver_id: '',
+            driver_phone: '',
+            driver_additional_phone: '',
+            customs: [],
+            notes: ''
+          }]);
         }
       } else {
         setOrderInfo({
@@ -131,23 +168,24 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         setOrderCreated(false);
         setCreatedOrderId(null);
         setCustomerItems([{ customer_id: '', note: '' }]);
+        
+        setStages([{
+          id: '1',
+          stage_number: 1,
+          from_location: '',
+          to_location: '',
+          vehicle_id: '',
+          driver_id: '',
+          driver_phone: '',
+          driver_additional_phone: '',
+          customs: [],
+          notes: ''
+        }]);
       }
       
-      setStages([{
-        id: '1',
-        stage_number: 1,
-        from_location: '',
-        to_location: '',
-        vehicle_id: '',
-        driver_id: '',
-        driver_phone: '',
-        driver_additional_phone: '',
-        customs: [],
-        notes: ''
-      }]);
       setErrors({});
     }
-  }, [open, editOrder]);
+  }, [open, editOrder, vehicles, drivers]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
