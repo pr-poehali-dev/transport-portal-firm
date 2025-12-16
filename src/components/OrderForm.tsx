@@ -29,6 +29,11 @@ interface OrderFormProps {
   userRole?: string;
 }
 
+interface Customs {
+  id: string;
+  customs_name: string;
+}
+
 interface Stage {
   id: string;
   stage_number: number;
@@ -36,7 +41,9 @@ interface Stage {
   to_location: string;
   vehicle_id: string;
   driver_id: string;
-  customs_name: string;
+  driver_phone: string;
+  driver_additional_phone: string;
+  customs: Customs[];
   notes: string;
 }
 
@@ -76,7 +83,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     to_location: '',
     vehicle_id: '',
     driver_id: '',
-    customs_name: '',
+    driver_phone: '',
+    driver_additional_phone: '',
+    customs: [],
     notes: ''
   }]);
 
@@ -131,7 +140,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         to_location: '',
         vehicle_id: '',
         driver_id: '',
-        customs_name: '',
+        driver_phone: '',
+        driver_additional_phone: '',
+        customs: [],
         notes: ''
       }]);
       setErrors({});
@@ -204,7 +215,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       to_location: '',
       vehicle_id: '',
       driver_id: '',
-      customs_name: '',
+      driver_phone: '',
+      driver_additional_phone: '',
+      customs: [],
       notes: ''
     };
     setStages([...stages, newStage]);
@@ -219,7 +232,64 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
   };
 
   const updateStage = (id: string, field: keyof Stage, value: string) => {
-    setStages(stages.map(s => s.id === id ? { ...s, [field]: value } : s));
+    setStages(stages.map(s => {
+      if (s.id !== id) return s;
+      
+      // При выборе автомобиля автоматически подгружаем водителя и его телефоны
+      if (field === 'vehicle_id') {
+        const selectedVehicle = vehicles.find(v => v.id.toString() === value);
+        if (selectedVehicle && selectedVehicle.driver_id) {
+          const driver = drivers.find(d => d.id === selectedVehicle.driver_id);
+          if (driver) {
+            return {
+              ...s,
+              vehicle_id: value,
+              driver_id: selectedVehicle.driver_id.toString(),
+              driver_phone: driver.phone || '',
+              driver_additional_phone: driver.additional_phone || ''
+            };
+          }
+        }
+      }
+      
+      return { ...s, [field]: value };
+    }));
+  };
+
+  const addCustomsToStage = (stageId: string) => {
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        return {
+          ...s,
+          customs: [...s.customs, { id: Date.now().toString(), customs_name: '' }]
+        };
+      }
+      return s;
+    }));
+  };
+
+  const removeCustomsFromStage = (stageId: string, customsId: string) => {
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        return {
+          ...s,
+          customs: s.customs.filter(c => c.id !== customsId)
+        };
+      }
+      return s;
+    }));
+  };
+
+  const updateCustomsInStage = (stageId: string, customsId: string, value: string) => {
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        return {
+          ...s,
+          customs: s.customs.map(c => c.id === customsId ? { ...c, customs_name: value } : c)
+        };
+      }
+      return s;
+    }));
   };
 
   // Автоматическое формирование маршрута из этапов
@@ -268,7 +338,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       if (!stage.from_location?.trim()) newErrors[`stage_${idx}_from`] = 'Обязательное поле';
       if (!stage.to_location?.trim()) newErrors[`stage_${idx}_to`] = 'Обязательное поле';
       if (!stage.vehicle_id) newErrors[`stage_${idx}_vehicle`] = 'Обязательное поле';
-      if (!stage.driver_id) newErrors[`stage_${idx}_driver`] = 'Обязательное поле';
+      if (!stage.driver_id) newErrors[`stage_${idx}_driver`] = 'Выберите автомобиль с назначенным водителем';
     });
 
     setErrors(newErrors);
@@ -399,21 +469,23 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           })
         });
 
-        if (stage.customs_name?.trim()) {
-          await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'add_customs_point',
-              order_id: createdOrderId,
-              customs: {
-                customs_name: stage.customs_name,
-                country: '',
-                crossing_date: null,
-                notes: ''
-              }
-            })
-          });
+        for (const customs of stage.customs) {
+          if (customs.customs_name?.trim()) {
+            await fetch(API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'add_customs_point',
+                order_id: createdOrderId,
+                customs: {
+                  customs_name: customs.customs_name,
+                  country: '',
+                  crossing_date: null,
+                  notes: ''
+                }
+              })
+            });
+          }
         }
       }
 
@@ -681,79 +753,126 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     )}
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Откуда *</Label>
-                        <Input
-                          value={stage.from_location}
-                          onChange={(e) => updateStage(stage.id, 'from_location', e.target.value)}
-                          className={errors[`stage_${idx}_from`] ? 'border-red-500' : ''}
-                          placeholder="Москва"
-                        />
-                        {errors[`stage_${idx}_from`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_from`]}</p>}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Откуда *</Label>
+                          <Input
+                            value={stage.from_location}
+                            onChange={(e) => updateStage(stage.id, 'from_location', e.target.value)}
+                            className={errors[`stage_${idx}_from`] ? 'border-red-500' : ''}
+                            placeholder="Москва"
+                          />
+                          {errors[`stage_${idx}_from`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_from`]}</p>}
+                        </div>
+
+                        <div>
+                          <Label>Куда *</Label>
+                          <Input
+                            value={stage.to_location}
+                            onChange={(e) => updateStage(stage.id, 'to_location', e.target.value)}
+                            className={errors[`stage_${idx}_to`] ? 'border-red-500' : ''}
+                            placeholder="Санкт-Петербург"
+                          />
+                          {errors[`stage_${idx}_to`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_to`]}</p>}
+                        </div>
+
+                        <div>
+                          <Label>Автомобиль *</Label>
+                          <Select value={stage.vehicle_id} onValueChange={(val) => updateStage(stage.id, 'vehicle_id', val)}>
+                            <SelectTrigger className={errors[`stage_${idx}_vehicle`] ? 'border-red-500' : ''}>
+                              <SelectValue placeholder="Выберите автомобиль" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {vehicles.map((vehicle) => (
+                                <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
+                                  {vehicle.license_plate} - {vehicle.model}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {errors[`stage_${idx}_vehicle`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_vehicle`]}</p>}
+                        </div>
+
+                        <div>
+                          <Label>Водитель *</Label>
+                          <Input
+                            value={stage.driver_id ? drivers.find(d => d.id.toString() === stage.driver_id)?.full_name || '' : ''}
+                            disabled
+                            placeholder="Автоматически"
+                            className="bg-gray-50"
+                          />
+                          {errors[`stage_${idx}_driver`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_driver`]}</p>}
+                        </div>
+
+                        <div>
+                          <Label>Телефон водителя</Label>
+                          <Input
+                            value={stage.driver_phone}
+                            disabled
+                            placeholder="Автоматически"
+                            className="bg-gray-50"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Дополнительный телефон</Label>
+                          <Input
+                            value={stage.driver_additional_phone}
+                            disabled
+                            placeholder="Автоматически"
+                            className="bg-gray-50"
+                          />
+                        </div>
+
+                        <div className="col-span-2">
+                          <Label>Примечания этапа</Label>
+                          <Input
+                            value={stage.notes}
+                            onChange={(e) => updateStage(stage.id, 'notes', e.target.value)}
+                            placeholder="Дополнительная информация"
+                          />
+                        </div>
                       </div>
 
                       <div>
-                        <Label>Куда *</Label>
-                        <Input
-                          value={stage.to_location}
-                          onChange={(e) => updateStage(stage.id, 'to_location', e.target.value)}
-                          className={errors[`stage_${idx}_to`] ? 'border-red-500' : ''}
-                          placeholder="Санкт-Петербург"
-                        />
-                        {errors[`stage_${idx}_to`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_to`]}</p>}
-                      </div>
-
-                      <div>
-                        <Label>Водитель *</Label>
-                        <Select value={stage.driver_id} onValueChange={(val) => updateStage(stage.id, 'driver_id', val)}>
-                          <SelectTrigger className={errors[`stage_${idx}_driver`] ? 'border-red-500' : ''}>
-                            <SelectValue placeholder="Выберите водителя" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {drivers.map((driver) => (
-                              <SelectItem key={driver.id} value={driver.id.toString()}>
-                                {driver.full_name}
-                              </SelectItem>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label>Таможни</Label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addCustomsToStage(stage.id)}
+                          >
+                            <Icon name="Plus" size={14} className="mr-1" />
+                            Добавить таможню
+                          </Button>
+                        </div>
+                        {stage.customs.length > 0 && (
+                          <div className="space-y-2">
+                            {stage.customs.map((customs, customsIdx) => (
+                              <div key={customs.id} className="flex gap-2 items-center">
+                                <Input
+                                  value={customs.customs_name}
+                                  onChange={(e) => updateCustomsInStage(stage.id, customs.id, e.target.value)}
+                                  placeholder="Торфяновка"
+                                  className="flex-1"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeCustomsFromStage(stage.id, customs.id)}
+                                >
+                                  <Icon name="Trash2" size={16} className="text-red-500" />
+                                </Button>
+                              </div>
                             ))}
-                          </SelectContent>
-                        </Select>
-                        {errors[`stage_${idx}_driver`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_driver`]}</p>}
-                      </div>
-
-                      <div>
-                        <Label>Автомобиль *</Label>
-                        <Select value={stage.vehicle_id} onValueChange={(val) => updateStage(stage.id, 'vehicle_id', val)}>
-                          <SelectTrigger className={errors[`stage_${idx}_vehicle`] ? 'border-red-500' : ''}>
-                            <SelectValue placeholder="Выберите автомобиль" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {vehicles.map((vehicle) => (
-                              <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
-                                {vehicle.license_plate} - {vehicle.model}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {errors[`stage_${idx}_vehicle`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_vehicle`]}</p>}
-                      </div>
-
-                      <div>
-                        <Label>Таможня</Label>
-                        <Input
-                          value={stage.customs_name}
-                          onChange={(e) => updateStage(stage.id, 'customs_name', e.target.value)}
-                          placeholder="Торфяновка"
-                        />
-                      </div>
-
-                      <div>
-                        <Label>Примечания этапа</Label>
-                        <Input
-                          value={stage.notes}
-                          onChange={(e) => updateStage(stage.id, 'notes', e.target.value)}
-                          placeholder="Дополнительная информация"
-                        />
+                          </div>
+                        )}
+                        {stage.customs.length === 0 && (
+                          <p className="text-sm text-gray-500 italic">Таможни не добавлены</p>
+                        )}
                       </div>
                     </div>
                   </CardContent>
