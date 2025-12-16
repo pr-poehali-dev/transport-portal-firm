@@ -326,6 +326,36 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif resource == 'customer_addresses':
+                customer_id = query_params.get('customer_id')
+                if not customer_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'customer_id required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute('''
+                    SELECT id, customer_id, address_name, address, contact_person, phone, is_primary, created_at
+                    FROM customer_delivery_addresses
+                    WHERE customer_id = %s
+                    ORDER BY is_primary DESC, address_name
+                ''', (customer_id,))
+                columns = [desc[0] for desc in cur.description]
+                addresses = [dict(zip(columns, row)) for row in cur.fetchall()]
+                
+                for addr in addresses:
+                    if addr.get('created_at'):
+                        addr['created_at'] = addr['created_at'].strftime('%d.%m.%Y')
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'addresses': addresses}),
+                    'isBase64Encoded': False
+                }
+            
             elif resource == 'telegram_settings':
                 cur.execute('''
                     SELECT bot_token, chat_id, is_active
@@ -731,6 +761,35 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif action == 'create_customer_address':
+                customer_id = body_data.get('customer_id')
+                data = body_data.get('data', {})
+                
+                if data.get('is_primary'):
+                    cur.execute('''
+                        UPDATE customer_delivery_addresses 
+                        SET is_primary = false 
+                        WHERE customer_id = %s
+                    ''', (customer_id,))
+                
+                cur.execute('''
+                    INSERT INTO customer_delivery_addresses 
+                    (customer_id, address_name, address, contact_person, phone, is_primary)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                ''', (customer_id, data.get('address_name'), data.get('address'), 
+                      data.get('contact_person'), data.get('phone'), data.get('is_primary', False)))
+                
+                address_id = cur.fetchone()[0]
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'id': address_id}),
+                    'isBase64Encoded': False
+                }
+            
             elif action == 'login':
                 username = body_data.get('username')
                 password = body_data.get('password')
@@ -1044,6 +1103,34 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif resource == 'customer_address':
+                if data.get('is_primary'):
+                    cur.execute('''
+                        SELECT customer_id FROM customer_delivery_addresses WHERE id = %s
+                    ''', (item_id,))
+                    customer_row = cur.fetchone()
+                    if customer_row:
+                        cur.execute('''
+                            UPDATE customer_delivery_addresses 
+                            SET is_primary = false 
+                            WHERE customer_id = %s
+                        ''', (customer_row[0],))
+                
+                cur.execute('''
+                    UPDATE customer_delivery_addresses 
+                    SET address_name = %s, address = %s, contact_person = %s, phone = %s, is_primary = %s
+                    WHERE id = %s
+                ''', (data.get('address_name'), data.get('address'), data.get('contact_person'),
+                      data.get('phone'), data.get('is_primary', False), item_id))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
             elif resource == 'client':
                 cur.execute('''
                     UPDATE clients SET name = %s, contact_person = %s, phone = %s, email = %s, address = %s
@@ -1117,6 +1204,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 cur.execute('DELETE FROM clients WHERE id = %s', (item_id,))
             elif resource == 'customer':
                 cur.execute('DELETE FROM customers WHERE id = %s', (item_id,))
+            elif resource == 'customer_address':
+                cur.execute('DELETE FROM customer_delivery_addresses WHERE id = %s', (item_id,))
+            elif resource == 'user':
+                cur.execute('DELETE FROM users WHERE id = %s', (item_id,))
             
             conn.commit()
             
