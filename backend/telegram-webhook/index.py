@@ -81,17 +81,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if invite_code:
                 cur.execute('''
-                    UPDATE users 
-                    SET telegram_chat_id = %s, telegram_connected_at = NOW()
+                    SELECT username, full_name FROM users 
                     WHERE invite_code = %s
-                    RETURNING username, full_name
-                ''', (str(chat_id), invite_code))
+                ''', (invite_code,))
                 
                 user_data = cur.fetchone()
-                conn.commit()
                 
                 if user_data:
                     username, full_name = user_data
+                    
+                    cur.execute('''
+                        UPDATE users 
+                        SET telegram_chat_id = %s, telegram_connected_at = NOW()
+                        WHERE invite_code = %s
+                    ''', (str(chat_id), invite_code))
+                    
+                    conn.commit()
                     response_text = f'''✅ <b>Telegram успешно подключен!</b>
 
 Привет, <b>{full_name}</b>!
