@@ -262,6 +262,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                 <TableHead className="min-w-[150px]">Марка ТС</TableHead>
                 <TableHead className="min-w-[120px]">Номер ТС</TableHead>
                 <TableHead className="min-w-[120px]">Прицеп</TableHead>
+                <TableHead className="min-w-[150px]">Фирма ТК</TableHead>
                 <TableHead className="text-right min-w-[120px]">Действия</TableHead>
               </TableRow>
             </TableHeader>
@@ -271,6 +272,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                   <TableCell className="font-medium text-sm">{item.vehicle_brand}</TableCell>
                   <TableCell className="text-sm">{item.license_plate}</TableCell>
                   <TableCell className="text-sm">{item.trailer_plate || '—'}</TableCell>
+                  <TableCell className="text-sm">{item.company_name || '—'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
                       <Button
