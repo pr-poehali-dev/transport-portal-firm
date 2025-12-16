@@ -937,7 +937,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   Отмена
                 </Button>
                 <Button type="submit" className="flex-1">
-                  Добавить этапы
+                  Сохранить
                 </Button>
               </div>
             </>
