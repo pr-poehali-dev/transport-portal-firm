@@ -214,10 +214,9 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[150px]">ФИО</TableHead>
-                <TableHead className="min-w-[120px]">Телефон</TableHead>
-                <TableHead className="min-w-[150px] hidden md:table-cell">Водительское удостоверение</TableHead>
-                <TableHead className="min-w-[100px] hidden lg:table-cell">Статус</TableHead>
+                <TableHead className="min-w-[200px]">ФИО</TableHead>
+                <TableHead className="min-w-[140px]">Телефон</TableHead>
+                <TableHead className="min-w-[180px]">Водительское удостоверение</TableHead>
                 <TableHead className="text-right min-w-[120px]">Действия</TableHead>
               </TableRow>
             </TableHeader>
@@ -228,13 +227,8 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                     {[item.last_name, item.first_name, item.middle_name].filter(Boolean).join(' ')}
                   </TableCell>
                   <TableCell className="text-sm">{item.phone}</TableCell>
-                  <TableCell className="hidden md:table-cell text-sm">
+                  <TableCell className="text-sm">
                     {[item.license_series, item.license_number].filter(Boolean).join(' ')}
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <Badge variant={item.status === 'available' ? 'default' : 'secondary'}>
-                      {item.status === 'available' ? 'Доступен' : 'Занят'}
-                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
