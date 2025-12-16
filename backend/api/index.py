@@ -694,20 +694,33 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             elif action == 'create_driver':
                 data = body_data.get('data', {})
                 
+                # Формируем full_name из компонентов для совместимости
+                full_name_parts = [
+                    data.get('last_name', ''),
+                    data.get('first_name', ''),
+                    data.get('middle_name', '')
+                ]
+                full_name = ' '.join([p for p in full_name_parts if p]).strip() or 'Не указано'
+                
+                # Формируем license_number из серии и номера
+                license_parts = [data.get('license_series', ''), data.get('license_number', '')]
+                license_full = ' '.join([p for p in license_parts if p]).strip() or 'Не указано'
+                
                 cur.execute('''
                     INSERT INTO drivers (
-                        last_name, first_name, middle_name, phone, additional_phone,
+                        full_name, last_name, first_name, middle_name, phone, additional_phone,
                         passport_series, passport_number, passport_issued_by, passport_issue_date,
                         license_series, license_number, license_issued_by, license_issue_date, status
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 ''', (
+                    full_name,
                     data.get('last_name'), data.get('first_name'), data.get('middle_name'),
                     data.get('phone'), data.get('additional_phone'),
                     data.get('passport_series'), data.get('passport_number'), 
                     data.get('passport_issued_by'), data.get('passport_issue_date'),
-                    data.get('license_series'), data.get('license_number'),
+                    data.get('license_series'), license_full,
                     data.get('license_issued_by'), data.get('license_issue_date'), 'available'
                 ))
                 
@@ -1182,9 +1195,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             elif resource == 'driver':
+                # Формируем full_name из компонентов для совместимости
+                full_name_parts = [
+                    data.get('last_name', ''),
+                    data.get('first_name', ''),
+                    data.get('middle_name', '')
+                ]
+                full_name = ' '.join([p for p in full_name_parts if p]).strip() or 'Не указано'
+                
+                # Формируем license_number из серии и номера
+                license_parts = [data.get('license_series', ''), data.get('license_number', '')]
+                license_full = ' '.join([p for p in license_parts if p]).strip() or 'Не указано'
+                
                 cur.execute('''
                     UPDATE drivers 
-                    SET last_name = %s, first_name = %s, middle_name = %s,
+                    SET full_name = %s,
+                        last_name = %s, first_name = %s, middle_name = %s,
                         phone = %s, additional_phone = %s,
                         passport_series = %s, passport_number = %s,
                         passport_issued_by = %s, passport_issue_date = %s,
@@ -1193,11 +1219,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         updated_at = CURRENT_TIMESTAMP
                     WHERE id = %s
                 ''', (
+                    full_name,
                     data.get('last_name'), data.get('first_name'), data.get('middle_name'),
                     data.get('phone'), data.get('additional_phone'),
                     data.get('passport_series'), data.get('passport_number'),
                     data.get('passport_issued_by'), data.get('passport_issue_date'),
-                    data.get('license_series'), data.get('license_number'),
+                    data.get('license_series'), license_full,
                     data.get('license_issued_by'), data.get('license_issue_date'),
                     item_id
                 ))
