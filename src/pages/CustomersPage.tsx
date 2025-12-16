@@ -32,6 +32,7 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
   const [deliveryAddresses, setDeliveryAddresses] = useState<DeliveryAddress[]>([]);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editAddress, setEditAddress] = useState<DeliveryAddress | null>(null);
+  const [newAddresses, setNewAddresses] = useState<DeliveryAddress[]>([]);
   
   const [formData, setFormData] = useState({
     company_name: '',
@@ -39,7 +40,6 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
     kpp: '',
     legal_address: '',
     director_name: '',
-    delivery_address: '',
     nickname: '',
     contact_person: '',
     phone: '',
@@ -61,12 +61,12 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
       kpp: '',
       legal_address: '',
       director_name: '',
-      delivery_address: '',
       nickname: '',
       contact_person: '',
       phone: '',
       email: ''
     });
+    setNewAddresses([]);
     setEditCustomer(null);
   };
 
@@ -103,7 +103,6 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
       kpp: customer.kpp || '',
       legal_address: customer.legal_address || '',
       director_name: customer.director_name || '',
-      delivery_address: customer.delivery_address || '',
       nickname: customer.nickname || '',
       contact_person: customer.contact_person || '',
       phone: customer.phone || '',
@@ -139,7 +138,7 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
         });
         toast.success('Заказчик обновлен');
       } else {
-        await fetch(API_URL, {
+        const response = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -147,6 +146,23 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
             data: formData
           })
         });
+        const result = await response.json();
+        const customerId = result.id;
+        
+        if (newAddresses.length > 0) {
+          for (const addr of newAddresses) {
+            await fetch(API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'create_customer_address',
+                customer_id: customerId,
+                data: addr
+              })
+            });
+          }
+        }
+        
         toast.success('Заказчик добавлен');
       }
       setShowForm(false);
@@ -155,6 +171,36 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
     } catch (error) {
       toast.error('Ошибка сохранения');
     }
+  };
+
+  const addNewAddress = () => {
+    setNewAddresses([...newAddresses, {
+      address_name: '',
+      address: '',
+      contact_person: '',
+      phone: '',
+      is_primary: newAddresses.length === 0
+    }]);
+  };
+
+  const removeNewAddress = (index: number) => {
+    const updated = newAddresses.filter((_, i) => i !== index);
+    if (updated.length > 0 && !updated.some(a => a.is_primary)) {
+      updated[0].is_primary = true;
+    }
+    setNewAddresses(updated);
+  };
+
+  const updateNewAddress = (index: number, field: keyof DeliveryAddress, value: string | boolean) => {
+    const updated = [...newAddresses];
+    if (field === 'is_primary' && value === true) {
+      updated.forEach((addr, i) => {
+        addr.is_primary = i === index;
+      });
+    } else {
+      updated[index] = { ...updated[index], [field]: value };
+    }
+    setNewAddresses(updated);
   };
 
   const handleAddressSubmit = async (e: React.FormEvent) => {
@@ -388,13 +434,78 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
               </div>
 
               <div className="col-span-2">
-                <Label htmlFor="delivery_address">Адрес доставки</Label>
-                <Input
-                  id="delivery_address"
-                  value={formData.delivery_address}
-                  onChange={(e) => setFormData({ ...formData, delivery_address: e.target.value })}
-                  placeholder="Можно добавить позже через кнопку 📍"
-                />
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Адреса доставки</Label>
+                  <Button type="button" size="sm" variant="outline" onClick={addNewAddress}>
+                    <Icon name="Plus" size={16} className="mr-1" />
+                    Добавить адрес
+                  </Button>
+                </div>
+                
+                {newAddresses.length === 0 ? (
+                  <p className="text-sm text-gray-500">Нажмите "Добавить адрес" для добавления адресов доставки</p>
+                ) : (
+                  <div className="space-y-3">
+                    {newAddresses.map((addr, index) => (
+                      <Card key={index} className="p-3">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-semibold">Адрес #{index + 1}</Label>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeNewAddress(index)}
+                            >
+                              <Icon name="Trash2" size={16} className="text-red-500" />
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Input
+                                placeholder="Название адреса *"
+                                value={addr.address_name}
+                                onChange={(e) => updateNewAddress(index, 'address_name', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Input
+                                placeholder="Адрес *"
+                                value={addr.address}
+                                onChange={(e) => updateNewAddress(index, 'address', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Input
+                                placeholder="Контактное лицо"
+                                value={addr.contact_person}
+                                onChange={(e) => updateNewAddress(index, 'contact_person', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Input
+                                placeholder="Телефон"
+                                value={addr.phone}
+                                onChange={(e) => updateNewAddress(index, 'phone', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={addr.is_primary}
+                              onChange={(e) => updateNewAddress(index, 'is_primary', e.target.checked)}
+                              className="w-4 h-4"
+                            />
+                            <Label className="text-sm cursor-pointer">Основной адрес</Label>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
