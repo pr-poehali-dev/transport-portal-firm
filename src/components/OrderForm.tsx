@@ -443,7 +443,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Новый заказ</DialogTitle>
+          <DialogTitle>
+            {editOrder ? `Редактирование заказа ${orderInfo.order_number}` : 'Новый заказ'}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleAddStages} className="space-y-6">
@@ -785,9 +787,22 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 Отмена
               </Button>
               {editOrder ? (
-                <Button type="button" onClick={handleUpdateOrder} className="flex-1">
-                  Сохранить изменения
-                </Button>
+                <>
+                  <Button type="button" onClick={handleUpdateOrder} className="flex-1">
+                    Сохранить изменения
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="secondary" 
+                    onClick={() => {
+                      setOrderCreated(true);
+                    }}
+                    className="flex-1"
+                  >
+                    <Icon name="Plus" size={16} className="mr-2" />
+                    Добавить этапы
+                  </Button>
+                </>
               ) : (
                 <Button type="button" onClick={handleCreateOrder} className="flex-1">
                   Создать заказ

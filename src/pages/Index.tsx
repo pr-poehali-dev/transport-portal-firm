@@ -647,26 +647,37 @@ const Index = () => {
               <div>
                 <h3 className="font-semibold text-lg mb-4">Этапы выполнения</h3>
                 <div className="space-y-3">
-                  {orderStages.map((stage) => (
-                    <div key={stage.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50">
-                      <Checkbox
-                        checked={stage.is_completed}
-                        onCheckedChange={(checked) => updateStage(stage.id, checked as boolean)}
-                        disabled={stage.is_completed}
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium">{stage.stage_name}</p>
-                        {stage.is_completed && stage.completed_by && (
-                          <p className="text-xs text-gray-500">
-                            Выполнил: {stage.completed_by} • {stage.completed_at}
-                          </p>
+                  {orderStages.length > 0 ? (
+                    orderStages.map((stage) => (
+                      <div key={stage.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50">
+                        <Checkbox
+                          checked={stage.is_completed}
+                          onCheckedChange={(checked) => updateStage(stage.id, checked as boolean)}
+                          disabled={stage.is_completed}
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium">{stage.stage_name}</p>
+                          {stage.description && (
+                            <p className="text-sm text-gray-600 mt-1">{stage.description}</p>
+                          )}
+                          {stage.is_completed && stage.completed_by && (
+                            <p className="text-xs text-gray-500">
+                              Выполнил: {stage.completed_by} • {stage.completed_at}
+                            </p>
+                          )}
+                        </div>
+                        {stage.is_completed && (
+                          <Icon name="CheckCircle2" className="text-green-500" size={20} />
                         )}
                       </div>
-                      {stage.is_completed && (
-                        <Icon name="CheckCircle2" className="text-green-500" size={20} />
-                      )}
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500 border rounded-lg bg-gray-50">
+                      <Icon name="TruckOff" size={48} className="mx-auto mb-3 text-gray-300" />
+                      <p className="font-medium">Этапы перевозки не добавлены</p>
+                      <p className="text-sm mt-1">Отредактируйте заказ чтобы добавить этапы</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 
