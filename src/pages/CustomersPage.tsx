@@ -39,6 +39,7 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
     kpp: '',
     legal_address: '',
     director_name: '',
+    delivery_address: '',
     nickname: '',
     contact_person: '',
     phone: '',
@@ -60,6 +61,7 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
       kpp: '',
       legal_address: '',
       director_name: '',
+      delivery_address: '',
       nickname: '',
       contact_person: '',
       phone: '',
@@ -101,6 +103,7 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
       kpp: customer.kpp || '',
       legal_address: customer.legal_address || '',
       director_name: customer.director_name || '',
+      delivery_address: customer.delivery_address || '',
       nickname: customer.nickname || '',
       contact_person: customer.contact_person || '',
       phone: customer.phone || '',
@@ -381,6 +384,16 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
                   value={formData.legal_address}
                   onChange={(e) => setFormData({ ...formData, legal_address: e.target.value })}
                   required
+                />
+              </div>
+
+              <div className="col-span-2">
+                <Label htmlFor="delivery_address">Адрес доставки</Label>
+                <Input
+                  id="delivery_address"
+                  value={formData.delivery_address}
+                  onChange={(e) => setFormData({ ...formData, delivery_address: e.target.value })}
+                  placeholder="Можно добавить позже через кнопку 📍"
                 />
               </div>
 
