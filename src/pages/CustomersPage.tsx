@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import PhoneInput from '@/components/ui/phone-input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
@@ -478,10 +479,10 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
                               />
                             </div>
                             <div>
-                              <Input
+                              <PhoneInput
                                 placeholder="Телефон"
                                 value={addr.phone}
-                                onChange={(e) => updateNewAddress(index, 'phone', e.target.value)}
+                                onChange={(value) => updateNewAddress(index, 'phone', value)}
                               />
                             </div>
                           </div>
@@ -648,11 +649,10 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
 
             <div>
               <Label htmlFor="addr_phone">Телефон</Label>
-              <Input
+              <PhoneInput
                 id="addr_phone"
                 value={addressFormData.phone}
-                onChange={(e) => setAddressFormData({ ...addressFormData, phone: e.target.value })}
-                placeholder="+7 (999) 123-45-67"
+                onChange={(value) => setAddressFormData({ ...addressFormData, phone: value })}
               />
             </div>
 

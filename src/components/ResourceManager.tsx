@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import PhoneInput from '@/components/ui/phone-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -387,10 +388,9 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
           
           <div>
             <Label>Номер телефона *</Label>
-            <Input
+            <PhoneInput
               value={formData.phone || ''}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="+7 (___) ___-__-__"
+              onChange={(value) => setFormData({ ...formData, phone: value })}
               className={errors.phone ? 'border-red-500' : ''}
             />
             {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
@@ -398,10 +398,9 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
 
           <div>
             <Label>Дополнительный телефон</Label>
-            <Input
+            <PhoneInput
               value={formData.additional_phone || ''}
-              onChange={(e) => setFormData({ ...formData, additional_phone: e.target.value })}
-              placeholder="+7 (___) ___-__-__"
+              onChange={(value) => setFormData({ ...formData, additional_phone: value })}
             />
           </div>
 
@@ -728,9 +727,9 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
           </div>
           <div>
             <Label>Телефон *</Label>
-            <Input
+            <PhoneInput
               value={formData.phone || ''}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, phone: value })}
               className={errors.phone ? 'border-red-500' : ''}
             />
             {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
