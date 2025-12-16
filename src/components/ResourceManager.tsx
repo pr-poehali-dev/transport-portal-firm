@@ -444,7 +444,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
               <div className="flex gap-2">
                 <Input
                   type="text"
-                  value={formData.passport_issue_date ? format(new Date(formData.passport_issue_date), 'dd-MM-yyyy') : ''}
+                  value={formData.passport_issue_date && formData.passport_issue_date.match(/^\d{4}-\d{2}-\d{2}$/) ? format(new Date(formData.passport_issue_date), 'dd-MM-yyyy') : (formData.passport_issue_date || '')}
                   onChange={(e) => {
                     const val = e.target.value;
                     const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
@@ -466,7 +466,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={formData.passport_issue_date ? new Date(formData.passport_issue_date) : undefined}
+                      selected={formData.passport_issue_date && formData.passport_issue_date.match(/^\d{4}-\d{2}-\d{2}$/) ? new Date(formData.passport_issue_date) : undefined}
                       onSelect={(date) => setFormData({ ...formData, passport_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
                       locale={ru}
                       initialFocus
@@ -519,7 +519,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
               <div className="flex gap-2">
                 <Input
                   type="text"
-                  value={formData.license_issue_date ? format(new Date(formData.license_issue_date), 'dd-MM-yyyy') : ''}
+                  value={formData.license_issue_date && formData.license_issue_date.match(/^\d{4}-\d{2}-\d{2}$/) ? format(new Date(formData.license_issue_date), 'dd-MM-yyyy') : (formData.license_issue_date || '')}
                   onChange={(e) => {
                     const val = e.target.value;
                     const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
@@ -541,7 +541,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={formData.license_issue_date ? new Date(formData.license_issue_date) : undefined}
+                      selected={formData.license_issue_date && formData.license_issue_date.match(/^\d{4}-\d{2}-\d{2}$/) ? new Date(formData.license_issue_date) : undefined}
                       onSelect={(date) => setFormData({ ...formData, license_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
                       locale={ru}
                       initialFocus
