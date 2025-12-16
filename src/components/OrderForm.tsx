@@ -84,21 +84,46 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
   const [autoRoute, setAutoRoute] = useState('');
 
   useEffect(() => {
-    if (open && !editOrder) {
-      setOrderInfo({
-        order_number: '',
-        client_id: '',
-        order_date: new Date().toISOString().split('T')[0],
-        cargo_type: '',
-        cargo_weight: '',
-        invoice: '',
-        track_number: '',
-        notes: ''
-      });
-      setUploadedFiles([]);
-      setOrderCreated(false);
-      setCreatedOrderId(null);
-      setCustomerItems([{ customer_id: '', note: '' }]);
+    if (open) {
+      if (editOrder) {
+        setOrderInfo({
+          order_number: editOrder.order_number || '',
+          client_id: editOrder.client_id?.toString() || '',
+          order_date: editOrder.order_date || new Date().toISOString().split('T')[0],
+          cargo_type: editOrder.cargo_type || '',
+          cargo_weight: editOrder.cargo_weight || '',
+          invoice: editOrder.invoice || '',
+          track_number: editOrder.track_number || '',
+          notes: editOrder.notes || ''
+        });
+        setOrderCreated(false);
+        setCreatedOrderId(editOrder.id);
+        
+        if (editOrder.customer_items && editOrder.customer_items.length > 0) {
+          setCustomerItems(editOrder.customer_items.map((ci: any) => ({
+            customer_id: ci.customer_id?.toString() || '',
+            note: ci.note || ''
+          })));
+        } else {
+          setCustomerItems([{ customer_id: '', note: '' }]);
+        }
+      } else {
+        setOrderInfo({
+          order_number: '',
+          client_id: '',
+          order_date: new Date().toISOString().split('T')[0],
+          cargo_type: '',
+          cargo_weight: '',
+          invoice: '',
+          track_number: '',
+          notes: ''
+        });
+        setUploadedFiles([]);
+        setOrderCreated(false);
+        setCreatedOrderId(null);
+        setCustomerItems([{ customer_id: '', note: '' }]);
+      }
+      
       setStages([{
         id: '1',
         stage_number: 1,
@@ -250,6 +275,43 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleUpdateOrder = async () => {
+    if (!validateOrderInfo()) {
+      toast.error('Заполните все обязательные поля');
+      return;
+    }
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_order',
+          order_id: editOrder.id,
+          order: {
+            order_number: orderInfo.order_number,
+            order_date: orderInfo.order_date,
+            cargo_type: orderInfo.cargo_type || null,
+            cargo_weight: orderInfo.cargo_weight || null,
+            invoice: orderInfo.invoice || null,
+            track_number: orderInfo.track_number || null,
+            notes: orderInfo.notes || null,
+            customer_items: customerItems
+          }
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to update order');
+      
+      toast.success('Заказ обновлен');
+      onSuccess();
+      onClose();
+    } catch (error) {
+      toast.error('Ошибка при обновлении заказа');
+      console.error(error);
+    }
+  };
+
   const handleCreateOrder = async () => {
     if (!validateOrderInfo()) {
       toast.error('Заполните все обязательные поля');
@@ -398,7 +460,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     onChange={(e) => setOrderInfo({ ...orderInfo, order_number: e.target.value })}
                     className={errors.order_number ? 'border-red-500' : ''}
                     placeholder="2024-001"
-                    disabled={orderCreated}
+                    disabled={orderCreated && !editOrder}
                   />
                   {errors.order_number && <p className="text-red-500 text-xs mt-1">{errors.order_number}</p>}
                 </div>
@@ -418,7 +480,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                       }
                     }}
                     className={errors.order_date ? 'border-red-500' : ''}
-                    disabled={orderCreated}
+                    disabled={orderCreated && !editOrder}
                   />
                   {errors.order_date && <p className="text-red-500 text-xs mt-1">{errors.order_date}</p>}
                 </div>
@@ -442,7 +504,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     variant="outline"
                     size="sm"
                     onClick={addCustomerItem}
-                    disabled={orderCreated}
+                    disabled={orderCreated && !editOrder}
                   >
                     <Icon name="Plus" size={14} className="mr-1" />
                     Добавить заказчика
@@ -455,7 +517,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         <Select 
                           value={item.customer_id} 
                           onValueChange={(val) => updateCustomerItem(index, 'customer_id', val)}
-                          disabled={orderCreated}
+                          disabled={orderCreated && !editOrder}
                         >
                           <SelectTrigger className={errors[`customer_${index}_id`] ? 'border-red-500' : ''}>
                             <SelectValue placeholder="Выберите заказчика" />
@@ -475,7 +537,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                           placeholder="Примечание (7 тонн, 5 паллет)"
                           value={item.note}
                           onChange={(e) => updateCustomerItem(index, 'note', e.target.value)}
-                          disabled={orderCreated}
+                          disabled={orderCreated && !editOrder}
                         />
                       </div>
                       {customerItems.length > 1 && (
@@ -484,7 +546,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                           variant="ghost"
                           size="icon"
                           onClick={() => removeCustomerItem(index)}
-                          disabled={orderCreated}
+                          disabled={orderCreated && !editOrder}
                         >
                           <Icon name="Trash2" size={16} className="text-red-500" />
                         </Button>
@@ -501,7 +563,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.invoice}
                     onChange={(e) => setOrderInfo({ ...orderInfo, invoice: e.target.value })}
                     placeholder="INV-2024-001"
-                    disabled={orderCreated}
+                    disabled={orderCreated && !editOrder}
                   />
                 </div>
 
@@ -511,7 +573,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.track_number}
                     onChange={(e) => setOrderInfo({ ...orderInfo, track_number: e.target.value })}
                     placeholder="TRACK123456"
-                    disabled={orderCreated}
+                    disabled={orderCreated && !editOrder}
                   />
                 </div>
 
@@ -521,7 +583,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.cargo_type}
                     onChange={(e) => setOrderInfo({ ...orderInfo, cargo_type: e.target.value })}
                     placeholder="Фрукты, овощи..."
-                    disabled={orderCreated}
+                    disabled={orderCreated && !editOrder}
                   />
                 </div>
 
@@ -532,7 +594,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.cargo_weight}
                     onChange={(e) => setOrderInfo({ ...orderInfo, cargo_weight: e.target.value })}
                     placeholder="20000"
-                    disabled={orderCreated}
+                    disabled={orderCreated && !editOrder}
                   />
                 </div>
               </div>
@@ -719,9 +781,18 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
           {!orderCreated && (
             <div className="flex gap-3 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={onClose} className="w-full">
+              <Button type="button" variant="outline" onClick={onClose}>
                 Отмена
               </Button>
+              {editOrder ? (
+                <Button type="button" onClick={handleUpdateOrder} className="flex-1">
+                  Сохранить изменения
+                </Button>
+              ) : (
+                <Button type="button" onClick={handleCreateOrder} className="flex-1">
+                  Создать заказ
+                </Button>
+              )}
             </div>
           )}
         </form>

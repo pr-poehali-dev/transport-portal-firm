@@ -600,6 +600,55 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif action == 'update_order':
+                order_id = body_data.get('order_id')
+                order_data = body_data.get('order', {})
+                
+                cur.execute('SELECT order_number FROM orders WHERE id = %s', (order_id,))
+                existing_order = cur.fetchone()
+                
+                if not existing_order:
+                    return {
+                        'statusCode': 404,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': False, 'message': 'Заказ не найден'}),
+                        'isBase64Encoded': False
+                    }
+                
+                customer_items = order_data.get('customer_items', [])
+                
+                cur.execute('''
+                    UPDATE orders 
+                    SET order_number = %s, order_date = %s, cargo_type = %s, 
+                        cargo_weight = %s, invoice = %s, track_number = %s, 
+                        notes = %s, customer_items = %s
+                    WHERE id = %s
+                ''', (
+                    order_data.get('order_number'),
+                    order_data.get('order_date'),
+                    order_data.get('cargo_type'),
+                    order_data.get('cargo_weight'),
+                    order_data.get('invoice'),
+                    order_data.get('track_number'),
+                    order_data.get('notes'),
+                    json.dumps(customer_items),
+                    order_id
+                ))
+                
+                cur.execute('''
+                    INSERT INTO activity_log (order_id, user_role, action_type, description)
+                    VALUES (%s, %s, %s, %s)
+                ''', (order_id, 'Пользователь', 'update_order', f'Обновлен заказ {order_data.get("order_number")}'))
+                
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'message': 'Заказ обновлен'}),
+                    'isBase64Encoded': False
+                }
+            
             elif action == 'delete_order':
                 order_id = body_data.get('order_id')
                 user_role = body_data.get('user_role', 'Пользователь')
