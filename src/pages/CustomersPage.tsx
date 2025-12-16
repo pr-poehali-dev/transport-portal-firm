@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
@@ -426,10 +426,18 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!selectedCustomer} onOpenChange={(open) => !open && setSelectedCustomer(null)}>
+      <Dialog open={!!selectedCustomer && !showAddressForm} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedCustomer(null);
+          setDeliveryAddresses([]);
+        }
+      }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Адреса доставки: {selectedCustomer?.nickname}</DialogTitle>
+            <DialogDescription>
+              Управление адресами доставки заказчика
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
@@ -505,10 +513,18 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showAddressForm} onOpenChange={setShowAddressForm}>
+      <Dialog open={showAddressForm} onOpenChange={(open) => {
+        if (!open) {
+          setShowAddressForm(false);
+          resetAddressForm();
+        }
+      }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editAddress ? 'Редактировать адрес' : 'Новый адрес доставки'}</DialogTitle>
+            <DialogDescription>
+              {editAddress ? 'Изменить данные адреса доставки' : 'Добавить новый адрес доставки для заказчика'}
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddressSubmit} className="space-y-4">
             <div>
