@@ -238,16 +238,23 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       // При выборе автомобиля автоматически подгружаем водителя и его телефоны
       if (field === 'vehicle_id') {
         const selectedVehicle = vehicles.find(v => v.id.toString() === value);
+        console.log('Selected vehicle:', selectedVehicle);
+        
         if (selectedVehicle && selectedVehicle.driver_id) {
           const driver = drivers.find(d => d.id === selectedVehicle.driver_id);
+          console.log('Found driver:', driver);
+          console.log('All drivers:', drivers);
+          
           if (driver) {
-            return {
+            const updatedStage = {
               ...s,
               vehicle_id: value,
               driver_id: selectedVehicle.driver_id.toString(),
               driver_phone: driver.phone || '',
               driver_additional_phone: driver.additional_phone || ''
             };
+            console.log('Updated stage:', updatedStage);
+            return updatedStage;
           }
         }
       }
