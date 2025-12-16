@@ -206,24 +206,57 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'isBase64Encoded': False
                     }
                 
+                # Получаем этапы перевозки из order_transport_stages
                 cur.execute('''
-                    SELECT id, stage_name, stage_order, is_completed, completed_by, completed_at
-                    FROM order_stages
-                    WHERE order_id = %s
-                    ORDER BY stage_order
+                    SELECT 
+                        s.id, 
+                        s.stage_number,
+                        s.from_location || ' → ' || s.to_location as stage_name,
+                        s.from_location,
+                        s.to_location,
+                        s.notes,
+                        s.status,
+                        v.license_plate,
+                        v.model as vehicle_model,
+                        d.last_name || ' ' || d.first_name as driver_name,
+                        s.planned_departure,
+                        s.planned_arrival,
+                        s.actual_departure,
+                        s.actual_arrival
+                    FROM order_transport_stages s
+                    LEFT JOIN vehicles v ON s.vehicle_id = v.id
+                    LEFT JOIN drivers d ON s.driver_id = d.id
+                    WHERE s.order_id = %s
+                    ORDER BY s.stage_number
                 ''', (order_id,))
                 
                 columns = [desc[0] for desc in cur.description]
                 stages = [dict(zip(columns, row)) for row in cur.fetchall()]
                 
+                # Форматируем этапы для отображения
+                formatted_stages = []
                 for stage in stages:
-                    if stage.get('completed_at'):
-                        stage['completed_at'] = stage['completed_at'].strftime('%d.%m.%Y %H:%M')
+                    formatted_stage = {
+                        'id': stage['id'],
+                        'stage_name': f"Этап {stage['stage_number']}: {stage['stage_name']}",
+                        'description': f"{stage['driver_name']} | {stage['license_plate']} {stage['vehicle_model']}" if stage.get('driver_name') else '',
+                        'is_completed': stage['status'] == 'completed',
+                        'completed_by': None,
+                        'completed_at': stage.get('actual_arrival')
+                    }
+                    
+                    if stage.get('notes'):
+                        formatted_stage['description'] += f"\n{stage['notes']}"
+                    
+                    if formatted_stage['is_completed'] and stage.get('actual_arrival'):
+                        formatted_stage['completed_at'] = stage['actual_arrival'].strftime('%d.%m.%Y %H:%M')
+                    
+                    formatted_stages.append(formatted_stage)
                 
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'stages': stages}),
+                    'body': json.dumps({'stages': formatted_stages}),
                     'isBase64Encoded': False
                 }
             
