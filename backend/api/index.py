@@ -1083,21 +1083,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            elif resource == 'driver':
-                cur.execute('''
-                    UPDATE drivers SET full_name = %s, phone = %s, license_number = %s, status = %s
-                    WHERE id = %s
-                ''', (data.get('full_name'), data.get('phone'), data.get('license_number'), 
-                      data.get('status'), item_id))
-                conn.commit()
-                
-                return {
-                    'statusCode': 200,
-                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'success': True}),
-                    'isBase64Encoded': False
-                }
-            
             elif resource == 'vehicle':
                 cur.execute('''
                     UPDATE vehicles SET license_plate = %s, model = %s, capacity = %s, status = %s
