@@ -125,17 +125,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             elif resource == 'drivers':
                 cur.execute('''
-                    SELECT id, full_name as last_name, '' as first_name, '' as middle_name, 
-                           phone, '' as passport_series, '' as passport_number, 
-                           '' as passport_issued_by, NULL as passport_issue_date,
-                           '' as license_series, license_number, 
-                           '' as license_issued_by, NULL as license_issue_date, 
-                           status 
+                    SELECT id, last_name, first_name, middle_name, 
+                           phone, additional_phone,
+                           passport_series, passport_number, 
+                           passport_issued_by, passport_issue_date,
+                           license_series, license_number, 
+                           license_issued_by, license_issue_date, 
+                           status, created_at, updated_at
                     FROM drivers 
-                    ORDER BY full_name
+                    ORDER BY last_name, first_name
                 ''')
                 columns = [desc[0] for desc in cur.description]
                 drivers = [dict(zip(columns, row)) for row in cur.fetchall()]
+                
+                for driver in drivers:
+                    if driver.get('created_at'):
+                        driver['created_at'] = driver['created_at'].strftime('%d.%m.%Y %H:%M')
+                    if driver.get('updated_at'):
+                        driver['updated_at'] = driver['updated_at'].strftime('%d.%m.%Y %H:%M')
+                    if driver.get('passport_issue_date'):
+                        driver['passport_issue_date'] = driver['passport_issue_date'].strftime('%Y-%m-%d')
+                    if driver.get('license_issue_date'):
+                        driver['license_issue_date'] = driver['license_issue_date'].strftime('%Y-%m-%d')
                 
                 return {
                     'statusCode': 200,
@@ -682,14 +693,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             elif action == 'create_driver':
                 data = body_data.get('data', {})
-                full_name = f"{data.get('last_name', '')} {data.get('first_name', '')} {data.get('middle_name', '')}".strip()
-                license_num = f"{data.get('license_series', '')} {data.get('license_number', '')}".strip()
                 
                 cur.execute('''
-                    INSERT INTO drivers (full_name, phone, license_number, status)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO drivers (
+                        last_name, first_name, middle_name, phone, additional_phone,
+                        passport_series, passport_number, passport_issued_by, passport_issue_date,
+                        license_series, license_number, license_issued_by, license_issue_date, status
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
-                ''', (full_name, data.get('phone'), license_num, 'available'))
+                ''', (
+                    data.get('last_name'), data.get('first_name'), data.get('middle_name'),
+                    data.get('phone'), data.get('additional_phone'),
+                    data.get('passport_series'), data.get('passport_number'), 
+                    data.get('passport_issued_by'), data.get('passport_issue_date'),
+                    data.get('license_series'), data.get('license_number'),
+                    data.get('license_issued_by'), data.get('license_issue_date'), 'available'
+                ))
                 
                 driver_id = cur.fetchone()[0]
                 conn.commit()
@@ -1152,6 +1172,35 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     WHERE id = %s
                 ''', (data.get('full_name'), data.get('email'), data.get('phone'),
                       data.get('role'), data.get('is_active'), item_id))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
+            elif resource == 'driver':
+                cur.execute('''
+                    UPDATE drivers 
+                    SET last_name = %s, first_name = %s, middle_name = %s,
+                        phone = %s, additional_phone = %s,
+                        passport_series = %s, passport_number = %s,
+                        passport_issued_by = %s, passport_issue_date = %s,
+                        license_series = %s, license_number = %s,
+                        license_issued_by = %s, license_issue_date = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ''', (
+                    data.get('last_name'), data.get('first_name'), data.get('middle_name'),
+                    data.get('phone'), data.get('additional_phone'),
+                    data.get('passport_series'), data.get('passport_number'),
+                    data.get('passport_issued_by'), data.get('passport_issue_date'),
+                    data.get('license_series'), data.get('license_number'),
+                    data.get('license_issued_by'), data.get('license_issue_date'),
+                    item_id
+                ))
                 conn.commit()
                 
                 return {

@@ -221,9 +221,13 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
             <TableBody>
               {data.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.full_name || `${item.last_name} ${item.first_name}`}</TableCell>
+                  <TableCell className="font-medium">
+                    {[item.last_name, item.first_name, item.middle_name].filter(Boolean).join(' ')}
+                  </TableCell>
                   <TableCell className="text-sm">{item.phone}</TableCell>
-                  <TableCell className="hidden md:table-cell text-sm">{item.license_number}</TableCell>
+                  <TableCell className="hidden md:table-cell text-sm">
+                    {[item.license_series, item.license_number].filter(Boolean).join(' ')}
+                  </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <Badge variant={item.status === 'available' ? 'default' : 'secondary'}>
                       {item.status === 'available' ? 'Доступен' : 'Занят'}
