@@ -126,7 +126,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         if (editOrder.stages && editOrder.stages.length > 0) {
           console.log('Mapping stages...');
           const mappedStages = editOrder.stages.map((stage: any, idx: number) => {
-            console.log('Processing stage:', stage);
+            console.log('Processing stage FULL:', JSON.stringify(stage, null, 2));
             const vehicle = vehicles.find(v => v.id === stage.vehicle_id);
             const driver = drivers.find(d => d.id === stage.driver_id);
             console.log('Found vehicle:', vehicle, 'Found driver:', driver);
