@@ -440,7 +440,16 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
               <Label>Дата выдачи *</Label>
               <div className="flex gap-2">
                 <DateInput
-                  value={formData.passport_issue_date && formData.passport_issue_date.match(/^\d{4}-\d{2}-\d{2}$/) ? format(new Date(formData.passport_issue_date), 'dd-MM-yyyy') : (formData.passport_issue_date || '')}
+                  value={(() => {
+                    if (!formData.passport_issue_date) return '';
+                    if (formData.passport_issue_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                      const date = new Date(formData.passport_issue_date);
+                      if (!isNaN(date.getTime())) {
+                        return format(date, 'dd-MM-yyyy');
+                      }
+                    }
+                    return formData.passport_issue_date;
+                  })()}
                   onChange={(val) => {
                     const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
                     if (match) {
@@ -461,7 +470,11 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={formData.passport_issue_date && formData.passport_issue_date.match(/^\d{4}-\d{2}-\d{2}$/) ? new Date(formData.passport_issue_date) : undefined}
+                      selected={(() => {
+                        if (!formData.passport_issue_date || !formData.passport_issue_date.match(/^\d{4}-\d{2}-\d{2}$/)) return undefined;
+                        const date = new Date(formData.passport_issue_date);
+                        return isNaN(date.getTime()) ? undefined : date;
+                      })()}
                       onSelect={(date) => setFormData({ ...formData, passport_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
                       locale={ru}
                       initialFocus
@@ -513,7 +526,16 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
               <Label>Дата выдачи *</Label>
               <div className="flex gap-2">
                 <DateInput
-                  value={formData.license_issue_date && formData.license_issue_date.match(/^\d{4}-\d{2}-\d{2}$/) ? format(new Date(formData.license_issue_date), 'dd-MM-yyyy') : (formData.license_issue_date || '')}
+                  value={(() => {
+                    if (!formData.license_issue_date) return '';
+                    if (formData.license_issue_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                      const date = new Date(formData.license_issue_date);
+                      if (!isNaN(date.getTime())) {
+                        return format(date, 'dd-MM-yyyy');
+                      }
+                    }
+                    return formData.license_issue_date;
+                  })()}
                   onChange={(val) => {
                     const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
                     if (match) {
@@ -534,7 +556,11 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={formData.license_issue_date && formData.license_issue_date.match(/^\d{4}-\d{2}-\d{2}$/) ? new Date(formData.license_issue_date) : undefined}
+                      selected={(() => {
+                        if (!formData.license_issue_date || !formData.license_issue_date.match(/^\d{4}-\d{2}-\d{2}$/)) return undefined;
+                        const date = new Date(formData.license_issue_date);
+                        return isNaN(date.getTime()) ? undefined : date;
+                      })()}
                       onSelect={(date) => setFormData({ ...formData, license_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
                       locale={ru}
                       initialFocus
