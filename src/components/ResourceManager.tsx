@@ -417,8 +417,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                 <Input
                   value={formData.passport_series || ''}
                   onChange={(e) => setFormData({ ...formData, passport_series: e.target.value })}
-                  placeholder="1234"
-                  maxLength={4}
+                  placeholder="1234 или AB"
                   className={errors.passport_series ? 'border-red-500' : ''}
                 />
                 {errors.passport_series && <p className="text-red-500 text-xs mt-1">{errors.passport_series}</p>}
@@ -428,8 +427,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                 <Input
                   value={formData.passport_number || ''}
                   onChange={(e) => setFormData({ ...formData, passport_number: e.target.value })}
-                  placeholder="567890"
-                  maxLength={6}
+                  placeholder="567890 или 12345678"
                   className={errors.passport_number ? 'border-red-500' : ''}
                 />
                 {errors.passport_number && <p className="text-red-500 text-xs mt-1">{errors.passport_number}</p>}
