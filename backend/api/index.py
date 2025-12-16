@@ -1130,6 +1130,64 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'body': json.dumps({'success': False, 'error': 'Пользователь не найден'}),
                         'isBase64Encoded': False
                     }
+            
+            elif action == 'add_order_stage':
+                order_id = body_data.get('order_id')
+                stage_data = body_data.get('stage', {})
+                
+                cur.execute('''
+                    INSERT INTO order_transport_stages (
+                        order_id, stage_number, vehicle_id, driver_id,
+                        from_location, to_location, notes, status
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                ''', (
+                    order_id,
+                    stage_data.get('stage_number'),
+                    stage_data.get('vehicle_id'),
+                    stage_data.get('driver_id'),
+                    stage_data.get('from_location'),
+                    stage_data.get('to_location'),
+                    stage_data.get('notes', ''),
+                    'pending'
+                ))
+                
+                stage_id = cur.fetchone()[0]
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'stage_id': stage_id}),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'add_customs_point':
+                order_id = body_data.get('order_id')
+                customs_data = body_data.get('customs', {})
+                
+                cur.execute('''
+                    INSERT INTO order_customs_points (
+                        order_id, customs_name, country, crossing_date, notes
+                    ) VALUES (%s, %s, %s, %s, %s)
+                    RETURNING id
+                ''', (
+                    order_id,
+                    customs_data.get('customs_name'),
+                    customs_data.get('country', ''),
+                    customs_data.get('crossing_date'),
+                    customs_data.get('notes', '')
+                ))
+                
+                customs_id = cur.fetchone()[0]
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'customs_id': customs_id}),
+                    'isBase64Encoded': False
+                }
         
         elif method == 'PUT':
             body_data = json.loads(event.get('body', '{}'))
