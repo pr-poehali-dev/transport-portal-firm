@@ -330,14 +330,6 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleViewAddresses(customer)}
-                          title="Адреса доставки"
-                        >
-                          <Icon name="MapPin" size={16} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
                           onClick={() => handleEdit(customer)}
                         >
                           <Icon name="Edit" size={16} />
