@@ -95,6 +95,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
   useEffect(() => {
     if (open) {
       if (editOrder) {
+        console.log('Edit Order data:', editOrder);
+        console.log('Edit Order stages:', editOrder.stages);
+        
         setOrderInfo({
           order_number: editOrder.order_number || '',
           client_id: editOrder.client_id?.toString() || '',
