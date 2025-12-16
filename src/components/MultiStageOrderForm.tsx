@@ -82,6 +82,7 @@ export default function MultiStageOrderForm({ open, onClose, onSuccess, clients,
 
   const [customsPoints, setCustomsPoints] = useState<CustomsPoint[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [autoRoute, setAutoRoute] = useState('');
 
   const addCustomerItem = () => {
     setCustomerItems([...customerItems, { customer_id: '', note: '' }]);
@@ -157,6 +158,31 @@ export default function MultiStageOrderForm({ open, onClose, onSuccess, clients,
     newStages[index] = { ...newStages[index], [field]: value };
     setStages(newStages);
   };
+
+  // Автоматическое формирование маршрута из этапов
+  useEffect(() => {
+    if (stages.length === 0) {
+      setAutoRoute('');
+      return;
+    }
+
+    const routeParts: string[] = [];
+    
+    // Добавляем начальную точку первого этапа
+    if (stages[0]?.from_location) {
+      routeParts.push(stages[0].from_location);
+    }
+    
+    // Добавляем конечные точки всех этапов
+    stages.forEach((stage) => {
+      if (stage.to_location) {
+        routeParts.push(stage.to_location);
+      }
+    });
+    
+    const route = routeParts.filter(Boolean).join(' → ');
+    setAutoRoute(route);
+  }, [stages]);
 
   const addCustomsPoint = () => {
     setCustomsPoints([...customsPoints, {
@@ -293,6 +319,17 @@ export default function MultiStageOrderForm({ open, onClose, onSuccess, clients,
                   </Select>
                   {errors.client_id && <p className="text-red-500 text-xs mt-1">{errors.client_id}</p>}
                 </div>
+              </div>
+
+              <div>
+                <Label htmlFor="auto_route">Маршрут</Label>
+                <Input
+                  id="auto_route"
+                  value={autoRoute}
+                  disabled
+                  placeholder="Формируется автоматически из этапов"
+                  className="bg-gray-50"
+                />
               </div>
 
               <div>
