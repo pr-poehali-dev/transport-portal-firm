@@ -61,7 +61,13 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
       director_name: '',
       nickname: ''
     });
-    setNewAddresses([]);
+    setNewAddresses([{
+      address_name: '',
+      address: '',
+      contact_person: '',
+      phone: '',
+      is_primary: true
+    }]);
     setEditCustomer(null);
   };
 
@@ -91,7 +97,7 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
     setShowForm(true);
   };
 
-  const handleEdit = (customer: any) => {
+  const handleEdit = async (customer: any) => {
     setFormData({
       company_name: customer.company_name || '',
       inn: customer.inn || '',
@@ -100,6 +106,33 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
       director_name: customer.director_name || '',
       nickname: customer.nickname || ''
     });
+    
+    try {
+      const response = await fetch(`${API_URL}?resource=customer_addresses&customer_id=${customer.id}`);
+      const data = await response.json();
+      const addresses = data.addresses || [];
+      
+      if (addresses.length === 0) {
+        setNewAddresses([{
+          address_name: '',
+          address: '',
+          contact_person: '',
+          phone: '',
+          is_primary: true
+        }]);
+      } else {
+        setNewAddresses(addresses);
+      }
+    } catch (error) {
+      setNewAddresses([{
+        address_name: '',
+        address: '',
+        contact_person: '',
+        phone: '',
+        is_primary: true
+      }]);
+    }
+    
     setEditCustomer(customer);
     setShowForm(true);
   };
@@ -128,6 +161,33 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
             data: formData
           })
         });
+        
+        for (const addr of newAddresses) {
+          if (addr.id) {
+            await fetch(API_URL, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                resource: 'customer_address',
+                id: addr.id,
+                data: addr
+              })
+            });
+          } else {
+            if (addr.address_name && addr.address) {
+              await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  action: 'create_customer_address',
+                  customer_id: editCustomer.id,
+                  data: addr
+                })
+              });
+            }
+          }
+        }
+        
         toast.success('Заказчик обновлен');
       } else {
         const response = await fetch(API_URL, {
@@ -143,15 +203,17 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
         
         if (newAddresses.length > 0) {
           for (const addr of newAddresses) {
-            await fetch(API_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'create_customer_address',
-                customer_id: customerId,
-                data: addr
-              })
-            });
+            if (addr.address_name && addr.address) {
+              await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  action: 'create_customer_address',
+                  customer_id: customerId,
+                  data: addr
+                })
+              });
+            }
           }
         }
         
@@ -175,9 +237,38 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
     }]);
   };
 
-  const removeNewAddress = (index: number) => {
+  const removeNewAddress = async (index: number) => {
+    const addrToRemove = newAddresses[index];
+    
+    if (addrToRemove.id && editCustomer) {
+      if (!confirm('Удалить этот адрес?')) return;
+      
+      try {
+        await fetch(API_URL, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            resource: 'customer_address',
+            id: addrToRemove.id
+          })
+        });
+        toast.success('Адрес удален');
+      } catch (error) {
+        toast.error('Ошибка удаления адреса');
+        return;
+      }
+    }
+    
     const updated = newAddresses.filter((_, i) => i !== index);
-    if (updated.length > 0 && !updated.some(a => a.is_primary)) {
+    if (updated.length === 0) {
+      updated.push({
+        address_name: '',
+        address: '',
+        contact_person: '',
+        phone: '',
+        is_primary: true
+      });
+    } else if (!updated.some(a => a.is_primary)) {
       updated[0].is_primary = true;
     }
     setNewAddresses(updated);
@@ -423,29 +514,30 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
               <div className="col-span-2">
                 <div className="flex items-center justify-between mb-2">
                   <Label>Адреса доставки</Label>
-                  <Button type="button" size="sm" variant="outline" onClick={addNewAddress}>
-                    <Icon name="Plus" size={16} className="mr-1" />
-                    Добавить адрес
-                  </Button>
+                  {newAddresses.length > 0 && (
+                    <Button type="button" size="sm" variant="outline" onClick={addNewAddress}>
+                      <Icon name="Plus" size={16} className="mr-1" />
+                      Добавить адрес
+                    </Button>
+                  )}
                 </div>
                 
-                {newAddresses.length === 0 ? (
-                  <p className="text-sm text-gray-500">Нажмите "Добавить адрес" для добавления адресов доставки</p>
-                ) : (
-                  <div className="space-y-3">
-                    {newAddresses.map((addr, index) => (
-                      <Card key={index} className="p-3">
-                        <div className="space-y-3">
+                <div className="space-y-3">
+                  {newAddresses.map((addr, index) => (
+                    <Card key={index} className="p-3">
+                      <div className="space-y-3">
                           <div className="flex items-center justify-between">
                             <Label className="text-sm font-semibold">Адрес #{index + 1}</Label>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeNewAddress(index)}
-                            >
-                              <Icon name="Trash2" size={16} className="text-red-500" />
-                            </Button>
+                            {newAddresses.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeNewAddress(index)}
+                              >
+                                <Icon name="Trash2" size={16} className="text-red-500" />
+                              </Button>
+                            )}
                           </div>
                           
                           <div className="grid grid-cols-2 gap-2">
@@ -492,7 +584,6 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
                       </Card>
                     ))}
                   </div>
-                )}
               </div>
             </div>
 
