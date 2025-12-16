@@ -97,6 +97,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       if (editOrder) {
         console.log('Edit Order data:', editOrder);
         console.log('Edit Order stages:', editOrder.stages);
+        console.log('Vehicles:', vehicles);
+        console.log('Drivers:', drivers);
         
         setOrderInfo({
           order_number: editOrder.order_number || '',
@@ -122,11 +124,14 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
         // Загружаем этапы из editOrder
         if (editOrder.stages && editOrder.stages.length > 0) {
-          setStages(editOrder.stages.map((stage: any, idx: number) => {
+          console.log('Mapping stages...');
+          const mappedStages = editOrder.stages.map((stage: any, idx: number) => {
+            console.log('Processing stage:', stage);
             const vehicle = vehicles.find(v => v.id === stage.vehicle_id);
             const driver = drivers.find(d => d.id === stage.driver_id);
+            console.log('Found vehicle:', vehicle, 'Found driver:', driver);
             
-            return {
+            const mapped = {
               id: stage.id?.toString() || Date.now().toString() + idx,
               stage_number: stage.stage_number || idx + 1,
               from_location: stage.from_location || '',
@@ -141,7 +146,11 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               })) : [],
               notes: stage.notes || ''
             };
-          }));
+            console.log('Mapped stage:', mapped);
+            return mapped;
+          });
+          console.log('Final mapped stages:', mappedStages);
+          setStages(mappedStages);
         } else {
           setStages([{
             id: '1',
