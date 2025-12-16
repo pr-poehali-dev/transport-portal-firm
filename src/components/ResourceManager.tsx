@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import PhoneInput from '@/components/ui/phone-input';
 import DateInput from '@/components/ui/date-input';
+import LicensePlateInput from '@/components/ui/license-plate-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -599,20 +600,20 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Гос. номер *</Label>
-              <Input
+              <LicensePlateInput
                 value={formData.license_plate || ''}
-                onChange={(e) => setFormData({ ...formData, license_plate: e.target.value })}
-                placeholder="А123БВ777"
+                onChange={(value) => setFormData({ ...formData, license_plate: value })}
+                placeholder="AB1234-5"
                 className={errors.license_plate ? 'border-red-500' : ''}
               />
               {errors.license_plate && <p className="text-red-500 text-xs mt-1">{errors.license_plate}</p>}
             </div>
             <div>
               <Label>Прицеп</Label>
-              <Input
+              <LicensePlateInput
                 value={formData.trailer_plate || ''}
-                onChange={(e) => setFormData({ ...formData, trailer_plate: e.target.value })}
-                placeholder="АС1234"
+                onChange={(value) => setFormData({ ...formData, trailer_plate: value })}
+                placeholder="AB1234"
               />
             </div>
           </div>
