@@ -291,6 +291,25 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     }
   };
 
+  const handleSaveOrderOnly = async () => {
+    if (uploadedFiles.length > 0) {
+      const filesInfo = uploadedFiles.map(f => `${f.name}: ${f.url}`).join('\n');
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add_order_note',
+          order_id: createdOrderId,
+          note: `Прикрепленные файлы:\n${filesInfo}`
+        })
+      });
+    }
+
+    toast.success('Заказ сохранен без этапов');
+    onSuccess();
+    onClose();
+  };
+
   const handleAddStages = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -685,8 +704,11 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               </div>
 
               <div className="flex gap-3 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+                <Button type="button" variant="outline" onClick={onClose}>
                   Отмена
+                </Button>
+                <Button type="button" variant="secondary" onClick={handleSaveOrderOnly} className="flex-1">
+                  Сохранить без этапов
                 </Button>
                 <Button type="submit" className="flex-1">
                   Добавить этапы
