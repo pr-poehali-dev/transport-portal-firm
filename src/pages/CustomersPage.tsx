@@ -40,10 +40,7 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
     kpp: '',
     legal_address: '',
     director_name: '',
-    nickname: '',
-    contact_person: '',
-    phone: '',
-    email: ''
+    nickname: ''
   });
 
   const [addressFormData, setAddressFormData] = useState<DeliveryAddress>({
@@ -61,10 +58,7 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
       kpp: '',
       legal_address: '',
       director_name: '',
-      nickname: '',
-      contact_person: '',
-      phone: '',
-      email: ''
+      nickname: ''
     });
     setNewAddresses([]);
     setEditCustomer(null);
@@ -103,10 +97,7 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
       kpp: customer.kpp || '',
       legal_address: customer.legal_address || '',
       director_name: customer.director_name || '',
-      nickname: customer.nickname || '',
-      contact_person: customer.contact_person || '',
-      phone: customer.phone || '',
-      email: customer.email || ''
+      nickname: customer.nickname || ''
     });
     setEditCustomer(customer);
     setShowForm(true);
@@ -324,11 +315,14 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
                     <TableCell>{customer.kpp || '—'}</TableCell>
                     <TableCell>{customer.director_name}</TableCell>
                     <TableCell>
-                      <div className="text-sm space-y-1">
-                        {customer.contact_person && <div>{customer.contact_person}</div>}
-                        {customer.phone && <div>{customer.phone}</div>}
-                        {customer.email && <div className="text-gray-500">{customer.email}</div>}
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewAddresses(customer)}
+                        className="text-blue-600"
+                      >
+                        Смотреть адреса
+                      </Button>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -506,35 +500,6 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
                     ))}
                   </div>
                 )}
-              </div>
-
-              <div>
-                <Label htmlFor="contact_person">Контактное лицо</Label>
-                <Input
-                  id="contact_person"
-                  value={formData.contact_person}
-                  onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="phone">Телефон</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+7 (999) 123-45-67"
-                />
-              </div>
-
-              <div className="col-span-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
               </div>
             </div>
 
