@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import DateInput from '@/components/ui/date-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -359,10 +360,18 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
                 <div>
                   <Label>Дата заказа *</Label>
-                  <Input
-                    type="date"
-                    value={orderInfo.order_date}
-                    onChange={(e) => setOrderInfo({ ...orderInfo, order_date: e.target.value })}
+                  <DateInput
+                    value={orderInfo.order_date && orderInfo.order_date.match(/^\d{4}-\d{2}-\d{2}$/) 
+                      ? orderInfo.order_date.split('-').reverse().join('-')
+                      : orderInfo.order_date}
+                    onChange={(val) => {
+                      const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+                      if (match) {
+                        setOrderInfo({ ...orderInfo, order_date: `${match[3]}-${match[2]}-${match[1]}` });
+                      } else {
+                        setOrderInfo({ ...orderInfo, order_date: val });
+                      }
+                    }}
                     className={errors.order_date ? 'border-red-500' : ''}
                     disabled={orderCreated}
                   />

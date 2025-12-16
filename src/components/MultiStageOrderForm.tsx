@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import DateInput from '@/components/ui/date-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -260,11 +261,19 @@ export default function MultiStageOrderForm({ open, onClose, onSuccess, clients,
 
                 <div>
                   <Label htmlFor="order_date">Дата заказа *</Label>
-                  <Input
+                  <DateInput
                     id="order_date"
-                    type="date"
-                    value={formData.order_date}
-                    onChange={(e) => setFormData({ ...formData, order_date: e.target.value })}
+                    value={formData.order_date && formData.order_date.match(/^\d{4}-\d{2}-\d{2}$/) 
+                      ? formData.order_date.split('-').reverse().join('-')
+                      : formData.order_date}
+                    onChange={(val) => {
+                      const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+                      if (match) {
+                        setFormData({ ...formData, order_date: `${match[3]}-${match[2]}-${match[1]}` });
+                      } else {
+                        setFormData({ ...formData, order_date: val });
+                      }
+                    }}
                   />
                 </div>
 

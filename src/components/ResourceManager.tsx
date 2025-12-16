@@ -7,6 +7,7 @@ import Icon from '@/components/ui/icon';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import PhoneInput from '@/components/ui/phone-input';
+import DateInput from '@/components/ui/date-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -445,11 +446,9 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
             <div className="mt-4">
               <Label>Дата выдачи *</Label>
               <div className="flex gap-2">
-                <Input
-                  type="text"
+                <DateInput
                   value={formData.passport_issue_date && formData.passport_issue_date.match(/^\d{4}-\d{2}-\d{2}$/) ? format(new Date(formData.passport_issue_date), 'dd-MM-yyyy') : (formData.passport_issue_date || '')}
-                  onChange={(e) => {
-                    const val = e.target.value;
+                  onChange={(val) => {
                     const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
                     if (match) {
                       setFormData({ ...formData, passport_issue_date: `${match[3]}-${match[2]}-${match[1]}` });
@@ -457,7 +456,6 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                       setFormData({ ...formData, passport_issue_date: val });
                     }
                   }}
-                  placeholder="ДД-ММ-ГГГГ"
                   className={errors.passport_issue_date ? 'border-red-500' : ''}
                 />
                 <Popover>
@@ -520,11 +518,9 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
             <div className="mt-4">
               <Label>Дата выдачи *</Label>
               <div className="flex gap-2">
-                <Input
-                  type="text"
+                <DateInput
                   value={formData.license_issue_date && formData.license_issue_date.match(/^\d{4}-\d{2}-\d{2}$/) ? format(new Date(formData.license_issue_date), 'dd-MM-yyyy') : (formData.license_issue_date || '')}
-                  onChange={(e) => {
-                    const val = e.target.value;
+                  onChange={(val) => {
                     const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
                     if (match) {
                       setFormData({ ...formData, license_issue_date: `${match[3]}-${match[2]}-${match[1]}` });
@@ -532,7 +528,6 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                       setFormData({ ...formData, license_issue_date: val });
                     }
                   }}
-                  placeholder="ДД-ММ-ГГГГ"
                   className={errors.license_issue_date ? 'border-red-500' : ''}
                 />
                 <Popover>
