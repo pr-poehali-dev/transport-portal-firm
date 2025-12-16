@@ -259,24 +259,18 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[120px]">Гос. номер</TableHead>
-                <TableHead className="min-w-[150px]">Модель</TableHead>
-                <TableHead className="min-w-[120px] hidden md:table-cell">Грузоподъемность</TableHead>
-                <TableHead className="min-w-[100px] hidden lg:table-cell">Статус</TableHead>
+                <TableHead className="min-w-[150px]">Марка ТС</TableHead>
+                <TableHead className="min-w-[120px]">Номер ТС</TableHead>
+                <TableHead className="min-w-[120px]">Прицеп</TableHead>
                 <TableHead className="text-right min-w-[120px]">Действия</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell className="font-medium text-sm">{item.license_plate}</TableCell>
-                  <TableCell className="text-sm">{item.model || item.vehicle_brand}</TableCell>
-                  <TableCell className="hidden md:table-cell text-sm">{item.capacity}</TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <Badge variant={item.status === 'available' ? 'default' : 'secondary'}>
-                      {item.status === 'available' ? 'Доступен' : 'В рейсе'}
-                    </Badge>
-                  </TableCell>
+                  <TableCell className="font-medium text-sm">{item.vehicle_brand}</TableCell>
+                  <TableCell className="text-sm">{item.license_plate}</TableCell>
+                  <TableCell className="text-sm">{item.trailer_plate || '—'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
                       <Button
