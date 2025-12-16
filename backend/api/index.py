@@ -45,7 +45,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         o.id, o.order_number, o.order_date, o.status,
                         c.name as client_name,
                         c.id as client_id,
-                        o.customer_items
+                        o.customer_items,
+                        o.invoice, o.track_number, o.cargo_type, 
+                        o.cargo_weight, o.notes
                     FROM orders o
                     LEFT JOIN clients c ON o.client_id = c.id
                     ORDER BY o.order_date DESC
@@ -56,7 +58,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 for order in orders:
                     if order.get('order_date'):
-                        order['order_date'] = order['order_date'].strftime('%d.%m.%Y')
+                        order['order_date_display'] = order['order_date'].strftime('%d.%m.%Y')
+                        order['order_date'] = order['order_date'].strftime('%Y-%m-%d')
                     
                     if order.get('customer_items'):
                         customer_items = order['customer_items']
