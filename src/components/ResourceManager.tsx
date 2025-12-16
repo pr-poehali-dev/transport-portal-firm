@@ -449,6 +449,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                       setFormData({ ...formData, passport_issue_date: val });
                     }
                   }}
+                  maxDate="today"
                   className={errors.passport_issue_date ? 'border-red-500' : ''}
                 />
                 <Popover>
@@ -521,6 +522,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                       setFormData({ ...formData, license_issue_date: val });
                     }
                   }}
+                  maxDate="today"
                   className={errors.license_issue_date ? 'border-red-500' : ''}
                 />
                 <Popover>
