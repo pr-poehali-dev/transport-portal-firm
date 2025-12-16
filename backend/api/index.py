@@ -214,11 +214,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         s.from_location || ' → ' || s.to_location as stage_name,
                         s.from_location,
                         s.to_location,
+                        s.vehicle_id,
+                        s.driver_id,
                         s.notes,
                         s.status,
                         v.license_plate,
                         v.model as vehicle_model,
                         d.last_name || ' ' || d.first_name as driver_name,
+                        d.phone as driver_phone,
+                        d.additional_phone as driver_additional_phone,
                         s.planned_departure,
                         s.planned_arrival,
                         s.actual_departure,
@@ -236,9 +240,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 # Форматируем этапы для отображения
                 formatted_stages = []
                 for stage in stages:
+                    # Получаем таможенные пункты для этого этапа
+                    cur.execute('''
+                        SELECT id, customs_name 
+                        FROM order_customs_points 
+                        WHERE stage_id = %s
+                        ORDER BY id
+                    ''', (stage['id'],))
+                    customs_columns = [desc[0] for desc in cur.description]
+                    customs_points = [dict(zip(customs_columns, row)) for row in cur.fetchall()]
+                    
                     formatted_stage = {
                         'id': stage['id'],
+                        'stage_number': stage['stage_number'],
                         'stage_name': f"Этап {stage['stage_number']}: {stage['stage_name']}",
+                        'from_location': stage['from_location'],
+                        'to_location': stage['to_location'],
+                        'vehicle_id': stage['vehicle_id'],
+                        'driver_id': stage['driver_id'],
+                        'driver_phone': stage.get('driver_phone') or '',
+                        'driver_additional_phone': stage.get('driver_additional_phone') or '',
+                        'customs_points': customs_points,
+                        'notes': stage.get('notes') or '',
                         'description': f"{stage['driver_name']} | {stage['license_plate']} {stage['vehicle_model']}" if stage.get('driver_name') else '',
                         'is_completed': stage['status'] == 'completed',
                         'completed_by': None,
