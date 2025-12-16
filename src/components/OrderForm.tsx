@@ -797,7 +797,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         <div>
                           <Label>Водитель *</Label>
                           <Input
-                            value={stage.driver_id ? drivers.find(d => d.id.toString() === stage.driver_id)?.full_name || '' : ''}
+                            value={stage.driver_id ? drivers.find(d => d.id === parseInt(stage.driver_id))?.full_name || '' : ''}
                             disabled
                             placeholder="Автоматически"
                             className="bg-gray-50"
