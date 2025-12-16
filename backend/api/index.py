@@ -163,7 +163,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                            COALESCE(
                                vehicle_brand || ' ' || license_plate || 
                                CASE WHEN trailer_plate IS NOT NULL AND trailer_plate != '' 
-                                    THEN ' + ' || trailer_plate 
+                                    THEN ' / ' || trailer_plate 
                                     ELSE '' 
                                END,
                                license_plate

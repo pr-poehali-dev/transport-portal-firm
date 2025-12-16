@@ -86,7 +86,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
       const displayName = [
         formData.vehicle_brand,
         formData.license_plate,
-        formData.trailer_plate ? `+ ${formData.trailer_plate}` : ''
+        formData.trailer_plate ? `/ ${formData.trailer_plate}` : ''
       ].filter(Boolean).join(' ');
       if (displayName !== formData.display_name) {
         setFormData({ ...formData, display_name: displayName });
