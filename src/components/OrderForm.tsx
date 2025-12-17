@@ -125,15 +125,12 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
         // Загружаем этапы из editOrder
         if (editOrder.stages && editOrder.stages.length > 0) {
-          console.log('Mapping stages...');
           const mappedStages = editOrder.stages.map((stage: any, idx: number) => {
-            console.log('Processing stage FULL:', JSON.stringify(stage, null, 2));
             const vehicle = vehicles.find(v => v.id === stage.vehicle_id);
             const driver = drivers.find(d => d.id === stage.driver_id);
-            console.log('Found vehicle:', vehicle, 'Found driver:', driver);
             
-            const mapped = {
-              id: stage.id?.toString() || Date.now().toString() + idx,
+            return {
+              id: `existing_${stage.id}`,
               stage_number: stage.stage_number || idx + 1,
               from_location: stage.from_location || '',
               to_location: stage.to_location || '',
@@ -145,12 +142,10 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 id: cp.id?.toString() || Date.now().toString(),
                 customs_name: cp.customs_name || ''
               })) : [],
-              notes: stage.notes || ''
+              notes: stage.notes || '',
+              saved: true
             };
-            console.log('Mapped stage:', mapped);
-            return mapped;
           });
-          console.log('Final mapped stages:', mappedStages);
           setStages(mappedStages);
         } else {
           setStages([{
@@ -486,6 +481,14 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
   const handleSaveStage = async (stageId: string) => {
     const stage = stages.find(s => s.id === stageId);
     if (!stage || stage.saved) return;
+
+    // Проверяем, новый это этап или существующий
+    const isExisting = stageId.startsWith('existing_');
+    if (isExisting) {
+      toast.info('Этап уже сохранён в БД');
+      setStages(stages.map(s => s.id === stageId ? { ...s, saved: true } : s));
+      return;
+    }
 
     const idx = stages.findIndex(s => s.id === stageId);
     const stageErrors: Record<string, string> = {};
