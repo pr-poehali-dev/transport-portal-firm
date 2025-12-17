@@ -1063,7 +1063,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   Отмена
                 </Button>
                 <Button type="button" onClick={handleFinishOrder} className="flex-1">
-                  Завершить заказ
+                  Сохранить
                 </Button>
               </div>
             </>
