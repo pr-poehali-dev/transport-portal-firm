@@ -419,16 +419,18 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         body: JSON.stringify({
           action: 'update_order',
           id: editOrder.id,
-          order_number: orderInfo.order_number,
-          order_date: orderInfo.order_date,
-          status: editOrder.status || 'pending',
-          client_id: editOrder.client_id || null,
-          customer_items: customerItems,
-          cargo_type: orderInfo.cargo_type || null,
-          cargo_weight: orderInfo.cargo_weight || null,
-          invoice: orderInfo.invoice || null,
-          track_number: orderInfo.track_number || null,
-          notes: orderInfo.notes || null
+          data: {
+            order_number: orderInfo.order_number,
+            order_date: orderInfo.order_date,
+            status: editOrder.status || 'pending',
+            client_id: editOrder.client_id || null,
+            customer_items: customerItems,
+            cargo_type: orderInfo.cargo_type || null,
+            cargo_weight: orderInfo.cargo_weight || null,
+            invoice: orderInfo.invoice || null,
+            track_number: orderInfo.track_number || null,
+            notes: orderInfo.notes || null
+          }
         })
       });
 
@@ -804,8 +806,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           </Card>
 
           {/* Этапы маршрута */}
-          {!editOrder && (
-            <>
+          <>
               {stages.map((stage, idx) => (
                 <Card key={stage.id} className="relative">
                   <CardHeader className="flex flex-row items-center justify-between">
@@ -958,8 +959,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   Добавить маршрут
                 </Button>
               </div>
-            </>
-          )}
+          </>
         </div>
 
         {/* Закрепленные кнопки внизу */}
