@@ -169,18 +169,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           });
           setStages(mappedStages);
         } else {
-          setStages([{
-            id: '1',
-            stage_number: 1,
-            from_location: '',
-            to_location: '',
-            vehicle_id: '',
-            driver_id: '',
-            driver_phone: '',
-            driver_additional_phone: '',
-            customs: [],
-            notes: ''
-          }]);
+          setStages([]);
         }
       } else {
         setOrderInfo({
