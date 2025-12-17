@@ -742,6 +742,67 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif action == 'add_order_stage':
+                order_id = body_data.get('order_id')
+                stage = body_data.get('stage', {})
+                
+                if not order_id or not stage:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': False, 'message': 'order_id and stage are required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute('''
+                    INSERT INTO order_transport_stages (
+                        order_id, stage_number, vehicle_id, driver_id,
+                        from_location, to_location, notes, status
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                ''', (
+                    order_id,
+                    stage.get('stage_number'),
+                    stage.get('vehicle_id'),
+                    stage.get('driver_id'),
+                    stage.get('from_location'),
+                    stage.get('to_location'),
+                    stage.get('notes', ''),
+                    'planned'
+                ))
+                
+                stage_id = cur.fetchone()[0]
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'stage_id': stage_id}),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'delete_order_stage':
+                stage_id = body_data.get('stage_id')
+                
+                if not stage_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': False, 'message': 'stage_id is required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute('DELETE FROM order_customs_points WHERE stage_id = %s', (stage_id,))
+                cur.execute('DELETE FROM order_transport_stages WHERE id = %s', (stage_id,))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'message': 'Stage deleted'}),
+                    'isBase64Encoded': False
+                }
+            
             elif action == 'update_stage':
                 stage_id = body_data.get('stage_id')
                 is_completed = body_data.get('is_completed')

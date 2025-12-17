@@ -552,6 +552,39 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     }
   };
 
+  const handleDeleteStage = async (stageId: string) => {
+    if (!stageId.startsWith('existing_')) {
+      setStages(stages.filter(s => s.id !== stageId));
+      toast.success('Этап удалён');
+      return;
+    }
+
+    const realStageId = stageId.replace('existing_', '');
+    
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete_order_stage',
+          stage_id: parseInt(realStageId)
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setStages(stages.filter(s => s.id !== stageId));
+        toast.success('Этап удалён из БД');
+      } else {
+        toast.error('Ошибка при удалении этапа');
+      }
+    } catch (error) {
+      toast.error('Ошибка при удалении этапа');
+      console.error(error);
+    }
+  };
+
   const handleFinishOrder = async () => {
     const unsavedStages = stages.filter(s => !s.saved);
     
@@ -951,17 +984,33 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t flex justify-end">
-                      {stage.saved ? (
-                        <div className="flex items-center gap-2 text-green-600">
-                          <Icon name="Check" size={16} />
-                          <span className="text-sm font-medium">Сохранено</span>
-                        </div>
-                      ) : (
-                        <Button type="button" onClick={() => handleSaveStage(stage.id)}>
-                          Сохранить этап {stage.stage_number}
-                        </Button>
-                      )}
+                    <div className="pt-4 border-t flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        {stage.saved && stage.id.startsWith('existing_') && stages.length > 1 && (
+                          <Button 
+                            type="button" 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => handleDeleteStage(stage.id)}
+                          >
+                            <Icon name="Trash2" size={16} className="mr-1" />
+                            Удалить
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <div>
+                        {stage.saved ? (
+                          <div className="flex items-center gap-2 text-green-600">
+                            <Icon name="Check" size={16} />
+                            <span className="text-sm font-medium">Сохранено</span>
+                          </div>
+                        ) : (
+                          <Button type="button" onClick={() => handleSaveStage(stage.id)}>
+                            Сохранить этап {stage.stage_number}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
