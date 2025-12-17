@@ -567,6 +567,16 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               <CardTitle className="text-lg">Информация о заказе</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <Label>Маршрут</Label>
+                <Input
+                  value={autoRoute}
+                  disabled
+                  placeholder="Формируется автоматически из этапов"
+                  className="bg-gray-50"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Номер заказа *</Label>
@@ -615,16 +625,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   />
                   {errors.order_date && <p className="text-red-500 text-xs mt-1">{errors.order_date}</p>}
                 </div>
-              </div>
-
-              <div>
-                <Label>Маршрут</Label>
-                <Input
-                  value={autoRoute}
-                  disabled
-                  placeholder="Формируется автоматически из этапов"
-                  className="bg-gray-50"
-                />
               </div>
 
               <div>
