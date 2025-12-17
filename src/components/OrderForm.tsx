@@ -77,8 +77,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [orderCreated, setOrderCreated] = useState(false);
-  const [createdOrderId, setCreatedOrderId] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const [stages, setStages] = useState<Stage[]>([{
     id: '1',
@@ -146,8 +145,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           track_number: editOrder.track_number || '',
           notes: editOrder.notes || ''
         });
-        setOrderCreated(true);
-        setCreatedOrderId(editOrder.id);
         
         if (editOrder.customer_items && editOrder.customer_items.length > 0) {
           setCustomerItems(editOrder.customer_items.map((ci: any) => ({
@@ -472,11 +469,52 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
   const handleCreateOrder = async () => {
     if (!validateOrderInfo()) {
-      toast.error('Заполните все обязательные поля');
+      toast.error('Заполните все обязательные поля заказа');
       return;
     }
 
+    // Валидация этапов
+    const stageErrors: Record<string, string> = {};
+    stages.forEach((stage, idx) => {
+      if (!stage.from_location?.trim()) stageErrors[`stage_${idx}_from`] = 'Обязательное поле';
+      if (!stage.to_location?.trim()) stageErrors[`stage_${idx}_to`] = 'Обязательное поле';
+      if (!stage.vehicle_id) stageErrors[`stage_${idx}_vehicle`] = 'Обязательное поле';
+      if (!stage.driver_id) stageErrors[`stage_${idx}_driver`] = 'Выберите автомобиль с назначенным водителем';
+    });
+
+    if (Object.keys(stageErrors).length > 0) {
+      setErrors(stageErrors);
+      toast.error('Заполните все обязательные поля этапов');
+      return;
+    }
+
+    setSaving(true);
     try {
+      // Подготовка этапов
+      const stagesData = stages.map(stage => ({
+        stage_number: stage.stage_number,
+        vehicle_id: parseInt(stage.vehicle_id),
+        driver_id: parseInt(stage.driver_id),
+        from_location: stage.from_location,
+        to_location: stage.to_location,
+        notes: stage.notes || ''
+      }));
+
+      // Подготовка таможен
+      const customsData: any[] = [];
+      stages.forEach(stage => {
+        stage.customs.forEach(customs => {
+          if (customs.customs_name?.trim()) {
+            customsData.push({
+              customs_name: customs.customs_name,
+              country: '',
+              crossing_date: null,
+              notes: ''
+            });
+          }
+        });
+      });
+
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -497,191 +535,45 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               track_number: orderInfo.track_number || null,
               notes: orderInfo.notes || null
             },
-            stages: [],
-            customs_points: []
+            stages: stagesData,
+            customs_points: customsData
           }
         })
       });
 
       if (!response.ok) throw new Error('Failed to create order');
       
-      const result = await response.json();
-      
-      setOrderCreated(true);
-      setCreatedOrderId(result.order_id);
-      toast.success('Заказ создан! Теперь добавьте этапы');
+      toast.success('Заказ успешно создан!');
+      onSuccess();
+      handleClose();
+      onClose();
     } catch (error) {
       toast.error('Ошибка при создании заказа');
       console.error(error);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleCancel = async () => {
-    // Если заказ создан, но не завершен (есть createdOrderId, но нет сохраненных этапов)
-    if (orderCreated && createdOrderId && !editOrder) {
-      const hasSavedStages = stages.some(s => s.saved);
-      if (!hasSavedStages) {
-        const confirmed = confirm('Заказ будет удален, данные потеряны. Продолжить?');
-        if (confirmed) {
-          try {
-            await fetch(API_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'delete_order',
-                order_id: createdOrderId,
-                user_role: userRole
-              })
-            });
-            toast.success('Незавершенный заказ удален');
-            onSuccess();
-          } catch (error) {
-            console.error('Failed to delete order:', error);
-          }
-        } else {
-          return; // Пользователь отменил удаление
-        }
-      }
+  const handleCancel = () => {
+    const hasData = orderInfo.order_number || customerItems.some(c => c.customer_id) || stages.some(s => s.from_location || s.to_location);
+    
+    if (hasData && !editOrder) {
+      const confirmed = confirm('Данные заказа будут потеряны. Закрыть форму?');
+      if (!confirmed) return;
     }
+    
     handleClose();
+    onClose();
   };
 
-  const handleSaveStage = async (stageId: string) => {
-    const stage = stages.find(s => s.id === stageId);
-    if (!stage || stage.saved) return;
-
-    // Проверяем, новый это этап или существующий
-    const isExisting = stageId.startsWith('existing_');
-    if (isExisting) {
-      toast.info('Этап уже сохранён в БД');
-      setStages(stages.map(s => s.id === stageId ? { ...s, saved: true } : s));
+  const handleDeleteStage = (stageId: string) => {
+    if (stages.length <= 1) {
+      toast.error('Должен быть хотя бы один этап');
       return;
     }
-
-    const idx = stages.findIndex(s => s.id === stageId);
-    const stageErrors: Record<string, string> = {};
-
-    if (!stage.from_location?.trim()) stageErrors[`stage_${idx}_from`] = 'Обязательное поле';
-    if (!stage.to_location?.trim()) stageErrors[`stage_${idx}_to`] = 'Обязательное поле';
-    if (!stage.vehicle_id) stageErrors[`stage_${idx}_vehicle`] = 'Обязательное поле';
-    if (!stage.driver_id) stageErrors[`stage_${idx}_driver`] = 'Обязательное поле';
-
-    if (Object.keys(stageErrors).length > 0) {
-      setErrors(stageErrors);
-      toast.error('Заполните все обязательные поля этапа');
-      return;
-    }
-
-    try {
-      const stagePayload = {
-        action: 'add_order_stage',
-        order_id: createdOrderId,
-        stage: {
-          stage_number: stage.stage_number,
-          vehicle_id: parseInt(stage.vehicle_id),
-          driver_id: parseInt(stage.driver_id),
-          from_location: stage.from_location,
-          to_location: stage.to_location,
-          notes: stage.notes || ''
-        }
-      };
-      
-      await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(stagePayload)
-      });
-
-      for (const customs of stage.customs) {
-        if (customs.customs_name?.trim()) {
-          await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'add_customs_point',
-              order_id: createdOrderId,
-              customs: {
-                customs_name: customs.customs_name,
-                country: '',
-                crossing_date: null,
-                notes: ''
-              }
-            })
-          });
-        }
-      }
-
-      setStages(stages.map(s => s.id === stageId ? { ...s, saved: true } : s));
-      toast.success(`Этап ${stage.stage_number} сохранён`);
-      setErrors({});
-    } catch (error) {
-      toast.error('Ошибка при сохранении этапа');
-      console.error(error);
-    }
-  };
-
-  const handleDeleteStage = async (stageId: string) => {
-    if (!stageId.startsWith('existing_')) {
-      setStages(stages.filter(s => s.id !== stageId));
-      toast.success('Этап удалён');
-      return;
-    }
-
-    const realStageId = stageId.replace('existing_', '');
-    
-    try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'delete_order_stage',
-          stage_id: parseInt(realStageId)
-        })
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setStages(stages.filter(s => s.id !== stageId));
-        toast.success('Этап удалён из БД');
-      } else {
-        toast.error('Ошибка при удалении этапа');
-      }
-    } catch (error) {
-      toast.error('Ошибка при удалении этапа');
-      console.error(error);
-    }
-  };
-
-  const handleFinishOrder = async () => {
-    const unsavedStages = stages.filter(s => !s.saved);
-    
-    if (unsavedStages.length > 0) {
-      toast.error(`Сохраните все этапы перед завершением (не сохранено: ${unsavedStages.length})`);
-      return;
-    }
-
-    try {
-      if (uploadedFiles.length > 0) {
-        const filesInfo = uploadedFiles.map(f => `${f.name}: ${f.url}`).join('\n');
-        await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'add_order_note',
-            order_id: createdOrderId,
-            note: `Прикрепленные файлы:\n${filesInfo}`
-          })
-        });
-      }
-
-      toast.success('Заказ завершён');
-      onSuccess();
-      onClose();
-    } catch (error) {
-      toast.error('Ошибка при завершении заказа');
-      console.error(error);
-    }
+    setStages(stages.filter(s => s.id !== stageId));
+    toast.success('Этап удалён');
   };
 
   return (
