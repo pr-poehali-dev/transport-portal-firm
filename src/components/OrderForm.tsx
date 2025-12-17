@@ -418,8 +418,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'update_order',
-          id: editOrder.id,
-          data: {
+          order_id: editOrder.id,
+          order: {
             order_number: orderInfo.order_number,
             order_date: orderInfo.order_date,
             status: editOrder.status || 'pending',
