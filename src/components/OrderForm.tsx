@@ -574,14 +574,14 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {editOrder ? `Редактирование заказа ${orderInfo.order_number}` : 'Новый заказ'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 overflow-y-auto flex-1 pr-2">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Информация о заказе</CardTitle>
@@ -963,27 +963,23 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   Добавить перегруз / продолжить маршрут
                 </Button>
               </div>
-
-              <div className="flex gap-3 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={handleCancel}>
-                  Отмена
-                </Button>
-                <Button type="button" onClick={handleCreateOrder} className="flex-1" disabled={saving}>
-                  {saving ? 'Сохранение...' : 'Создать заказ'}
-                </Button>
-              </div>
             </>
           )}
+        </div>
 
-          {editOrder && (
-            <div className="flex gap-3 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={handleCancel}>
-                Отмена
-              </Button>
-              <Button type="button" onClick={handleUpdateOrder} className="flex-1">
-                Сохранить изменения
-              </Button>
-            </div>
+        {/* Закрепленные кнопки внизу */}
+        <div className="flex gap-3 pt-4 border-t mt-auto shrink-0">
+          <Button type="button" variant="outline" onClick={handleCancel}>
+            Отмена
+          </Button>
+          {!editOrder ? (
+            <Button type="button" onClick={handleCreateOrder} className="flex-1" disabled={saving}>
+              {saving ? 'Сохранение...' : 'Создать заказ'}
+            </Button>
+          ) : (
+            <Button type="button" onClick={handleUpdateOrder} className="flex-1">
+              Сохранить изменения
+            </Button>
           )}
         </div>
       </DialogContent>
