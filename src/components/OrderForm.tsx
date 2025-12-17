@@ -543,7 +543,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       
       toast.success('Заказ успешно создан!');
       onSuccess();
-      handleClose();
       onClose();
     } catch (error) {
       toast.error('Ошибка при создании заказа');
@@ -561,7 +560,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       if (!confirmed) return;
     }
     
-    handleClose();
     onClose();
   };
 
