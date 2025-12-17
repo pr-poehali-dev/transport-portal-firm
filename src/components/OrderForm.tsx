@@ -850,7 +850,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeStage(stage.id)}
+                        onClick={() => handleDeleteStage(stage.id)}
                         className="text-red-500"
                       >
                         <Icon name="Trash2" size={16} />
@@ -984,33 +984,17 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        {stage.saved && stage.id.startsWith('existing_') && stages.length > 1 && (
-                          <Button 
-                            type="button" 
-                            variant="destructive" 
-                            size="sm"
-                            onClick={() => handleDeleteStage(stage.id)}
-                          >
-                            <Icon name="Trash2" size={16} className="mr-1" />
-                            Удалить
-                          </Button>
-                        )}
-                      </div>
-                      
-                      <div>
-                        {stage.saved ? (
-                          <div className="flex items-center gap-2 text-green-600">
-                            <Icon name="Check" size={16} />
-                            <span className="text-sm font-medium">Сохранено</span>
-                          </div>
-                        ) : (
-                          <Button type="button" onClick={() => handleSaveStage(stage.id)}>
-                            Сохранить этап {stage.stage_number}
-                          </Button>
-                        )}
-                      </div>
+                    <div className="pt-4 border-t flex justify-end">
+                      {stage.saved ? (
+                        <div className="flex items-center gap-2 text-green-600">
+                          <Icon name="Check" size={16} />
+                          <span className="text-sm font-medium">Сохранено</span>
+                        </div>
+                      ) : (
+                        <Button type="button" onClick={() => handleSaveStage(stage.id)}>
+                          Сохранить этап {stage.stage_number}
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
