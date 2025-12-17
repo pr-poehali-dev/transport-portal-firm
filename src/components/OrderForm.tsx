@@ -516,7 +516,35 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     }
   };
 
-
+  const handleCancel = async () => {
+    // Если заказ создан, но не завершен (есть createdOrderId, но нет сохраненных этапов)
+    if (orderCreated && createdOrderId && !editOrder) {
+      const hasSavedStages = stages.some(s => s.saved);
+      if (!hasSavedStages) {
+        const confirmed = confirm('Заказ будет удален, данные потеряны. Продолжить?');
+        if (confirmed) {
+          try {
+            await fetch(API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'delete_order',
+                order_id: createdOrderId,
+                user_role: userRole
+              })
+            });
+            toast.success('Незавершенный заказ удален');
+            onSuccess();
+          } catch (error) {
+            console.error('Failed to delete order:', error);
+          }
+        } else {
+          return; // Пользователь отменил удаление
+        }
+      }
+    }
+    handleClose();
+  };
 
   const handleSaveStage = async (stageId: string) => {
     const stage = stages.find(s => s.id === stageId);
@@ -1064,7 +1092,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               </div>
 
               <div className="flex gap-3 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={onClose}>
+                <Button type="button" variant="outline" onClick={handleCancel}>
                   Отмена
                 </Button>
                 <Button type="button" onClick={handleFinishOrder} className="flex-1">
@@ -1076,7 +1104,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
           {!orderCreated && (
             <div className="flex gap-3 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={handleCancel}>
                 Отмена
               </Button>
               {editOrder ? (
