@@ -483,67 +483,81 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
 
 
-  const handleAddStages = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveStage = async (stageId: string) => {
+    const stage = stages.find(s => s.id === stageId);
+    if (!stage || stage.saved) return;
 
-    if (!validateStages()) {
-      toast.error('Заполните все обязательные поля этапов');
+    const idx = stages.findIndex(s => s.id === stageId);
+    const stageErrors: Record<string, string> = {};
+
+    if (!stage.from_location?.trim()) stageErrors[`stage_${idx}_from`] = 'Обязательное поле';
+    if (!stage.to_location?.trim()) stageErrors[`stage_${idx}_to`] = 'Обязательное поле';
+    if (!stage.vehicle_id) stageErrors[`stage_${idx}_vehicle`] = 'Обязательное поле';
+    if (!stage.driver_id) stageErrors[`stage_${idx}_driver`] = 'Обязательное поле';
+
+    if (Object.keys(stageErrors).length > 0) {
+      setErrors(stageErrors);
+      toast.error('Заполните все обязательные поля этапа');
       return;
     }
 
     try {
-      const unsavedStages = stages.filter(s => !s.saved);
+      const stagePayload = {
+        action: 'add_order_stage',
+        order_id: createdOrderId,
+        stage: {
+          stage_number: stage.stage_number,
+          vehicle_id: parseInt(stage.vehicle_id),
+          driver_id: parseInt(stage.driver_id),
+          from_location: stage.from_location,
+          to_location: stage.to_location,
+          notes: stage.notes || ''
+        }
+      };
       
-      if (unsavedStages.length === 0) {
-        toast.info('Все этапы уже сохранены');
-        onSuccess();
-        onClose();
-        return;
-      }
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(stagePayload)
+      });
 
-      for (const stage of unsavedStages) {
-        console.log('Saving stage:', stage);
-        const stagePayload = {
-          action: 'add_order_stage',
-          order_id: createdOrderId,
-          stage: {
-            stage_number: stage.stage_number,
-            vehicle_id: parseInt(stage.vehicle_id),
-            driver_id: parseInt(stage.driver_id),
-            from_location: stage.from_location,
-            to_location: stage.to_location,
-            notes: stage.notes || ''
-          }
-        };
-        console.log('Stage payload:', stagePayload);
-        await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(stagePayload)
-        });
-
-        stage.saved = true;
-
-        for (const customs of stage.customs) {
-          if (customs.customs_name?.trim()) {
-            await fetch(API_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'add_customs_point',
-                order_id: createdOrderId,
-                customs: {
-                  customs_name: customs.customs_name,
-                  country: '',
-                  crossing_date: null,
-                  notes: ''
-                }
-              })
-            });
-          }
+      for (const customs of stage.customs) {
+        if (customs.customs_name?.trim()) {
+          await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'add_customs_point',
+              order_id: createdOrderId,
+              customs: {
+                customs_name: customs.customs_name,
+                country: '',
+                crossing_date: null,
+                notes: ''
+              }
+            })
+          });
         }
       }
 
+      setStages(stages.map(s => s.id === stageId ? { ...s, saved: true } : s));
+      toast.success(`Этап ${stage.stage_number} сохранён`);
+      setErrors({});
+    } catch (error) {
+      toast.error('Ошибка при сохранении этапа');
+      console.error(error);
+    }
+  };
+
+  const handleFinishOrder = async () => {
+    const unsavedStages = stages.filter(s => !s.saved);
+    
+    if (unsavedStages.length > 0) {
+      toast.error(`Сохраните все этапы перед завершением (не сохранено: ${unsavedStages.length})`);
+      return;
+    }
+
+    try {
       if (uploadedFiles.length > 0) {
         const filesInfo = uploadedFiles.map(f => `${f.name}: ${f.url}`).join('\n');
         await fetch(API_URL, {
@@ -557,11 +571,11 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         });
       }
 
-      toast.success('Этапы добавлены');
+      toast.success('Заказ завершён');
       onSuccess();
       onClose();
     } catch (error) {
-      toast.error('Ошибка при добавлении этапов');
+      toast.error('Ошибка при завершении заказа');
       console.error(error);
     }
   };
@@ -575,7 +589,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleAddStages} className="space-y-6">
+        <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Информация о заказе</CardTitle>
@@ -933,6 +947,19 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         )}
                       </div>
                     </div>
+
+                    <div className="pt-4 border-t flex justify-end">
+                      {stage.saved ? (
+                        <div className="flex items-center gap-2 text-green-600">
+                          <Icon name="Check" size={16} />
+                          <span className="text-sm font-medium">Сохранено</span>
+                        </div>
+                      ) : (
+                        <Button type="button" onClick={() => handleSaveStage(stage.id)}>
+                          Сохранить этап {stage.stage_number}
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -948,8 +975,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 <Button type="button" variant="outline" onClick={onClose}>
                   Отмена
                 </Button>
-                <Button type="submit" className="flex-1">
-                  Сохранить
+                <Button type="button" onClick={handleFinishOrder} className="flex-1">
+                  Завершить заказ
                 </Button>
               </div>
             </>
@@ -984,7 +1011,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               )}
             </div>
           )}
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
