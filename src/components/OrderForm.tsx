@@ -45,6 +45,7 @@ interface Stage {
   driver_additional_phone: string;
   customs: Customs[];
   notes: string;
+  saved?: boolean;
 }
 
 interface UploadedFile {
@@ -491,7 +492,16 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     }
 
     try {
-      for (const stage of stages) {
+      const unsavedStages = stages.filter(s => !s.saved);
+      
+      if (unsavedStages.length === 0) {
+        toast.info('Все этапы уже сохранены');
+        onSuccess();
+        onClose();
+        return;
+      }
+
+      for (const stage of unsavedStages) {
         console.log('Saving stage:', stage);
         const stagePayload = {
           action: 'add_order_stage',
@@ -511,6 +521,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(stagePayload)
         });
+
+        stage.saved = true;
 
         for (const customs of stage.customs) {
           if (customs.customs_name?.trim()) {
