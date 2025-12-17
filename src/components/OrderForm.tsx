@@ -449,30 +449,35 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       return;
     }
 
-    // Проверка, что добавлен хотя бы один маршрут
+    // Если маршрутов нет, спросить пользователя
     if (stages.length === 0) {
-      toast.error('Добавьте хотя бы один маршрут');
-      return;
+      const addRoute = confirm('Добавить маршрут?');
+      if (addRoute) {
+        addStage();
+        return;
+      }
     }
 
-    // Валидация этапов
-    const stageErrors: Record<string, string> = {};
-    stages.forEach((stage, idx) => {
-      if (!stage.from_location?.trim()) stageErrors[`stage_${idx}_from`] = 'Обязательное поле';
-      if (!stage.to_location?.trim()) stageErrors[`stage_${idx}_to`] = 'Обязательное поле';
-      if (!stage.vehicle_id) stageErrors[`stage_${idx}_vehicle`] = 'Обязательное поле';
-      if (!stage.driver_id) stageErrors[`stage_${idx}_driver`] = 'Выберите автомобиль с назначенным водителем';
-    });
+    // Валидация этапов (только если они есть)
+    if (stages.length > 0) {
+      const stageErrors: Record<string, string> = {};
+      stages.forEach((stage, idx) => {
+        if (!stage.from_location?.trim()) stageErrors[`stage_${idx}_from`] = 'Обязательное поле';
+        if (!stage.to_location?.trim()) stageErrors[`stage_${idx}_to`] = 'Обязательное поле';
+        if (!stage.vehicle_id) stageErrors[`stage_${idx}_vehicle`] = 'Обязательное поле';
+        if (!stage.driver_id) stageErrors[`stage_${idx}_driver`] = 'Выберите автомобиль с назначенным водителем';
+      });
 
-    if (Object.keys(stageErrors).length > 0) {
-      setErrors(stageErrors);
-      toast.error('Заполните все обязательные поля этапов');
-      return;
+      if (Object.keys(stageErrors).length > 0) {
+        setErrors(stageErrors);
+        toast.error('Заполните все обязательные поля этапов');
+        return;
+      }
     }
 
     setSaving(true);
     try {
-      // Подготовка этапов
+      // Подготовка этапов (если есть)
       const stagesData = stages.map(stage => ({
         stage_number: stage.stage_number,
         vehicle_id: parseInt(stage.vehicle_id),
