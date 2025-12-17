@@ -434,14 +434,21 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         })
       });
 
-      if (!response.ok) throw new Error('Failed to update order');
+      const result = await response.json();
+      console.log('Update order response:', response.status, result);
+      
+      if (!response.ok) {
+        console.error('Failed to update order:', response.status, result);
+        throw new Error(`Failed to update order: ${response.status}`);
+      }
       
       toast.success('Заказ обновлен');
       onSuccess();
       onClose();
-    } catch (error) {
-      toast.error('Ошибка при обновлении заказа');
-      console.error(error);
+    } catch (error: any) {
+      const errorMsg = error?.message || 'Неизвестная ошибка';
+      toast.error(`Ошибка при обновлении заказа: ${errorMsg}`);
+      console.error('Update order error:', error);
     }
   };
 
