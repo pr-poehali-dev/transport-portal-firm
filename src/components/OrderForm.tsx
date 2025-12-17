@@ -812,7 +812,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               {stages.map((stage, idx) => (
                 <Card key={stage.id} className="relative">
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg">Этап {stage.stage_number}</CardTitle>
+                    <CardTitle className="text-lg">Маршрут {stage.stage_number}</CardTitle>
                     {stages.length > 1 && (
                       <Button
                         type="button"
@@ -960,7 +960,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               <div className="flex gap-3">
                 <Button type="button" variant="outline" onClick={addStage} className="flex-1">
                   <Icon name="Plus" size={18} className="mr-2" />
-                  Добавить перегруз / продолжить маршрут
+                  Добавить маршрут
                 </Button>
               </div>
             </>
