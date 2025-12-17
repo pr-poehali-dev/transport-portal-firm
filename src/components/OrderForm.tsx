@@ -445,17 +445,17 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'update_order',
-          order_id: editOrder.id,
-          order: {
-            order_number: orderInfo.order_number,
-            order_date: orderInfo.order_date,
-            cargo_type: orderInfo.cargo_type || null,
-            cargo_weight: orderInfo.cargo_weight || null,
-            invoice: orderInfo.invoice || null,
-            track_number: orderInfo.track_number || null,
-            notes: orderInfo.notes || null,
-            customer_items: customerItems
-          }
+          id: editOrder.id,
+          order_number: orderInfo.order_number,
+          order_date: orderInfo.order_date,
+          status: editOrder.status || 'pending',
+          client_id: editOrder.client_id || null,
+          customer_items: customerItems,
+          cargo_type: orderInfo.cargo_type || null,
+          cargo_weight: orderInfo.cargo_weight || null,
+          invoice: orderInfo.invoice || null,
+          track_number: orderInfo.track_number || null,
+          notes: orderInfo.notes || null
         })
       });
 
@@ -490,7 +490,12 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               order_date: orderInfo.order_date,
               status: 'pending',
               attachments: uploadedFiles,
-              customer_items: customerItems
+              customer_items: customerItems,
+              cargo_type: orderInfo.cargo_type || null,
+              cargo_weight: orderInfo.cargo_weight || null,
+              invoice: orderInfo.invoice || null,
+              track_number: orderInfo.track_number || null,
+              notes: orderInfo.notes || null
             },
             stages: [],
             customs_points: []

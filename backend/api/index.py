@@ -575,8 +575,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 cur.execute('''
                     INSERT INTO orders (
-                        order_number, client_id, order_date, status, attachments, customer_items
-                    ) VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb)
+                        order_number, client_id, order_date, status, attachments, customer_items,
+                        cargo_type, cargo_weight, invoice, track_number, notes
+                    ) VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s, %s, %s, %s)
                     RETURNING id
                 ''', (
                     order_data.get('order_number'),
@@ -584,7 +585,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     order_data.get('order_date'),
                     order_data.get('status', 'pending'),
                     json.dumps(attachments),
-                    json.dumps(customer_items)
+                    json.dumps(customer_items),
+                    order_data.get('cargo_type'),
+                    order_data.get('cargo_weight'),
+                    order_data.get('invoice'),
+                    order_data.get('track_number'),
+                    order_data.get('notes')
                 ))
                 
                 order_id = cur.fetchone()[0]
