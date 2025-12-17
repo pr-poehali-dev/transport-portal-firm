@@ -355,6 +355,39 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
     }
   };
 
+  const handleDelete = async (customer: any) => {
+    if (!confirm(`Удалить заказчика "${customer.nickname || customer.company_name}"?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete_customer',
+          customer_id: customer.id
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (result.error && result.error.includes('используется')) {
+          toast.error(result.error);
+        } else {
+          throw new Error(result.error || 'Ошибка удаления');
+        }
+        return;
+      }
+
+      toast.success('Заказчик удален');
+      onRefresh();
+    } catch (error: any) {
+      toast.error(error.message || 'Ошибка удаления заказчика');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <CustomersList
@@ -362,6 +395,7 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
         onEdit={handleEdit}
         onCreate={handleCreate}
         onViewAddresses={handleViewAddresses}
+        onDelete={handleDelete}
       />
 
       <CustomerForm

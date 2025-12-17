@@ -1014,6 +1014,35 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif action == 'delete_customer':
+                customer_id = body_data.get('customer_id')
+                
+                cur.execute('SELECT COUNT(*) FROM orders WHERE customer_items::text LIKE %s', 
+                           (f'%"customer_id": "{customer_id}"%',))
+                order_count = cur.fetchone()[0]
+                
+                if order_count > 0:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({
+                            'success': False, 
+                            'error': f'Заказчик используется в {order_count} заказе(ах). Удаление невозможно.'
+                        }),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute('DELETE FROM customer_delivery_addresses WHERE customer_id = %s', (customer_id,))
+                cur.execute('DELETE FROM customers WHERE id = %s', (customer_id,))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
             elif action == 'create_customer_address':
                 customer_id = body_data.get('customer_id')
                 data = body_data.get('data', {})

@@ -8,9 +8,10 @@ interface CustomersListProps {
   onEdit: (customer: any) => void;
   onCreate: () => void;
   onViewAddresses: (customer: any) => void;
+  onDelete: (customer: any) => void;
 }
 
-export default function CustomersList({ customers, onEdit, onCreate, onViewAddresses }: CustomersListProps) {
+export default function CustomersList({ customers, onEdit, onCreate, onViewAddresses, onDelete }: CustomersListProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -56,13 +57,23 @@ export default function CustomersList({ customers, onEdit, onCreate, onViewAddre
                   </Button>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEdit(customer)}
-                  >
-                    <Icon name="Pencil" size={16} />
-                  </Button>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit(customer)}
+                    >
+                      <Icon name="Pencil" size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDelete(customer)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Icon name="Trash2" size={16} />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
