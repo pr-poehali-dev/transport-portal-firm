@@ -205,8 +205,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           notes: ''
         });
         setUploadedFiles([]);
-        setOrderCreated(false);
-        setCreatedOrderId(null);
         setCustomerItems([{ customer_id: '', note: '' }]);
         
         setStages([{
@@ -789,7 +787,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                             <p className="text-sm truncate">{file.name}</p>
                             <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
                           </div>
-                          {!orderCreated && (
+                          {!editOrder && (
                             <Button
                               type="button"
                               variant="ghost"
@@ -807,15 +805,11 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 )}
               </div>
 
-              {!orderCreated && (
-                <Button type="button" onClick={handleCreateOrder} className="w-full">
-                  Создать заказ
-                </Button>
-              )}
             </CardContent>
           </Card>
 
-          {orderCreated && (
+          {/* Этапы маршрута */}
+          {!editOrder && (
             <>
               {stages.map((stage, idx) => (
                 <Card key={stage.id} className="relative">
@@ -960,18 +954,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t flex justify-end">
-                      {stage.saved ? (
-                        <div className="flex items-center gap-2 text-green-600">
-                          <Icon name="Check" size={16} />
-                          <span className="text-sm font-medium">Сохранено</span>
-                        </div>
-                      ) : (
-                        <Button type="button" onClick={() => handleSaveStage(stage.id)}>
-                          Сохранить этап {stage.stage_number}
-                        </Button>
-                      )}
-                    </div>
+
                   </CardContent>
                 </Card>
               ))}
@@ -987,40 +970,21 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 <Button type="button" variant="outline" onClick={handleCancel}>
                   Отмена
                 </Button>
-                <Button type="button" onClick={handleFinishOrder} className="flex-1">
-                  Сохранить
+                <Button type="button" onClick={handleCreateOrder} className="flex-1" disabled={saving}>
+                  {saving ? 'Сохранение...' : 'Создать заказ'}
                 </Button>
               </div>
             </>
           )}
 
-          {!orderCreated && (
+          {editOrder && (
             <div className="flex gap-3 pt-4 border-t">
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Отмена
               </Button>
-              {editOrder ? (
-                <>
-                  <Button type="button" onClick={handleUpdateOrder} className="flex-1">
-                    Сохранить изменения
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="secondary" 
-                    onClick={() => {
-                      setOrderCreated(true);
-                    }}
-                    className="flex-1"
-                  >
-                    <Icon name="Plus" size={16} className="mr-2" />
-                    Добавить этапы
-                  </Button>
-                </>
-              ) : (
-                <Button type="button" onClick={handleCreateOrder} className="flex-1">
-                  Создать заказ
-                </Button>
-              )}
+              <Button type="button" onClick={handleUpdateOrder} className="flex-1">
+                Сохранить изменения
+              </Button>
             </div>
           )}
         </div>
