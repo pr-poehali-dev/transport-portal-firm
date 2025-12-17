@@ -66,6 +66,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     track_number: '',
     notes: ''
   });
+  
+  const [direction, setDirection] = useState<string>('EU');
+  const [orderSequence, setOrderSequence] = useState<string>('001');
 
   const [customerItems, setCustomerItems] = useState<CustomerItem[]>([{
     customer_id: '',
@@ -92,6 +95,38 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoRoute, setAutoRoute] = useState('');
+
+  useEffect(() => {
+    if (open && !editOrder) {
+      generateOrderNumber();
+    }
+  }, [open]);
+
+  const generateOrderNumber = async () => {
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    const dateStr = `${day}${month}${year}`;
+    
+    try {
+      const res = await fetch(`${API_URL}?resource=last_order_number&direction=${direction}&date=${dateStr}`);
+      const data = await res.json();
+      const nextNum = data.next_number || '001';
+      setOrderSequence(nextNum);
+      setOrderInfo(prev => ({ ...prev, order_number: `${direction}${dateStr}-${nextNum}` }));
+    } catch (error) {
+      console.error('Error generating order number:', error);
+      setOrderSequence('001');
+      setOrderInfo(prev => ({ ...prev, order_number: `${direction}${dateStr}-001` }));
+    }
+  };
+
+  useEffect(() => {
+    if (open && !editOrder) {
+      generateOrderNumber();
+    }
+  }, [direction]);
 
   useEffect(() => {
     if (open) {
@@ -634,13 +669,29 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Номер заказа *</Label>
-                  <Input
-                    value={orderInfo.order_number}
-                    onChange={(e) => setOrderInfo({ ...orderInfo, order_number: e.target.value })}
-                    className={errors.order_number ? 'border-red-500' : ''}
-                    placeholder="2024-001"
-                    disabled={orderCreated && !editOrder}
-                  />
+                  <div className="flex gap-2">
+                    <Select 
+                      value={direction} 
+                      onValueChange={(val) => setDirection(val)}
+                      disabled={orderCreated || !!editOrder}
+                    >
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EU">EU</SelectItem>
+                        <SelectItem value="RF">RF</SelectItem>
+                        <SelectItem value="CH">CH</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      value={orderInfo.order_number}
+                      onChange={(e) => setOrderInfo({ ...orderInfo, order_number: e.target.value })}
+                      className={errors.order_number ? 'border-red-500 flex-1' : 'flex-1'}
+                      placeholder="EU17122024-001"
+                      disabled={orderCreated || !!editOrder}
+                    />
+                  </div>
                   {errors.order_number && <p className="text-red-500 text-xs mt-1">{errors.order_number}</p>}
                 </div>
 

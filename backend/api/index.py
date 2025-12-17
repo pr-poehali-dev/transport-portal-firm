@@ -341,6 +341,37 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif resource == 'last_order_number':
+                direction = query_params.get('direction', 'EU')
+                date_str = query_params.get('date', '')
+                
+                # Получаем последний номер заказа с таким направлением и датой
+                cur.execute('''
+                    SELECT order_number FROM orders 
+                    WHERE order_number LIKE %s 
+                    ORDER BY id DESC 
+                    LIMIT 1
+                ''', (f'{direction}{date_str}-%',))
+                
+                result = cur.fetchone()
+                if result:
+                    # Извлекаем номер после последнего дефиса
+                    last_num = result[0].split('-')[-1]
+                    try:
+                        next_num = int(last_num) + 1
+                        next_number = str(next_num).zfill(3)
+                    except ValueError:
+                        next_number = '001'
+                else:
+                    next_number = '001'
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'next_number': next_number}),
+                    'isBase64Encoded': False
+                }
+            
             elif resource == 'users':
                 cur.execute('''
                     SELECT id, username, full_name, email, phone, role, is_active, created_at,
