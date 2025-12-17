@@ -379,6 +379,10 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
     if (!orderInfo.order_number?.trim()) newErrors.order_number = 'Обязательное поле';
     if (!orderInfo.order_date) newErrors.order_date = 'Обязательное поле';
+    if (!orderInfo.invoice?.trim()) newErrors.invoice = 'Обязательное поле';
+    if (!orderInfo.track_number?.trim()) newErrors.track_number = 'Обязательное поле';
+    if (!orderInfo.cargo_type?.trim()) newErrors.cargo_type = 'Обязательное поле';
+    if (!orderInfo.cargo_weight?.trim()) newErrors.cargo_weight = 'Обязательное поле';
     
     customerItems.forEach((item, i) => {
       if (!item.customer_id) newErrors[`customer_${i}_id`] = 'Выберите заказчика';
@@ -685,44 +689,56 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Инвойс</Label>
+                  <Label>Инвойс *</Label>
                   <Input
                     value={orderInfo.invoice}
                     onChange={(e) => setOrderInfo({ ...orderInfo, invoice: e.target.value })}
                     placeholder="INV-2024-001"
                     disabled={!!editOrder}
+                    className={errors.invoice ? 'border-red-500' : ''}
+                    required
                   />
+                  {errors.invoice && <p className="text-red-500 text-xs mt-1">{errors.invoice}</p>}
                 </div>
 
                 <div>
-                  <Label>Трак</Label>
+                  <Label>Трак *</Label>
                   <Input
                     value={orderInfo.track_number}
                     onChange={(e) => setOrderInfo({ ...orderInfo, track_number: e.target.value })}
                     placeholder="TRACK123456"
                     disabled={!!editOrder}
+                    className={errors.track_number ? 'border-red-500' : ''}
+                    required
                   />
+                  {errors.track_number && <p className="text-red-500 text-xs mt-1">{errors.track_number}</p>}
                 </div>
 
                 <div>
-                  <Label>Характер груза</Label>
+                  <Label>Характер груза *</Label>
                   <Input
                     value={orderInfo.cargo_type}
                     onChange={(e) => setOrderInfo({ ...orderInfo, cargo_type: e.target.value })}
-                    placeholder="Фрукты, овощи..."
+                    placeholder="Лук, Нобилис"
                     disabled={!!editOrder}
+                    className={errors.cargo_type ? 'border-red-500' : ''}
+                    required
                   />
+                  {errors.cargo_type && <p className="text-red-500 text-xs mt-1">{errors.cargo_type}</p>}
                 </div>
 
                 <div>
-                  <Label>Вес груза (кг)</Label>
+                  <Label>Вес груза (кг) *</Label>
                   <Input
-                    type="number"
+                    type="text"
                     value={orderInfo.cargo_weight}
                     onChange={(e) => setOrderInfo({ ...orderInfo, cargo_weight: e.target.value })}
                     placeholder="20000"
                     disabled={!!editOrder}
+                    className={errors.cargo_weight ? 'border-red-500' : ''}
+                    required
                   />
+                  {errors.cargo_weight && <p className="text-red-500 text-xs mt-1">{errors.cargo_weight}</p>}
                 </div>
               </div>
 
