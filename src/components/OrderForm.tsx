@@ -79,18 +79,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [stages, setStages] = useState<Stage[]>([{
-    id: '1',
-    stage_number: 1,
-    from_location: '',
-    to_location: '',
-    vehicle_id: '',
-    driver_id: '',
-    driver_phone: '',
-    driver_additional_phone: '',
-    customs: [],
-    notes: ''
-  }]);
+  const [stages, setStages] = useState<Stage[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoRoute, setAutoRoute] = useState('');
@@ -207,18 +196,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         setUploadedFiles([]);
         setCustomerItems([{ customer_id: '', note: '' }]);
         
-        setStages([{
-          id: '1',
-          stage_number: 1,
-          from_location: '',
-          to_location: '',
-          vehicle_id: '',
-          driver_id: '',
-          driver_phone: '',
-          driver_additional_phone: '',
-          customs: [],
-          notes: ''
-        }]);
+        setStages([]);
       }
       
       setErrors({});
@@ -300,10 +278,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
   };
 
   const removeStage = (id: string) => {
-    if (stages.length === 1) {
-      toast.error('Должен быть минимум 1 этап');
-      return;
-    }
     setStages(stages.filter(s => s.id !== id).map((s, idx) => ({ ...s, stage_number: idx + 1 })));
   };
 
@@ -471,6 +445,12 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       return;
     }
 
+    // Проверка, что добавлен хотя бы один маршрут
+    if (stages.length === 0) {
+      toast.error('Добавьте хотя бы один маршрут');
+      return;
+    }
+
     // Валидация этапов
     const stageErrors: Record<string, string> = {};
     stages.forEach((stage, idx) => {
@@ -564,12 +544,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
   };
 
   const handleDeleteStage = (stageId: string) => {
-    if (stages.length <= 1) {
-      toast.error('Должен быть хотя бы один этап');
-      return;
-    }
-    setStages(stages.filter(s => s.id !== stageId));
-    toast.success('Этап удалён');
+    setStages(stages.filter(s => s.id !== stageId).map((s, idx) => ({ ...s, stage_number: idx + 1 })));
+    toast.success('Маршрут удалён');
   };
 
   return (
@@ -813,17 +789,15 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 <Card key={stage.id} className="relative">
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-lg">Маршрут {stage.stage_number}</CardTitle>
-                    {stages.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteStage(stage.id)}
-                        className="text-red-500"
-                      >
-                        <Icon name="Trash2" size={16} />
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteStage(stage.id)}
+                      className="text-red-500"
+                    >
+                      <Icon name="Trash2" size={16} />
+                    </Button>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-4">
