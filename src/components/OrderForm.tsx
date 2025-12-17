@@ -596,7 +596,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     <Select 
                       value={direction} 
                       onValueChange={(val) => setDirection(val)}
-                      disabled={orderCreated || !!editOrder}
+                      disabled={false || !!editOrder}
                     >
                       <SelectTrigger className="w-24">
                         <SelectValue />
@@ -612,7 +612,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                       onChange={(e) => setOrderInfo({ ...orderInfo, order_number: e.target.value })}
                       className={errors.order_number ? 'border-red-500 flex-1' : 'flex-1'}
                       placeholder="EU17122024-001"
-                      disabled={orderCreated || !!editOrder}
+                      disabled={false || !!editOrder}
                     />
                   </div>
                   {errors.order_number && <p className="text-red-500 text-xs mt-1">{errors.order_number}</p>}
@@ -633,7 +633,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                       }
                     }}
                     className={errors.order_date ? 'border-red-500' : ''}
-                    disabled={orderCreated && !editOrder}
+                    disabled={false && !editOrder}
                   />
                   {errors.order_date && <p className="text-red-500 text-xs mt-1">{errors.order_date}</p>}
                 </div>
@@ -657,7 +657,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     variant="outline"
                     size="sm"
                     onClick={addCustomerItem}
-                    disabled={orderCreated && !editOrder}
+                    disabled={false && !editOrder}
                   >
                     <Icon name="Plus" size={14} className="mr-1" />
                     Добавить заказчика
@@ -716,7 +716,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.invoice}
                     onChange={(e) => setOrderInfo({ ...orderInfo, invoice: e.target.value })}
                     placeholder="INV-2024-001"
-                    disabled={orderCreated && !editOrder}
+                    disabled={!!editOrder}
                   />
                 </div>
 
@@ -726,7 +726,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.track_number}
                     onChange={(e) => setOrderInfo({ ...orderInfo, track_number: e.target.value })}
                     placeholder="TRACK123456"
-                    disabled={orderCreated && !editOrder}
+                    disabled={!!editOrder}
                   />
                 </div>
 
@@ -736,7 +736,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.cargo_type}
                     onChange={(e) => setOrderInfo({ ...orderInfo, cargo_type: e.target.value })}
                     placeholder="Фрукты, овощи..."
-                    disabled={orderCreated && !editOrder}
+                    disabled={!!editOrder}
                   />
                 </div>
 
@@ -747,7 +747,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.cargo_weight}
                     onChange={(e) => setOrderInfo({ ...orderInfo, cargo_weight: e.target.value })}
                     placeholder="20000"
-                    disabled={orderCreated && !editOrder}
+                    disabled={!!editOrder}
                   />
                 </div>
               </div>
@@ -759,7 +759,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   onChange={(e) => setOrderInfo({ ...orderInfo, notes: e.target.value })}
                   placeholder="Дополнительная информация о заказе..."
                   rows={3}
-                  disabled={orderCreated}
+                  disabled={!!editOrder}
                 />
               </div>
 
@@ -770,7 +770,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     type="file"
                     multiple
                     onChange={handleFileUpload}
-                    disabled={uploading || orderCreated}
+                    disabled={uploading || !!editOrder}
                     className="cursor-pointer"
                   />
                   {uploading && <p className="text-sm text-blue-500 mt-2">Загрузка...</p>}
