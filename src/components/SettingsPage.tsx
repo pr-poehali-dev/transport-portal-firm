@@ -37,11 +37,9 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
 
   const [telegramSettings, setTelegramSettings] = useState({
     bot_token: '',
-    chat_id: '',
     is_active: false,
     bot_username: null as string | null
   });
-  const [testingBot, setTestingBot] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -100,40 +98,7 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
     }
   };
 
-  const handleTestTelegramBot = async () => {
-    if (!telegramSettings.bot_token || !telegramSettings.chat_id) {
-      toast.error('Укажите токен бота и Chat ID');
-      return;
-    }
 
-    setTestingBot(true);
-    try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'test_telegram_bot',
-          data: {
-            bot_token: telegramSettings.bot_token,
-            chat_id: telegramSettings.chat_id
-          }
-        })
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        toast.success('Тестовое сообщение отправлено в Telegram!');
-      } else {
-        toast.error(`Ошибка: ${result.error || 'Не удалось отправить сообщение'}`);
-      }
-    } catch (error) {
-      toast.error('Ошибка подключения к боту');
-      console.error(error);
-    } finally {
-      setTestingBot(false);
-    }
-  };
 
   const handleRegenerateInviteCode = async (userId: number) => {
     try {
@@ -421,9 +386,9 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                 <p className="text-sm font-medium text-blue-900">📱 Как настроить:</p>
                 <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside ml-2">
                   <li>Создайте бота через <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="underline font-medium">@BotFather</a> и скопируйте токен</li>
-                  <li>Напишите боту любое сообщение (например, /start)</li>
-                  <li>Узнайте свой Chat ID через <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="underline font-medium">@userinfobot</a></li>
-                  <li>Введите данные ниже и проверьте подключение</li>
+                  <li>Введите токен ниже и сохраните настройки</li>
+                  <li>Каждый пользователь получит персональную ссылку-инвайт для подключения к боту</li>
+                  <li>При переходе по ссылке бот автоматически определит Chat ID пользователя</li>
                 </ol>
               </div>
 
@@ -438,35 +403,14 @@ export default function SettingsPage({ currentUser }: SettingsPageProps) {
                       value={telegramSettings.bot_token}
                       onChange={(e) => setTelegramSettings({ ...telegramSettings, bot_token: e.target.value })}
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="chat_id">Ваш Chat ID *</Label>
-                    <Input
-                      id="chat_id"
-                      placeholder="123456789"
-                      value={telegramSettings.chat_id}
-                      onChange={(e) => setTelegramSettings({ ...telegramSettings, chat_id: e.target.value })}
-                    />
                     <p className="text-xs text-gray-500">
-                      Ваш личный ID (обычно положительное число, без минуса)
+                      Получите токен у @BotFather в Telegram
                     </p>
                   </div>
-
-
                 </div>
 
                 <div className="flex gap-3 pt-4 border-t">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleTestTelegramBot}
-                    disabled={testingBot || !telegramSettings.bot_token || !telegramSettings.chat_id}
-                  >
-                    <Icon name="Send" size={18} className="mr-2" />
-                    {testingBot ? 'Отправка...' : 'Проверить подключение'}
-                  </Button>
-                  <Button onClick={handleSaveTelegramSettings}>
+                  <Button onClick={handleSaveTelegramSettings} disabled={!telegramSettings.bot_token}>
                     <Icon name="Save" size={18} className="mr-2" />
                     Сохранить настройки
                   </Button>
