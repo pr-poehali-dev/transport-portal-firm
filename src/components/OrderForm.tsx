@@ -39,6 +39,8 @@ interface Stage {
   stage_number: number;
   from_location: string;
   to_location: string;
+  planned_departure: string;
+  planned_arrival: string;
   vehicle_id: string;
   driver_id: string;
   driver_phone: string;
@@ -155,6 +157,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               stage_number: stage.stage_number || idx + 1,
               from_location: stage.from_location || '',
               to_location: stage.to_location || '',
+              planned_departure: stage.planned_departure ? stage.planned_departure.split(' ')[0] : '',
+              planned_arrival: stage.planned_arrival ? stage.planned_arrival.split(' ')[0] : '',
               vehicle_id: stage.vehicle_id?.toString() || '',
               driver_id: stage.driver_id?.toString() || '',
               driver_phone: driver?.phone || '',
@@ -256,6 +260,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       stage_number: stages.length + 1,
       from_location: '',
       to_location: '',
+      planned_departure: '',
+      planned_arrival: '',
       vehicle_id: '',
       driver_id: '',
       driver_phone: '',
@@ -424,6 +430,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
             stage_number: stage.stage_number,
             from_location: stage.from_location,
             to_location: stage.to_location,
+            planned_departure: stage.planned_departure,
+            planned_arrival: stage.planned_arrival,
             vehicle_id: parseInt(stage.vehicle_id),
             driver_id: parseInt(stage.driver_id),
             customs_points: stage.customs.map(c => ({
@@ -493,6 +501,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         driver_id: parseInt(stage.driver_id),
         from_location: stage.from_location,
         to_location: stage.to_location,
+        planned_departure: stage.planned_departure,
+        planned_arrival: stage.planned_arrival,
         notes: stage.notes || ''
       }));
 
@@ -851,6 +861,22 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                             placeholder="Санкт-Петербург"
                           />
                           {errors[`stage_${idx}_to`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_to`]}</p>}
+                        </div>
+
+                        <div>
+                          <Label>Дата погрузки</Label>
+                          <DateInput
+                            value={stage.planned_departure}
+                            onChange={(value) => updateStage(stage.id, 'planned_departure', value)}
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Дата разгрузки (прибл.)</Label>
+                          <DateInput
+                            value={stage.planned_arrival}
+                            onChange={(value) => updateStage(stage.id, 'planned_arrival', value)}
+                          />
                         </div>
 
                         <div>
