@@ -844,45 +844,20 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         <DateInput
                           value={stage.planned_departure}
                           onChange={(value) => updateStage(stage.id, 'planned_departure', value)}
-                          disabled={stage.started && !routeUnlocked}
+                          disabled
                         />
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {!stage.started ? (
-                        <Button
-                          type="button"
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleStartStage(stage.id)}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <Icon name="Play" size={16} className="mr-1" />
-                          Поехали
-                        </Button>
-                      ) : (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setRouteUnlocked(!routeUnlocked)}
-                          className={routeUnlocked ? 'bg-orange-100' : ''}
-                        >
-                          <Icon name="Route" size={16} className="mr-1" />
-                          Объезд
-                        </Button>
-                      )}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteStage(stage.id)}
-                        className="text-red-500"
-                        disabled={isOrderStarted && !routeUnlocked}
-                      >
-                        <Icon name="Trash2" size={16} />
-                      </Button>
-                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteStage(stage.id)}
+                      className="text-red-500"
+                      disabled={isOrderStarted && !routeUnlocked}
+                    >
+                      <Icon name="Trash2" size={16} />
+                    </Button>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-4">
@@ -1015,6 +990,31 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                       </div>
                     </div>
 
+                    <div className="flex justify-end gap-2 pt-4 border-t">
+                      {!stage.started ? (
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleStartStage(stage.id)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <Icon name="Play" size={16} className="mr-1" />
+                          Поехали
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setRouteUnlocked(!routeUnlocked)}
+                          className={routeUnlocked ? 'bg-orange-100' : ''}
+                        >
+                          <Icon name="Route" size={16} className="mr-1" />
+                          Объезд
+                        </Button>
+                      )}
+                    </div>
 
                   </CardContent>
                 </Card>
