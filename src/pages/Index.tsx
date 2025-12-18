@@ -2,16 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Icon from '@/components/ui/icon';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import OrderForm from '@/components/OrderForm';
-import MultiStageOrderForm from '@/components/MultiStageOrderForm';
 import ResourceManager from '@/components/ResourceManager';
 import SettingsPage from '@/components/SettingsPage';
 import LoginPage from '@/components/LoginPage';
@@ -19,14 +11,8 @@ import Dashboard from '@/components/Dashboard';
 import CustomersPage from './CustomersPage';
 
 const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44ca0e';
-const DOCS_URL = 'https://functions.poehali.dev/7a5d7ce6-72d6-4fb9-8c89-2adabbad28c2';
 
-const statusMap: Record<string, { label: string; color: string }> = {
-  'pending': { label: 'Ожидание', color: 'bg-gray-500' },
-  'loading': { label: 'Загрузка', color: 'bg-yellow-500' },
-  'in_transit': { label: 'В пути', color: 'bg-blue-500' },
-  'delivered': { label: 'Доставлен', color: 'bg-green-500' }
-};
+
 
 const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -37,16 +23,9 @@ const Index = () => {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [stats, setStats] = useState({ active_orders: 0, in_transit: 0, total_drivers: 0, total_vehicles: 0 });
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [orderStages, setOrderStages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showOrderForm, setShowOrderForm] = useState(false);
-  const [showMultiStageForm, setShowMultiStageForm] = useState(false);
-  const [editOrder, setEditOrder] = useState<any>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [selectedLogOrder, setSelectedLogOrder] = useState<number | null>(null);
@@ -114,62 +93,11 @@ const Index = () => {
     }
   };
 
-  const loadOrderStages = async (orderId: number) => {
-    try {
-      const res = await fetch(`${API_URL}?resource=order_stages&order_id=${orderId}`);
-      const data = await res.json();
-      setOrderStages(data.stages || []);
-    } catch (error) {
-      toast.error('Ошибка загрузки этапов');
-    }
-  };
 
-  const updateStage = async (stageId: number, isCompleted: boolean) => {
-    try {
-      await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'update_stage',
-          stage_id: stageId,
-          is_completed: isCompleted,
-          completed_by: userRole === 'admin' ? 'Администратор' : userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : userRole === 'manager' ? 'Менеджер' : 'Руководитель'
-        })
-      });
-      
-      toast.success('Этап обновлен');
-      if (selectedOrder) {
-        loadOrderStages(selectedOrder.id);
-      }
-      loadData();
-    } catch (error) {
-      toast.error('Ошибка обновления этапа');
-    }
-  };
 
-  const openOrderDetails = (order: any) => {
-    setSelectedOrder(order);
-    loadOrderStages(order.id);
-  };
 
-  const generateDocument = (orderId: number, docType: 'waybill' | 'power_of_attorney') => {
-    const url = `${DOCS_URL}?order_id=${orderId}&type=${docType}`;
-    window.open(url, '_blank');
-  };
 
-  const statsDisplay = [
-    { title: 'Активные заказы', value: stats.active_orders.toString(), icon: 'TruckIcon', color: 'text-blue-500' },
-    { title: 'В пути', value: stats.in_transit.toString(), icon: 'Navigation', color: 'text-green-500' },
-    { title: 'Водители', value: stats.total_drivers.toString(), icon: 'Users', color: 'text-purple-500' },
-    { title: 'Автомобили', value: stats.total_vehicles.toString(), icon: 'Truck', color: 'text-orange-500' }
-  ];
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.order_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.client_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
 
   if (!isLoggedIn) {
     return <LoginPage onLogin={handleLogin} />;
@@ -310,11 +238,8 @@ const Index = () => {
           <div className="p-4 md:p-8">
             {activeSection === 'dashboard' && (
               <Dashboard 
-                orders={filteredOrders} 
-                onOrderClick={(order) => {
-                  setSelectedOrder(order);
-                  loadOrderStages(order.id);
-                }}
+                orders={orders} 
+                onOrderClick={(order) => {}}
               />
             )}
 
@@ -378,180 +303,11 @@ const Index = () => {
 
             {activeSection === 'orders' && (
               <div className="space-y-6 animate-fade-in">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>Заказы</CardTitle>
-                      <div className="flex gap-2">
-                        <Input 
-                          placeholder="Поиск заказа..." 
-                          className="w-64"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                          <SelectTrigger className="w-40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Все статусы</SelectItem>
-                            <SelectItem value="pending">Ожидание</SelectItem>
-                            <SelectItem value="loading">Загрузка</SelectItem>
-                            <SelectItem value="in_transit">В пути</SelectItem>
-                            <SelectItem value="delivered">Доставлен</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button onClick={() => { setEditOrder(null); setShowOrderForm(true); }}>
-                          <Icon name="Plus" size={18} className="mr-2" />
-                          Новый заказ
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
+                <Card className="text-center py-16">
                   <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>№ заказа</TableHead>
-                          <TableHead>Дата заказа</TableHead>
-                          <TableHead>Инвойс / Трак</TableHead>
-                          <TableHead>Гос номер</TableHead>
-                          <TableHead>Время в пути</TableHead>
-                          <TableHead>Статус</TableHead>
-                          <TableHead>Фито</TableHead>
-                          <TableHead className="text-right">Действия</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {orders
-                          .filter(order => {
-                            if (searchQuery === '') {
-                              const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-                              return matchesStatus;
-                            }
-                            
-                            const query = searchQuery.replace(/[\s\-]/g, '').toLowerCase();
-                            
-                            const orderNumber = (order.order_number || '').toLowerCase();
-                            const trackNumber = (order.track_number || '').replace(/[\s\-]/g, '').toLowerCase();
-                            const invoice = (order.invoice || '').replace(/[\s\-]/g, '').toLowerCase();
-                            const licensePlate = (order.license_plate || '').replace(/[\s\-]/g, '').toLowerCase();
-                            const trailerPlate = (order.trailer_plate || '').replace(/[\s\-]/g, '').toLowerCase();
-                            const driverPhone = (order.driver_phone || '').replace(/[\s\-]/g, '').toLowerCase();
-                            const driverAdditionalPhone = (order.driver_additional_phone || '').replace(/[\s\-]/g, '').toLowerCase();
-                            
-                            const matchesSearch = orderNumber.includes(query) ||
-                              trackNumber.includes(query) ||
-                              invoice.includes(query) ||
-                              licensePlate.includes(query) ||
-                              trailerPlate.includes(query) ||
-                              driverPhone.includes(query) ||
-                              driverAdditionalPhone.includes(query);
-                            
-                            const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-                            return matchesSearch && matchesStatus;
-                          })
-                          .map((order) => {
-                            // Вычисляем время в пути
-                            const getDaysInTransit = () => {
-                              if (!order.first_stage_departure) return '—';
-                              const departureDate = new Date(order.first_stage_departure);
-                              const today = new Date();
-                              const diffTime = Math.abs(today.getTime() - departureDate.getTime());
-                              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                              return `${diffDays} дн.`;
-                            };
-
-                            // Определяем статус по этапам
-                            const getOrderStatus = () => {
-                              if (!order.stages_count || order.stages_count === 0) return 'Создан';
-                              if (!order.completed_stages || order.completed_stages === 0) return 'Маршрут 1';
-                              if (order.completed_stages >= order.stages_count) return 'Завершён';
-                              return `Маршрут ${order.completed_stages + 1}`;
-                            };
-
-                            // Формируем номер авто/прицеп
-                            const getVehicleNumber = () => {
-                              if (!order.license_plate) return '—';
-                              if (order.trailer_plate) return `${order.license_plate} / ${order.trailer_plate}`;
-                              return order.license_plate;
-                            };
-
-                            // Формируем Инвойс / Трак
-                            const getInvoiceTrack = () => {
-                              const invoice = order.invoice || '—';
-                              const track = order.track_number || '—';
-                              return `${invoice} / ${track}`;
-                            };
-
-                            return (
-                              <TableRow key={order.id} className="hover:bg-gray-50">
-                                <TableCell className="font-medium">{order.order_number}</TableCell>
-                                <TableCell>{order.order_date ? new Date(order.order_date).toLocaleDateString('ru-RU') : '—'}</TableCell>
-                                <TableCell>{getInvoiceTrack()}</TableCell>
-                                <TableCell>{getVehicleNumber()}</TableCell>
-                                <TableCell>{getDaysInTransit()}</TableCell>
-                                <TableCell>
-                                  <Badge variant="outline">
-                                    {getOrderStatus()}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  {order.fito_ready ? (
-                                    <Icon name="CheckCircle2" className="text-green-500" size={20} />
-                                  ) : (
-                                    <Icon name="Clock" className="text-yellow-500" size={20} />
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex gap-1 justify-end">
-                                    <Button variant="ghost" size="sm" onClick={async () => { 
-                                      const stagesRes = await fetch(`${API_URL}?resource=order_stages&order_id=${order.id}`);
-                                      const stagesData = await stagesRes.json();
-                                      console.log('Loaded stages for order:', order.id, stagesData);
-                                      setEditOrder({...order, stages: stagesData.stages || []}); 
-                                      setShowOrderForm(true); 
-                                    }}>
-                                      <Icon name="Pencil" size={16} />
-                                    </Button>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      onClick={async () => {
-                                        if (confirm(`Удалить заказ ${order.order_number}?`)) {
-                                          try {
-                                            const res = await fetch(API_URL, {
-                                              method: 'POST',
-                                              headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({
-                                                action: 'delete_order',
-                                                order_id: order.id,
-                                                user_role: userRole
-                                              })
-                                            });
-                                            const result = await res.json();
-                                            if (result.success) {
-                                              toast.success('Заказ удален');
-                                              loadData();
-                                            } else {
-                                              toast.error('Ошибка удаления');
-                                            }
-                                          } catch (error) {
-                                            toast.error('Ошибка удаления');
-                                          }
-                                        }
-                                      }}
-                                      className="text-red-500 hover:text-red-700"
-                                    >
-                                      <Icon name="Trash2" size={16} />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                      </TableBody>
-                    </Table>
+                    <Icon name="ClipboardList" size={64} className="mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-2xl font-bold mb-2">Раздел в разработке</h3>
+                    <p className="text-gray-600">Панель заказов скоро будет готова</p>
                   </CardContent>
                 </Card>
               </div>
@@ -655,131 +411,7 @@ const Index = () => {
         </main>
       </div>
 
-      <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Детали заказа {selectedOrder?.order_number}</DialogTitle>
-            <DialogDescription>
-              Поэтапный контроль выполнения заказа
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedOrder && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="text-sm text-gray-600">Клиент</p>
-                  <p className="font-semibold">{selectedOrder.client_name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Перевозчик</p>
-                  <p className="font-semibold">{selectedOrder.carrier}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Маршрут</p>
-                  <p className="font-semibold">{selectedOrder.route_from} → {selectedOrder.route_to}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Автомобиль</p>
-                  <p className="font-semibold">{selectedOrder.license_plate} ({selectedOrder.vehicle_model})</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Водитель</p>
-                  <p className="font-semibold">{selectedOrder.driver_name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Статус</p>
-                  <Badge className={`${statusMap[selectedOrder.status]?.color} text-white`}>
-                    {statusMap[selectedOrder.status]?.label}
-                  </Badge>
-                </div>
-              </div>
 
-              <div>
-                <h3 className="font-semibold text-lg mb-4">Этапы выполнения</h3>
-                <div className="space-y-3">
-                  {orderStages.length > 0 ? (
-                    orderStages.map((stage) => (
-                      <div key={stage.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50">
-                        <Checkbox
-                          checked={stage.is_completed}
-                          onCheckedChange={(checked) => updateStage(stage.id, checked as boolean)}
-                          disabled={stage.is_completed}
-                        />
-                        <div className="flex-1">
-                          <p className="font-medium">{stage.stage_name}</p>
-                          {stage.description && (
-                            <p className="text-sm text-gray-600 mt-1">{stage.description}</p>
-                          )}
-                          {stage.is_completed && stage.completed_by && (
-                            <p className="text-xs text-gray-500">
-                              Выполнил: {stage.completed_by} • {stage.completed_at}
-                            </p>
-                          )}
-                        </div>
-                        {stage.is_completed && (
-                          <Icon name="CheckCircle2" className="text-green-500" size={20} />
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-gray-500 border rounded-lg bg-gray-50">
-                      <Icon name="TruckOff" size={48} className="mx-auto mb-3 text-gray-300" />
-                      <p className="font-medium">Этапы перевозки не добавлены</p>
-                      <p className="text-sm mt-1">Отредактируйте заказ чтобы добавить этапы</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <h3 className="font-semibold text-lg mb-4">Документы</h3>
-                <div className="flex gap-3">
-                  <Button 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={() => generateDocument(selectedOrder.id, 'waybill')}
-                  >
-                    <Icon name="FileText" size={18} className="mr-2" />
-                    Транспортная накладная
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => generateDocument(selectedOrder.id, 'power_of_attorney')}
-                  >
-                    <Icon name="FileCheck" size={18} className="mr-2" />
-                    Доверенность
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <OrderForm
-        open={showOrderForm}
-        onClose={() => { setShowOrderForm(false); setEditOrder(null); }}
-        onSuccess={loadData}
-        editOrder={editOrder}
-        clients={clients}
-        customers={customers}
-        drivers={drivers}
-        vehicles={vehicles}
-        userRole={userRole === 'admin' ? 'Администратор' : userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : userRole === 'manager' ? 'Менеджер' : 'Руководитель'}
-      />
-
-      <MultiStageOrderForm
-        open={showMultiStageForm}
-        onClose={() => setShowMultiStageForm(false)}
-        onSuccess={loadData}
-        clients={clients}
-        customers={customers}
-        drivers={drivers}
-        vehicles={vehicles}
-        userRole={userRole === 'admin' ? 'Администратор' : userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : userRole === 'manager' ? 'Менеджер' : 'Руководитель'}
-      />
     </div>
   );
 };
