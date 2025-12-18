@@ -886,7 +886,49 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                           />
                           {errors[`stage_${idx}_to`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_to`]}</p>}
                         </div>
+                      </div>
 
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label>Таможня</Label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addCustomsToStage(stage.id)}
+                          >
+                            <Icon name="Plus" size={14} className="mr-1" />
+                            Добавить таможню
+                          </Button>
+                        </div>
+                        {stage.customs.length > 0 && (
+                          <div className="space-y-2">
+                            {stage.customs.map((customs, customsIdx) => (
+                              <div key={customs.id} className="flex gap-2 items-center">
+                                <Input
+                                  value={customs.customs_name}
+                                  onChange={(e) => updateCustomsInStage(stage.id, customs.id, e.target.value)}
+                                  placeholder="Торфяновка"
+                                  className="flex-1"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeCustomsFromStage(stage.id, customs.id)}
+                                >
+                                  <Icon name="Trash2" size={16} className="text-red-500" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {stage.customs.length === 0 && (
+                          <p className="text-sm text-gray-500 italic">Таможня не добавлена</p>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label>Автомобиль *</Label>
                           <Select value={stage.vehicle_id} onValueChange={(val) => updateStage(stage.id, 'vehicle_id', val)} disabled={isOrderStarted && !routeUnlocked}>
@@ -946,46 +988,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                             placeholder="Дополнительная информация"
                           />
                         </div>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <Label>Таможни</Label>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => addCustomsToStage(stage.id)}
-                          >
-                            <Icon name="Plus" size={14} className="mr-1" />
-                            Добавить таможню
-                          </Button>
-                        </div>
-                        {stage.customs.length > 0 && (
-                          <div className="space-y-2">
-                            {stage.customs.map((customs, customsIdx) => (
-                              <div key={customs.id} className="flex gap-2 items-center">
-                                <Input
-                                  value={customs.customs_name}
-                                  onChange={(e) => updateCustomsInStage(stage.id, customs.id, e.target.value)}
-                                  placeholder="Торфяновка"
-                                  className="flex-1"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeCustomsFromStage(stage.id, customs.id)}
-                                >
-                                  <Icon name="Trash2" size={16} className="text-red-500" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {stage.customs.length === 0 && (
-                          <p className="text-sm text-gray-500 italic">Таможни не добавлены</p>
-                        )}
                       </div>
                     </div>
 
