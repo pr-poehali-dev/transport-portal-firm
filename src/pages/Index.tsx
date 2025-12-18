@@ -417,6 +417,7 @@ const Index = () => {
                         <TableRow>
                           <TableHead>№ заказа</TableHead>
                           <TableHead>Дата заказа</TableHead>
+                          <TableHead>Инвойс / Трак</TableHead>
                           <TableHead>Гос номер</TableHead>
                           <TableHead>Время в пути</TableHead>
                           <TableHead>Статус</TableHead>
@@ -460,10 +461,18 @@ const Index = () => {
                               return order.license_plate;
                             };
 
+                            // Формируем Инвойс / Трак
+                            const getInvoiceTrack = () => {
+                              const invoice = order.invoice || '—';
+                              const track = order.track_number || '—';
+                              return `${invoice} / ${track}`;
+                            };
+
                             return (
                               <TableRow key={order.id} className="hover:bg-gray-50">
                                 <TableCell className="font-medium">{order.order_number}</TableCell>
                                 <TableCell>{order.order_date ? new Date(order.order_date).toLocaleDateString('ru-RU') : '—'}</TableCell>
+                                <TableCell>{getInvoiceTrack()}</TableCell>
                                 <TableCell>{getVehicleNumber()}</TableCell>
                                 <TableCell>{getDaysInTransit()}</TableCell>
                                 <TableCell>
