@@ -299,21 +299,21 @@ const Index = () => {
               <div className="space-y-6 animate-fade-in">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Заказы</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex gap-2">
-                      <Input 
-                        placeholder="Поиск заказа..." 
-                        className="flex-1"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Заказы</CardTitle>
                       <Button onClick={() => { setEditOrder(null); setShowOrderForm(true); }}>
                         <Icon name="Plus" size={18} className="mr-2" />
                         Новый заказ
                       </Button>
                     </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Input 
+                      placeholder="Поиск заказа..." 
+                      className="w-full"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                     <Table>
                       <TableHeader>
                         <TableRow>
