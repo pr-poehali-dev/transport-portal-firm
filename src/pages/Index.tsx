@@ -157,6 +157,10 @@ const Index = () => {
   const handleSaveFitoDates = async () => {
     if (!selectedFitoOrder) return;
 
+    const isoFitoOrderDate = convertDateToISO(fitoData.fito_order_date);
+    const isoFitoReadyDate = convertDateToISO(fitoData.fito_ready_date);
+    const isoFitoReceivedDate = convertDateToISO(fitoData.fito_received_date);
+
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
@@ -165,18 +169,30 @@ const Index = () => {
           action: 'update_fito_dates',
           order_id: selectedFitoOrder.id,
           data: {
-            fito_order_date: convertDateToISO(fitoData.fito_order_date),
-            fito_ready_date: convertDateToISO(fitoData.fito_ready_date),
-            fito_received_date: convertDateToISO(fitoData.fito_received_date)
+            fito_order_date: isoFitoOrderDate,
+            fito_ready_date: isoFitoReadyDate,
+            fito_received_date: isoFitoReceivedDate
           }
         })
       });
 
       if (!response.ok) throw new Error('Failed to update fito dates');
       
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.id === selectedFitoOrder.id 
+            ? {
+                ...order,
+                fito_order_date: isoFitoOrderDate,
+                fito_ready_date: isoFitoReadyDate,
+                fito_received_date: isoFitoReceivedDate
+              }
+            : order
+        )
+      );
+      
       toast.success('Даты Фито обновлены');
       setShowFitoDialog(false);
-      loadData();
     } catch (error) {
       toast.error('Ошибка при сохранении дат');
       console.error(error);
