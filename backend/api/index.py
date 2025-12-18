@@ -738,8 +738,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 for stage in stages_data:
                     cur.execute('''
                         INSERT INTO order_transport_stages 
-                        (order_id, stage_number, from_location, to_location, planned_departure, planned_arrival, vehicle_id, driver_id, notes, status)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        (order_id, stage_number, from_location, to_location, planned_departure, vehicle_id, driver_id, notes, status)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id
                     ''', (
                         order_id,
@@ -747,7 +747,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         stage.get('from_location'),
                         stage.get('to_location'),
                         stage.get('planned_departure'),
-                        stage.get('planned_arrival'),
                         stage.get('vehicle_id'),
                         stage.get('driver_id'),
                         stage.get('notes'),

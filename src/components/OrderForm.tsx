@@ -40,7 +40,6 @@ interface Stage {
   from_location: string;
   to_location: string;
   planned_departure: string;
-  planned_arrival: string;
   vehicle_id: string;
   driver_id: string;
   driver_phone: string;
@@ -48,6 +47,7 @@ interface Stage {
   customs: Customs[];
   notes: string;
   saved?: boolean;
+  started?: boolean;
 }
 
 interface UploadedFile {
@@ -158,7 +158,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               from_location: stage.from_location || '',
               to_location: stage.to_location || '',
               planned_departure: stage.planned_departure ? stage.planned_departure.split(' ')[0] : '',
-              planned_arrival: stage.planned_arrival ? stage.planned_arrival.split(' ')[0] : '',
               vehicle_id: stage.vehicle_id?.toString() || '',
               driver_id: stage.driver_id?.toString() || '',
               driver_phone: driver?.phone || '',
@@ -168,7 +167,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 customs_name: cp.customs_name || ''
               })) : [],
               notes: stage.notes || '',
-              saved: true
+              saved: true,
+              started: !!stage.planned_departure
             };
           });
           setStages(mappedStages);
@@ -261,13 +261,13 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       from_location: '',
       to_location: '',
       planned_departure: '',
-      planned_arrival: '',
       vehicle_id: '',
       driver_id: '',
       driver_phone: '',
       driver_additional_phone: '',
       customs: [],
-      notes: ''
+      notes: '',
+      started: false
     };
     setStages([...stages, newStage]);
   };
@@ -431,7 +431,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
             from_location: stage.from_location,
             to_location: stage.to_location,
             planned_departure: stage.planned_departure,
-            planned_arrival: stage.planned_arrival,
             vehicle_id: parseInt(stage.vehicle_id),
             driver_id: parseInt(stage.driver_id),
             customs_points: stage.customs.map(c => ({
@@ -502,7 +501,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         from_location: stage.from_location,
         to_location: stage.to_location,
         planned_departure: stage.planned_departure,
-        planned_arrival: stage.planned_arrival,
         notes: stage.notes || ''
       }));
 
@@ -575,6 +573,18 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     setStages(stages.filter(s => s.id !== stageId).map((s, idx) => ({ ...s, stage_number: idx + 1 })));
     toast.success('Маршрут удалён');
   };
+
+  const handleStartStage = (stageId: string) => {
+    const now = new Date().toISOString().split('T')[0];
+    setStages(stages.map(s => 
+      s.id === stageId ? { ...s, started: true, planned_departure: now } : s
+    ));
+    toast.success('Маршрут запущен');
+  };
+
+  const [routeUnlocked, setRouteUnlocked] = useState(false);
+
+  const isOrderStarted = stages.some(s => s.started);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -659,7 +669,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     variant="outline"
                     size="sm"
                     onClick={addCustomerItem}
-                    disabled={false && !editOrder}
+                    disabled={isOrderStarted}
                   >
                     <Icon name="Plus" size={14} className="mr-1" />
                     Добавить заказчика
@@ -672,7 +682,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         <Select 
                           value={item.customer_id} 
                           onValueChange={(val) => updateCustomerItem(index, 'customer_id', val)}
-                          disabled={false}
+                          disabled={isOrderStarted}
                         >
                           <SelectTrigger className={errors[`customer_${index}_id`] ? 'border-red-500' : ''}>
                             <SelectValue placeholder="Выберите заказчика" />
@@ -692,7 +702,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                           placeholder="Примечание (7 тонн, 5 паллет)"
                           value={item.note}
                           onChange={(e) => updateCustomerItem(index, 'note', e.target.value)}
-                          disabled={false}
+                          disabled={isOrderStarted}
                         />
                       </div>
                       {customerItems.length > 1 && (
@@ -701,7 +711,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                           variant="ghost"
                           size="icon"
                           onClick={() => removeCustomerItem(index)}
-                          disabled={false}
+                          disabled={isOrderStarted}
                         >
                           <Icon name="Trash2" size={16} className="text-red-500" />
                         </Button>
@@ -718,7 +728,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.invoice}
                     onChange={(e) => setOrderInfo({ ...orderInfo, invoice: e.target.value })}
                     placeholder="INV-2024-001"
-                    disabled={!!editOrder}
+                    disabled={!!editOrder || isOrderStarted}
                     className={errors.invoice ? 'border-red-500' : ''}
                     required
                   />
@@ -731,7 +741,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.track_number}
                     onChange={(e) => setOrderInfo({ ...orderInfo, track_number: e.target.value })}
                     placeholder="TRACK123456"
-                    disabled={!!editOrder}
+                    disabled={!!editOrder || isOrderStarted}
                     className={errors.track_number ? 'border-red-500' : ''}
                     required
                   />
@@ -744,7 +754,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.cargo_type}
                     onChange={(e) => setOrderInfo({ ...orderInfo, cargo_type: e.target.value })}
                     placeholder="Лук, Нобилис"
-                    disabled={!!editOrder}
+                    disabled={!!editOrder || isOrderStarted}
                     className={errors.cargo_type ? 'border-red-500' : ''}
                     required
                   />
@@ -758,7 +768,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.cargo_weight}
                     onChange={(e) => setOrderInfo({ ...orderInfo, cargo_weight: e.target.value })}
                     placeholder="20000"
-                    disabled={!!editOrder}
+                    disabled={!!editOrder || isOrderStarted}
                     className={errors.cargo_weight ? 'border-red-500' : ''}
                     required
                   />
@@ -773,7 +783,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   onChange={(e) => setOrderInfo({ ...orderInfo, notes: e.target.value })}
                   placeholder="Дополнительная информация о заказе..."
                   rows={3}
-                  disabled={!!editOrder}
+                  disabled={!!editOrder || isOrderStarted}
                 />
               </div>
 
@@ -826,17 +836,53 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           <>
               {stages.map((stage, idx) => (
                 <Card key={stage.id} className="relative">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg">Маршрут {stage.stage_number}</CardTitle>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteStage(stage.id)}
-                      className="text-red-500"
-                    >
-                      <Icon name="Trash2" size={16} />
-                    </Button>
+                  <CardHeader className="flex flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 flex-1">
+                      <CardTitle className="text-lg">Маршрут {stage.stage_number}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm text-gray-600">Дата погрузки:</Label>
+                        <DateInput
+                          value={stage.planned_departure}
+                          onChange={(value) => updateStage(stage.id, 'planned_departure', value)}
+                          disabled={stage.started && !routeUnlocked}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!stage.started ? (
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleStartStage(stage.id)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <Icon name="Play" size={16} className="mr-1" />
+                          Поехали
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setRouteUnlocked(!routeUnlocked)}
+                          className={routeUnlocked ? 'bg-orange-100' : ''}
+                        >
+                          <Icon name="Route" size={16} className="mr-1" />
+                          Объезд
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteStage(stage.id)}
+                        className="text-red-500"
+                        disabled={isOrderStarted && !routeUnlocked}
+                      >
+                        <Icon name="Trash2" size={16} />
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-4">
@@ -848,6 +894,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                             onChange={(e) => updateStage(stage.id, 'from_location', e.target.value)}
                             className={errors[`stage_${idx}_from`] ? 'border-red-500' : ''}
                             placeholder="Москва"
+                            disabled={isOrderStarted && !routeUnlocked}
                           />
                           {errors[`stage_${idx}_from`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_from`]}</p>}
                         </div>
@@ -859,29 +906,14 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                             onChange={(e) => updateStage(stage.id, 'to_location', e.target.value)}
                             className={errors[`stage_${idx}_to`] ? 'border-red-500' : ''}
                             placeholder="Санкт-Петербург"
+                            disabled={isOrderStarted && !routeUnlocked}
                           />
                           {errors[`stage_${idx}_to`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_to`]}</p>}
                         </div>
 
                         <div>
-                          <Label>Дата погрузки</Label>
-                          <DateInput
-                            value={stage.planned_departure}
-                            onChange={(value) => updateStage(stage.id, 'planned_departure', value)}
-                          />
-                        </div>
-
-                        <div>
-                          <Label>Дата разгрузки (прибл.)</Label>
-                          <DateInput
-                            value={stage.planned_arrival}
-                            onChange={(value) => updateStage(stage.id, 'planned_arrival', value)}
-                          />
-                        </div>
-
-                        <div>
                           <Label>Автомобиль *</Label>
-                          <Select value={stage.vehicle_id} onValueChange={(val) => updateStage(stage.id, 'vehicle_id', val)}>
+                          <Select value={stage.vehicle_id} onValueChange={(val) => updateStage(stage.id, 'vehicle_id', val)} disabled={isOrderStarted && !routeUnlocked}>
                             <SelectTrigger className={errors[`stage_${idx}_vehicle`] ? 'border-red-500' : ''}>
                               <SelectValue placeholder="Выберите автомобиль" />
                             </SelectTrigger>
@@ -895,6 +927,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                           </Select>
                           {errors[`stage_${idx}_vehicle`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_vehicle`]}</p>}
                         </div>
+
+                        <div></div>
 
                         <div>
                           <Label>Водитель *</Label>
