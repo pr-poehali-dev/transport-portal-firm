@@ -699,6 +699,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             elif action == 'update_order':
                 order_id = body_data.get('order_id')
                 order_data = body_data.get('order', {})
+                stages_data = body_data.get('stages', [])
                 
                 cur.execute('SELECT order_number FROM orders WHERE id = %s', (order_id,))
                 existing_order = cur.fetchone()
@@ -730,6 +731,33 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     json.dumps(customer_items),
                     order_id
                 ))
+                
+                cur.execute('DELETE FROM order_customs_points WHERE stage_id IN (SELECT id FROM order_transport_stages WHERE order_id = %s)', (order_id,))
+                cur.execute('DELETE FROM order_transport_stages WHERE order_id = %s', (order_id,))
+                
+                for stage in stages_data:
+                    cur.execute('''
+                        INSERT INTO order_transport_stages 
+                        (order_id, stage_number, from_location, to_location, vehicle_id, driver_id, notes, status)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        RETURNING id
+                    ''', (
+                        order_id,
+                        stage.get('stage_number'),
+                        stage.get('from_location'),
+                        stage.get('to_location'),
+                        stage.get('vehicle_id'),
+                        stage.get('driver_id'),
+                        stage.get('notes'),
+                        'pending'
+                    ))
+                    stage_id = cur.fetchone()[0]
+                    
+                    for customs in stage.get('customs_points', []):
+                        cur.execute('''
+                            INSERT INTO order_customs_points (stage_id, customs_name, status)
+                            VALUES (%s, %s, %s)
+                        ''', (stage_id, customs.get('customs_name'), 'pending'))
                 
                 cur.execute('''
                     INSERT INTO activity_log (order_id, user_role, action_type, description)

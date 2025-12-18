@@ -419,7 +419,18 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
             invoice: orderInfo.invoice || null,
             track_number: orderInfo.track_number || null,
             notes: orderInfo.notes || null
-          }
+          },
+          stages: stages.map(stage => ({
+            stage_number: stage.stage_number,
+            from_location: stage.from_location,
+            to_location: stage.to_location,
+            vehicle_id: parseInt(stage.vehicle_id),
+            driver_id: parseInt(stage.driver_id),
+            customs_points: stage.customs.map(c => ({
+              customs_name: c.customs_name
+            })),
+            notes: stage.notes
+          }))
         })
       });
 
