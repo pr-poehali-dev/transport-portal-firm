@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Icon from '@/components/ui/icon';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import OrderForm from '@/components/OrderForm';
 import ResourceManager from '@/components/ResourceManager';
 import SettingsPage from '@/components/SettingsPage';
 import LoginPage from '@/components/LoginPage';
-import Dashboard from '@/components/Dashboard';
+
 import CustomersPage from './CustomersPage';
 
 const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44ca0e';
@@ -18,14 +22,18 @@ const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
   const [userRole, setUserRole] = useState<'admin' | 'logist' | 'buyer' | 'manager' | 'director'>('admin');
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeSection, setActiveSection] = useState('orders');
   const [orders, setOrders] = useState<any[]>([]);
   const [drivers, setDrivers] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [stats, setStats] = useState({ active_orders: 0, in_transit: 0, total_drivers: 0, total_vehicles: 0 });
   const [loading, setLoading] = useState(false);
+  const [showOrderForm, setShowOrderForm] = useState(false);
+  const [editOrder, setEditOrder] = useState<any>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [selectedLogOrder, setSelectedLogOrder] = useState<number | null>(null);
@@ -47,7 +55,7 @@ const Index = () => {
     setIsLoggedIn(false);
     setUserId(null);
     setUserRole('admin');
-    setActiveSection('dashboard');
+    setActiveSection('orders');
   };
 
   const loadData = async () => {
@@ -141,14 +149,6 @@ const Index = () => {
 
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             <Button
-              variant={activeSection === 'dashboard' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => { setActiveSection('dashboard'); setMobileMenuOpen(false); }}
-            >
-              <Icon name="LayoutDashboard" size={20} className="mr-3" />
-              Панель
-            </Button>
-            <Button
               variant={activeSection === 'orders' ? 'default' : 'ghost'}
               className="w-full justify-start"
               onClick={() => { setActiveSection('orders'); setMobileMenuOpen(false); }}
@@ -236,12 +236,7 @@ const Index = () => {
           </header>
 
           <div className="p-4 md:p-8">
-            {activeSection === 'dashboard' && (
-              <Dashboard 
-                orders={orders} 
-                onOrderClick={(order) => {}}
-              />
-            )}
+
 
             {activeSection === 'overview' && (
               <div className="space-y-6 animate-fade-in">
@@ -303,11 +298,175 @@ const Index = () => {
 
             {activeSection === 'orders' && (
               <div className="space-y-6 animate-fade-in">
-                <Card className="text-center py-16">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Заказы</CardTitle>
+                      <div className="flex gap-2">
+                        <Input 
+                          placeholder="Поиск заказа..." 
+                          className="w-64"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                          <SelectTrigger className="w-40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Все статусы</SelectItem>
+                            <SelectItem value="pending">Ожидание</SelectItem>
+                            <SelectItem value="loading">Загрузка</SelectItem>
+                            <SelectItem value="in_transit">В пути</SelectItem>
+                            <SelectItem value="delivered">Доставлен</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button onClick={() => { setEditOrder(null); setShowOrderForm(true); }}>
+                          <Icon name="Plus" size={18} className="mr-2" />
+                          Новый заказ
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
                   <CardContent>
-                    <Icon name="ClipboardList" size={64} className="mx-auto text-gray-300 mb-4" />
-                    <h3 className="text-2xl font-bold mb-2">Раздел в разработке</h3>
-                    <p className="text-gray-600">Панель заказов скоро будет готова</p>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>№ заказа</TableHead>
+                          <TableHead>Дата заказа</TableHead>
+                          <TableHead>Инвойс / Трак</TableHead>
+                          <TableHead>Гос номер</TableHead>
+                          <TableHead>Время в пути</TableHead>
+                          <TableHead>Статус</TableHead>
+                          <TableHead>Фито</TableHead>
+                          <TableHead className="text-right">Действия</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {orders
+                          .filter(order => {
+                            if (searchQuery === '') {
+                              const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+                              return matchesStatus;
+                            }
+                            
+                            const query = searchQuery.replace(/[\s\-]/g, '').toLowerCase();
+                            
+                            const orderNumber = (order.order_number || '').toLowerCase();
+                            const trackNumber = (order.track_number || '').replace(/[\s\-]/g, '').toLowerCase();
+                            const invoice = (order.invoice || '').replace(/[\s\-]/g, '').toLowerCase();
+                            const licensePlate = (order.license_plate || '').replace(/[\s\-]/g, '').toLowerCase();
+                            const trailerPlate = (order.trailer_plate || '').replace(/[\s\-]/g, '').toLowerCase();
+                            const driverPhone = (order.driver_phone || '').replace(/[\s\-]/g, '').toLowerCase();
+                            const driverAdditionalPhone = (order.driver_additional_phone || '').replace(/[\s\-]/g, '').toLowerCase();
+                            
+                            const matchesSearch = orderNumber.includes(query) ||
+                              trackNumber.includes(query) ||
+                              invoice.includes(query) ||
+                              licensePlate.includes(query) ||
+                              trailerPlate.includes(query) ||
+                              driverPhone.includes(query) ||
+                              driverAdditionalPhone.includes(query);
+                            
+                            const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+                            return matchesSearch && matchesStatus;
+                          })
+                          .map((order) => {
+                            const getDaysInTransit = () => {
+                              if (!order.first_stage_departure) return '—';
+                              const departureDate = new Date(order.first_stage_departure);
+                              const today = new Date();
+                              const diffTime = Math.abs(today.getTime() - departureDate.getTime());
+                              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                              return `${diffDays} дн.`;
+                            };
+
+                            const getOrderStatus = () => {
+                              if (!order.stages_count || order.stages_count === 0) return 'Создан';
+                              if (!order.completed_stages || order.completed_stages === 0) return 'Маршрут 1';
+                              if (order.completed_stages >= order.stages_count) return 'Завершён';
+                              return `Маршрут ${order.completed_stages + 1}`;
+                            };
+
+                            const getVehicleNumber = () => {
+                              if (!order.license_plate) return '—';
+                              if (order.trailer_plate) return `${order.license_plate} / ${order.trailer_plate}`;
+                              return order.license_plate;
+                            };
+
+                            const getInvoiceTrack = () => {
+                              const invoice = order.invoice || '—';
+                              const track = order.track_number || '—';
+                              return `${invoice} / ${track}`;
+                            };
+
+                            return (
+                              <TableRow key={order.id} className="hover:bg-gray-50">
+                                <TableCell className="font-medium">{order.order_number}</TableCell>
+                                <TableCell>{order.order_date ? new Date(order.order_date).toLocaleDateString('ru-RU') : '—'}</TableCell>
+                                <TableCell>{getInvoiceTrack()}</TableCell>
+                                <TableCell>{getVehicleNumber()}</TableCell>
+                                <TableCell>{getDaysInTransit()}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    {getOrderStatus()}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {order.fito_ready ? (
+                                    <Icon name="CheckCircle2" className="text-green-500" size={20} />
+                                  ) : (
+                                    <Icon name="Clock" className="text-yellow-500" size={20} />
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex gap-1 justify-end">
+                                    <Button variant="ghost" size="sm" onClick={async () => { 
+                                      const stagesRes = await fetch(`${API_URL}?resource=order_stages&order_id=${order.id}`);
+                                      const stagesData = await stagesRes.json();
+                                      setEditOrder({...order, stages: stagesData.stages || []}); 
+                                      setShowOrderForm(true); 
+                                    }}>
+                                      <Icon name="Pencil" size={16} />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={async () => {
+                                        if (confirm(`Удалить заказ ${order.order_number}?`)) {
+                                          try {
+                                            const res = await fetch(API_URL, {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({
+                                                action: 'delete_order',
+                                                order_id: order.id,
+                                                user_role: userRole
+                                              })
+                                            });
+                                            const result = await res.json();
+                                            if (result.success) {
+                                              toast.success('Заказ удален');
+                                              loadData();
+                                            } else {
+                                              toast.error('Ошибка удаления');
+                                            }
+                                          } catch (error) {
+                                            toast.error('Ошибка удаления');
+                                          }
+                                        }
+                                      }}
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      <Icon name="Trash2" size={16} />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                      </TableBody>
+                    </Table>
                   </CardContent>
                 </Card>
               </div>
@@ -411,7 +570,17 @@ const Index = () => {
         </main>
       </div>
 
-
+      <OrderForm
+        open={showOrderForm}
+        onClose={() => { setShowOrderForm(false); setEditOrder(null); }}
+        onSuccess={loadData}
+        editOrder={editOrder}
+        clients={clients}
+        customers={customers}
+        drivers={drivers}
+        vehicles={vehicles}
+        userRole={userRole === 'admin' ? 'Администратор' : userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : userRole === 'manager' ? 'Менеджер' : 'Руководитель'}
+      />
     </div>
   );
 };
