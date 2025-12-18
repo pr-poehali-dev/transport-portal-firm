@@ -382,7 +382,7 @@ const Index = () => {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle>Все заказы</CardTitle>
+                        <CardTitle>Заказы</CardTitle>
                         <CardDescription>Управление перевозками и отчетность</CardDescription>
                       </div>
                       <div className="flex gap-2">
@@ -415,12 +415,10 @@ const Index = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>№</TableHead>
-                          <TableHead>Заказчики</TableHead>
-                          <TableHead>Перевозчик</TableHead>
-                          <TableHead>Гос номер</TableHead>
-                          <TableHead>Маршрут</TableHead>
+                          <TableHead>№ заказа</TableHead>
                           <TableHead>Дата заказа</TableHead>
+                          <TableHead>Гос номер</TableHead>
+                          <TableHead>Время в пути</TableHead>
                           <TableHead>Статус</TableHead>
                           <TableHead>Фито</TableHead>
                           <TableHead className="text-right">Действия</TableHead>
@@ -436,72 +434,97 @@ const Index = () => {
                             const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
                             return matchesSearch && matchesStatus;
                           })
-                          .map((order) => (
-                          <TableRow key={order.id} className="hover:bg-gray-50">
-                            <TableCell className="font-medium">{order.order_number}</TableCell>
-                            <TableCell>{order.customer_display || '—'}</TableCell>
-                            <TableCell>{order.client_name}</TableCell>
-                            <TableCell>{order.license_plate}</TableCell>
-                            <TableCell>{order.route_from} - {order.route_to}</TableCell>
-                            <TableCell>{order.order_date}</TableCell>
-                            <TableCell>
-                              <Badge className={`${statusMap[order.status]?.color} text-white`}>
-                                {statusMap[order.status]?.label}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {order.fito_ready ? (
-                                <Icon name="CheckCircle2" className="text-green-500" size={20} />
-                              ) : (
-                                <Icon name="Clock" className="text-yellow-500" size={20} />
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex gap-1 justify-end">
-                                <Button variant="ghost" size="sm" onClick={async () => { 
-                                  const stagesRes = await fetch(`${API_URL}?resource=order_stages&order_id=${order.id}`);
-                                  const stagesData = await stagesRes.json();
-                                  console.log('Loaded stages for order:', order.id, stagesData);
-                                  setEditOrder({...order, stages: stagesData.stages || []}); 
-                                  setShowOrderForm(true); 
-                                }}>
-                                  <Icon name="Pencil" size={16} />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={async () => {
-                                    if (confirm(`Удалить заказ ${order.order_number}?`)) {
-                                      try {
-                                        const res = await fetch(API_URL, {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({
-                                            action: 'delete_order',
-                                            order_id: order.id,
-                                            user_role: userRole
-                                          })
-                                        });
-                                        const result = await res.json();
-                                        if (result.success) {
-                                          toast.success('Заказ удален');
-                                          loadData();
-                                        } else {
-                                          toast.error('Ошибка удаления');
+                          .map((order) => {
+                            // Вычисляем время в пути
+                            const getDaysInTransit = () => {
+                              if (!order.first_stage_departure) return '—';
+                              const departureDate = new Date(order.first_stage_departure);
+                              const today = new Date();
+                              const diffTime = Math.abs(today.getTime() - departureDate.getTime());
+                              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                              return `${diffDays} дн.`;
+                            };
+
+                            // Определяем статус по этапам
+                            const getOrderStatus = () => {
+                              if (!order.stages_count || order.stages_count === 0) return 'Создан';
+                              if (!order.completed_stages || order.completed_stages === 0) return 'Маршрут 1';
+                              if (order.completed_stages >= order.stages_count) return 'Завершён';
+                              return `Маршрут ${order.completed_stages + 1}`;
+                            };
+
+                            // Формируем номер авто/прицеп
+                            const getVehicleNumber = () => {
+                              if (!order.license_plate) return '—';
+                              if (order.trailer_plate) return `${order.license_plate} / ${order.trailer_plate}`;
+                              return order.license_plate;
+                            };
+
+                            return (
+                              <TableRow key={order.id} className="hover:bg-gray-50">
+                                <TableCell className="font-medium">{order.order_number}</TableCell>
+                                <TableCell>{order.order_date ? new Date(order.order_date).toLocaleDateString('ru-RU') : '—'}</TableCell>
+                                <TableCell>{getVehicleNumber()}</TableCell>
+                                <TableCell>{getDaysInTransit()}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    {getOrderStatus()}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {order.fito_ready ? (
+                                    <Icon name="CheckCircle2" className="text-green-500" size={20} />
+                                  ) : (
+                                    <Icon name="Clock" className="text-yellow-500" size={20} />
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex gap-1 justify-end">
+                                    <Button variant="ghost" size="sm" onClick={async () => { 
+                                      const stagesRes = await fetch(`${API_URL}?resource=order_stages&order_id=${order.id}`);
+                                      const stagesData = await stagesRes.json();
+                                      console.log('Loaded stages for order:', order.id, stagesData);
+                                      setEditOrder({...order, stages: stagesData.stages || []}); 
+                                      setShowOrderForm(true); 
+                                    }}>
+                                      <Icon name="Pencil" size={16} />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={async () => {
+                                        if (confirm(`Удалить заказ ${order.order_number}?`)) {
+                                          try {
+                                            const res = await fetch(API_URL, {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({
+                                                action: 'delete_order',
+                                                order_id: order.id,
+                                                user_role: userRole
+                                              })
+                                            });
+                                            const result = await res.json();
+                                            if (result.success) {
+                                              toast.success('Заказ удален');
+                                              loadData();
+                                            } else {
+                                              toast.error('Ошибка удаления');
+                                            }
+                                          } catch (error) {
+                                            toast.error('Ошибка удаления');
+                                          }
                                         }
-                                      } catch (error) {
-                                        toast.error('Ошибка удаления');
-                                      }
-                                    }
-                                  }}
-                                  className="text-red-500 hover:text-red-700"
-                                >
-                                  <Icon name="Trash2" size={16} />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                                      }}
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      <Icon name="Trash2" size={16} />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                       </TableBody>
                     </Table>
                   </CardContent>
