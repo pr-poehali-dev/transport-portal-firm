@@ -10,7 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import Icon from '@/components/ui/icon';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44ca0e';
 
@@ -85,6 +84,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
   const [stages, setStages] = useState<Stage[]>([]);
   const [vehicleSearchOpen, setVehicleSearchOpen] = useState<Record<string, boolean>>({});
+  const [vehicleSearchQuery, setVehicleSearchQuery] = useState<Record<string, string>>({});
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoRoute, setAutoRoute] = useState('');
@@ -934,7 +934,10 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label>Автомобиль *</Label>
-                          <Popover open={vehicleSearchOpen[stage.id]} onOpenChange={(open) => setVehicleSearchOpen({ ...vehicleSearchOpen, [stage.id]: open })}>
+                          <Popover open={vehicleSearchOpen[stage.id]} onOpenChange={(open) => {
+                            setVehicleSearchOpen({ ...vehicleSearchOpen, [stage.id]: open });
+                            if (!open) setVehicleSearchQuery({ ...vehicleSearchQuery, [stage.id]: '' });
+                          }}>
                             <PopoverTrigger asChild>
                               <Button
                                 variant="outline"
@@ -952,35 +955,59 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-[400px] p-0">
-                              <Command>
-                                <CommandInput placeholder="Поиск автомобиля..." />
-                                <CommandList>
-                                  <CommandEmpty>Автомобиль не найден</CommandEmpty>
-                                  <CommandGroup>
-                                    {vehicles.map((vehicle) => {
-                                      const trailerPart = vehicle.trailer_plate ? ` / ${vehicle.trailer_plate}` : '';
-                                      const displayText = `${vehicle.vehicle_brand || vehicle.model} ${vehicle.license_plate}${trailerPart}`;
-                                      return (
-                                        <CommandItem
-                                          key={vehicle.id}
-                                          value={displayText}
-                                          onSelect={() => {
-                                            updateStage(stage.id, 'vehicle_id', vehicle.id.toString());
-                                            setVehicleSearchOpen({ ...vehicleSearchOpen, [stage.id]: false });
-                                          }}
-                                        >
-                                          <Icon 
-                                            name="Check" 
-                                            size={16}
-                                            className={`mr-2 ${stage.vehicle_id === vehicle.id.toString() ? 'opacity-100' : 'opacity-0'}`}
-                                          />
-                                          {displayText}
-                                        </CommandItem>
-                                      );
-                                    })}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
+                              <div className="p-2 border-b">
+                                <Input
+                                  placeholder="Поиск автомобиля..."
+                                  value={vehicleSearchQuery[stage.id] || ''}
+                                  onChange={(e) => setVehicleSearchQuery({ ...vehicleSearchQuery, [stage.id]: e.target.value })}
+                                  className="h-9"
+                                />
+                              </div>
+                              <div className="max-h-[300px] overflow-y-auto p-1">
+                                {vehicles
+                                  .filter(vehicle => {
+                                    const query = (vehicleSearchQuery[stage.id] || '').toLowerCase();
+                                    if (!query) return true;
+                                    const trailerPart = vehicle.trailer_plate ? ` / ${vehicle.trailer_plate}` : '';
+                                    const displayText = `${vehicle.vehicle_brand || vehicle.model} ${vehicle.license_plate}${trailerPart}`.toLowerCase();
+                                    return displayText.includes(query);
+                                  })
+                                  .map((vehicle) => {
+                                    const trailerPart = vehicle.trailer_plate ? ` / ${vehicle.trailer_plate}` : '';
+                                    const displayText = `${vehicle.vehicle_brand || vehicle.model} ${vehicle.license_plate}${trailerPart}`;
+                                    const isSelected = stage.vehicle_id === vehicle.id.toString();
+                                    return (
+                                      <div
+                                        key={vehicle.id}
+                                        onClick={() => {
+                                          updateStage(stage.id, 'vehicle_id', vehicle.id.toString());
+                                          setVehicleSearchOpen({ ...vehicleSearchOpen, [stage.id]: false });
+                                        }}
+                                        className={`flex items-center px-2 py-1.5 text-sm rounded-sm cursor-pointer hover:bg-accent ${
+                                          isSelected ? 'bg-accent' : ''
+                                        }`}
+                                      >
+                                        <Icon 
+                                          name="Check" 
+                                          size={16}
+                                          className={`mr-2 ${isSelected ? 'opacity-100' : 'opacity-0'}`}
+                                        />
+                                        {displayText}
+                                      </div>
+                                    );
+                                  })}
+                                {vehicles.filter(vehicle => {
+                                  const query = (vehicleSearchQuery[stage.id] || '').toLowerCase();
+                                  if (!query) return false;
+                                  const trailerPart = vehicle.trailer_plate ? ` / ${vehicle.trailer_plate}` : '';
+                                  const displayText = `${vehicle.vehicle_brand || vehicle.model} ${vehicle.license_plate}${trailerPart}`.toLowerCase();
+                                  return displayText.includes(query);
+                                }).length === 0 && vehicleSearchQuery[stage.id] && (
+                                  <div className="py-6 text-center text-sm text-muted-foreground">
+                                    Автомобиль не найден
+                                  </div>
+                                )}
+                              </div>
                             </PopoverContent>
                           </Popover>
                           {errors[`stage_${idx}_vehicle`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_vehicle`]}</p>}
