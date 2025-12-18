@@ -395,6 +395,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       if (!stage.to_location?.trim()) newErrors[`stage_${idx}_to`] = 'Обязательное поле';
       if (!stage.vehicle_id) newErrors[`stage_${idx}_vehicle`] = 'Обязательное поле';
       if (!stage.driver_id) newErrors[`stage_${idx}_driver`] = 'Выберите автомобиль с назначенным водителем';
+      if (!stage.planned_departure?.trim()) newErrors[`stage_${idx}_date`] = 'Укажите дату погрузки';
     });
 
     setErrors(newErrors);
@@ -430,7 +431,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
             stage_number: stage.stage_number,
             from_location: stage.from_location,
             to_location: stage.to_location,
-            planned_departure: stage.planned_departure,
+            planned_departure: stage.planned_departure?.trim() || null,
             vehicle_id: parseInt(stage.vehicle_id),
             driver_id: parseInt(stage.driver_id),
             customs_points: stage.customs.map(c => ({
@@ -482,6 +483,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         if (!stage.to_location?.trim()) stageErrors[`stage_${idx}_to`] = 'Обязательное поле';
         if (!stage.vehicle_id) stageErrors[`stage_${idx}_vehicle`] = 'Обязательное поле';
         if (!stage.driver_id) stageErrors[`stage_${idx}_driver`] = 'Выберите автомобиль с назначенным водителем';
+        if (!stage.planned_departure?.trim()) stageErrors[`stage_${idx}_date`] = 'Укажите дату погрузки';
       });
 
       if (Object.keys(stageErrors).length > 0) {
@@ -500,7 +502,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         driver_id: parseInt(stage.driver_id),
         from_location: stage.from_location,
         to_location: stage.to_location,
-        planned_departure: stage.planned_departure,
+        planned_departure: stage.planned_departure?.trim() || null,
         notes: stage.notes || ''
       }));
 
@@ -838,13 +840,17 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   <CardHeader className="flex flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-4 flex-1">
                       <CardTitle className="text-lg">Маршрут {stage.stage_number}</CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Label className="text-sm text-gray-600">Дата погрузки:</Label>
-                        <DateInput
-                          value={stage.planned_departure}
-                          onChange={(value) => updateStage(stage.id, 'planned_departure', value)}
-                          disabled={stage.started}
-                        />
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm text-gray-600">Дата погрузки:</Label>
+                          <DateInput
+                            value={stage.planned_departure}
+                            onChange={(value) => updateStage(stage.id, 'planned_departure', value)}
+                            disabled={stage.started}
+                            className={errors[`stage_${idx}_date`] ? 'border-red-500' : ''}
+                          />
+                        </div>
+                        {errors[`stage_${idx}_date`] && <p className="text-red-500 text-xs">{errors[`stage_${idx}_date`]}</p>}
                       </div>
                     </div>
                     <Button
