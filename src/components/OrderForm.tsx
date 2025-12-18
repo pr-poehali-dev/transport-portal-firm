@@ -574,12 +574,11 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     toast.success('Маршрут удалён');
   };
 
-  const handleStartStage = (stageId: string) => {
-    const now = new Date().toISOString().split('T')[0];
+  const handleCompleteStage = (stageId: string) => {
     setStages(stages.map(s => 
-      s.id === stageId ? { ...s, started: true, planned_departure: now } : s
+      s.id === stageId ? { ...s, started: true } : s
     ));
-    toast.success('Маршрут запущен');
+    toast.success('Маршрут завершён');
   };
 
   const [routeUnlocked, setRouteUnlocked] = useState(false);
@@ -844,7 +843,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         <DateInput
                           value={stage.planned_departure}
                           onChange={(value) => updateStage(stage.id, 'planned_departure', value)}
-                          disabled
+                          disabled={stage.started}
                         />
                       </div>
                     </div>
@@ -996,23 +995,17 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                           type="button"
                           variant="default"
                           size="sm"
-                          onClick={() => handleStartStage(stage.id)}
-                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => handleCompleteStage(stage.id)}
+                          className="bg-blue-600 hover:bg-blue-700"
                         >
-                          <Icon name="Play" size={16} className="mr-1" />
-                          Поехали
+                          <Icon name="CheckCircle" size={16} className="mr-1" />
+                          Завершить
                         </Button>
                       ) : (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setRouteUnlocked(!routeUnlocked)}
-                          className={routeUnlocked ? 'bg-orange-100' : ''}
-                        >
-                          <Icon name="Route" size={16} className="mr-1" />
-                          Объезд
-                        </Button>
+                        <span className="text-sm text-green-600 font-medium flex items-center">
+                          <Icon name="CheckCircle" size={16} className="mr-1" />
+                          Завершён
+                        </span>
                       )}
                     </div>
 
