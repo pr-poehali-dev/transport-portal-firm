@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44ca0e';
 
 interface LoginPageProps {
-  onLogin: (role: string, userId: number) => void;
+  onLogin: (role: string, userId: number, fullName?: string) => void;
 }
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
@@ -41,7 +41,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       }
 
       toast.success('Успешный вход');
-      onLogin(data.role, data.user_id);
+      onLogin(data.role, data.user_id, data.full_name);
     } catch (error) {
       toast.error('Ошибка подключения');
       console.error(error);

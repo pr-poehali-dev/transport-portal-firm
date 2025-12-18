@@ -48,6 +48,8 @@ const Index = () => {
     fito_ready_date: '',
     fito_received_date: ''
   });
+  const [activeSessions, setActiveSessions] = useState<any[]>([]);
+  const [userName, setUserName] = useState('');
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -55,9 +57,54 @@ const Index = () => {
     }
   }, [isLoggedIn]);
 
-  const handleLogin = (role: string, uid: number) => {
+  useEffect(() => {
+    if (!isLoggedIn || !userId) return;
+
+    const updateSession = async () => {
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update_session',
+            user_id: userId,
+            section_name: activeSection,
+            full_name: userName,
+            role: userRole,
+            is_editing: showOrderForm || editOrder !== null,
+            editing_item_id: editOrder?.id || null
+          })
+        });
+
+        const sessionsRes = await fetch(`${API_URL}?resource=active_sessions&section=${activeSection}`);
+        const sessionsData = await sessionsRes.json();
+        setActiveSessions(sessionsData.sessions || []);
+      } catch (error) {
+        console.error('Session update failed:', error);
+      }
+    };
+
+    updateSession();
+    const interval = setInterval(updateSession, 30000);
+
+    return () => {
+      clearInterval(interval);
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'remove_session',
+          user_id: userId,
+          section_name: activeSection
+        })
+      }).catch(() => {});
+    };
+  }, [isLoggedIn, userId, activeSection, showOrderForm, editOrder, userName, userRole]);
+
+  const handleLogin = (role: string, uid: number, fullName?: string) => {
     setUserRole(role as any);
     setUserId(uid);
+    setUserName(fullName || '');
     setIsLoggedIn(true);
   };
 
@@ -320,11 +367,23 @@ const Index = () => {
                   {activeSection === 'customers' && 'Заказчики'}
                   {activeSection === 'settings' && 'Настройки'}
                 </h2>
-                <p className="text-xs md:text-sm text-gray-500 mt-1">
-                  Роль: <span className="font-semibold capitalize">{userRole}</span>
+                <p className="text-xs md:text-sm text-gray-500 mt-1 flex items-center gap-2">
+                  <span>Роль: <span className="font-semibold capitalize">{userRole}</span></span>
+                  {userRole === 'admin' && activeSessions.length > 0 && (
+                    <span className="flex items-center gap-1 ml-2">
+                      <Icon name="Users" size={14} className="text-green-500" />
+                      <span className="text-green-600 font-medium">{activeSessions.length}</span>
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="flex items-center gap-2 md:gap-4">
+                {activeSessions.length > 0 && userRole === 'admin' && (
+                  <div className="hidden md:flex items-center gap-2 text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
+                    <Icon name="Users" size={14} />
+                    <span>{activeSessions.length} {activeSessions.length === 1 ? 'пользователь' : 'пользователей'} в разделе</span>
+                  </div>
+                )}
                 <Button variant="outline" size="sm" onClick={loadData}>
                   <Icon name="RefreshCw" size={18} className="mr-0 md:mr-2" />
                   <span className="hidden md:inline">Обновить</span>
@@ -478,9 +537,29 @@ const Index = () => {
                               return `${invoice} / ${track}`;
                             };
 
+                            const otherUserEditing = activeSessions.find(
+                              s => s.user_id !== userId && s.is_editing && s.editing_item_id === order.id
+                            );
+
                             return (
-                              <TableRow key={order.id} className="hover:bg-gray-50">
-                                <TableCell className="font-medium">{order.order_number}</TableCell>
+                              <TableRow key={order.id} className={`hover:bg-gray-50 ${otherUserEditing ? 'bg-yellow-50' : ''}`}>
+                                <TableCell className="font-medium">
+                                  <div className="flex items-center gap-2">
+                                    {otherUserEditing && (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Icon name="Lock" size={14} className="text-yellow-600" />
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            {otherUserEditing.full_name} редактирует
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    )}
+                                    {order.order_number}
+                                  </div>
+                                </TableCell>
                                 <TableCell>{order.order_date ? new Date(order.order_date).toLocaleDateString('ru-RU') : '—'}</TableCell>
                                 <TableCell>{getInvoiceTrack()}</TableCell>
                                 <TableCell>{getVehicleNumber()}</TableCell>
@@ -520,14 +599,39 @@ const Index = () => {
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex gap-1 justify-end">
-                                    <Button variant="ghost" size="sm" onClick={async () => { 
-                                      const stagesRes = await fetch(`${API_URL}?resource=order_stages&order_id=${order.id}`);
-                                      const stagesData = await stagesRes.json();
-                                      setEditOrder({...order, stages: stagesData.stages || []}); 
-                                      setShowOrderForm(true); 
-                                    }}>
-                                      <Icon name="Pencil" size={16} />
-                                    </Button>
+                                    {(() => {
+                                      const otherUserEditing = activeSessions.find(
+                                        s => s.user_id !== userId && s.is_editing && s.editing_item_id === order.id
+                                      );
+                                      
+                                      if (otherUserEditing) {
+                                        return (
+                                          <TooltipProvider>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="sm" disabled>
+                                                  <Icon name="Lock" size={16} className="text-gray-400" />
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                {otherUserEditing.full_name} редактирует
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+                                        );
+                                      }
+                                      
+                                      return (
+                                        <Button variant="ghost" size="sm" onClick={async () => { 
+                                          const stagesRes = await fetch(`${API_URL}?resource=order_stages&order_id=${order.id}`);
+                                          const stagesData = await stagesRes.json();
+                                          setEditOrder({...order, stages: stagesData.stages || []}); 
+                                          setShowOrderForm(true); 
+                                        }}>
+                                          <Icon name="Pencil" size={16} />
+                                        </Button>
+                                      );
+                                    })()}
                                     <Button 
                                       variant="ghost" 
                                       size="sm" 

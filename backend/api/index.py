@@ -511,6 +511,45 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'settings': settings}),
                     'isBase64Encoded': False
                 }
+            
+            elif resource == 'active_sessions':
+                section_name = query_params.get('section')
+                
+                cur.execute('''
+                    UPDATE user_sessions 
+                    SET last_activity = CURRENT_TIMESTAMP 
+                    WHERE last_activity < NOW() - INTERVAL '5 minutes'
+                ''')
+                
+                if section_name:
+                    cur.execute('''
+                        SELECT user_id, full_name, role, is_editing, editing_item_id, last_activity
+                        FROM user_sessions
+                        WHERE section_name = %s 
+                        AND last_activity >= NOW() - INTERVAL '5 minutes'
+                        ORDER BY last_activity DESC
+                    ''', (section_name,))
+                else:
+                    cur.execute('''
+                        SELECT section_name, COUNT(*) as user_count
+                        FROM user_sessions
+                        WHERE last_activity >= NOW() - INTERVAL '5 minutes'
+                        GROUP BY section_name
+                    ''')
+                
+                columns = [desc[0] for desc in cur.description]
+                sessions = [dict(zip(columns, row)) for row in cur.fetchall()]
+                
+                for session in sessions:
+                    if session.get('last_activity'):
+                        session['last_activity'] = session['last_activity'].strftime('%Y-%m-%d %H:%M:%S')
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'sessions': sessions}),
+                    'isBase64Encoded': False
+                }
         
         elif method == 'POST':
             body_data = json.loads(event.get('body', '{}'))
@@ -1377,6 +1416,71 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({'success': True, 'stage_id': stage_id}),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'update_session':
+                user_id = body_data.get('user_id')
+                section_name = body_data.get('section_name')
+                full_name = body_data.get('full_name', '')
+                role = body_data.get('role', '')
+                is_editing = body_data.get('is_editing', False)
+                editing_item_id = body_data.get('editing_item_id')
+                
+                if not user_id or not section_name:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': False, 'error': 'user_id and section_name required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute('''
+                    SELECT id FROM user_sessions 
+                    WHERE user_id = %s AND section_name = %s
+                ''', (user_id, section_name))
+                
+                existing = cur.fetchone()
+                
+                if existing:
+                    cur.execute('''
+                        UPDATE user_sessions 
+                        SET full_name = %s, role = %s, is_editing = %s, 
+                            editing_item_id = %s, last_activity = CURRENT_TIMESTAMP
+                        WHERE user_id = %s AND section_name = %s
+                    ''', (full_name, role, is_editing, editing_item_id, user_id, section_name))
+                else:
+                    cur.execute('''
+                        INSERT INTO user_sessions 
+                        (user_id, section_name, full_name, role, is_editing, editing_item_id)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    ''', (user_id, section_name, full_name, role, is_editing, editing_item_id))
+                
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'remove_session':
+                user_id = body_data.get('user_id')
+                section_name = body_data.get('section_name')
+                
+                if user_id and section_name:
+                    cur.execute('''
+                        UPDATE user_sessions 
+                        SET last_activity = NOW() - INTERVAL '10 minutes'
+                        WHERE user_id = %s AND section_name = %s
+                    ''', (user_id, section_name))
+                    conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
                     'isBase64Encoded': False
                 }
             
