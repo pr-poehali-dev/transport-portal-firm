@@ -407,7 +407,13 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
   const handleUpdateOrder = async () => {
     if (!validateOrderInfo()) {
-      toast.error('Заполните все обязательные поля');
+      toast.error('Заполните все обязательные поля заказа');
+      return;
+    }
+    
+    // Валидация маршрутов (если есть)
+    if (stages.length > 0 && !validateStages()) {
+      toast.error('Заполните все обязательные поля маршрутов');
       return;
     }
 
@@ -580,9 +586,29 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
   };
 
   const handleCompleteStage = (stageId: string) => {
+    const stage = stages.find(s => s.id === stageId);
+    const idx = stages.findIndex(s => s.id === stageId);
+    
+    if (!stage) return;
+    
+    // Валидация обязательных полей
+    const stageErrors: Record<string, string> = {};
+    if (!stage.planned_departure?.trim()) stageErrors[`stage_${idx}_date`] = 'Укажите дату погрузки';
+    if (!stage.from_location?.trim()) stageErrors[`stage_${idx}_from`] = 'Обязательное поле';
+    if (!stage.to_location?.trim()) stageErrors[`stage_${idx}_to`] = 'Обязательное поле';
+    if (!stage.vehicle_id) stageErrors[`stage_${idx}_vehicle`] = 'Обязательное поле';
+    if (!stage.driver_id) stageErrors[`stage_${idx}_driver`] = 'Выберите автомобиль с назначенным водителем';
+    
+    if (Object.keys(stageErrors).length > 0) {
+      setErrors({ ...errors, ...stageErrors });
+      toast.error('Заполните все обязательные поля маршрута');
+      return;
+    }
+    
     setStages(stages.map(s => 
       s.id === stageId ? { ...s, started: true } : s
     ));
+    setErrors({});
     toast.success('Маршрут завершён');
   };
 
