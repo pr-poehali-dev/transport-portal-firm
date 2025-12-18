@@ -33,7 +33,6 @@ const Index = () => {
   const [clients, setClients] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [selectedLogOrder, setSelectedLogOrder] = useState<number | null>(null);
@@ -300,35 +299,21 @@ const Index = () => {
               <div className="space-y-6 animate-fade-in">
                 <Card>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>Заказы</CardTitle>
-                      <div className="flex gap-2">
-                        <Input 
-                          placeholder="Поиск заказа..." 
-                          className="w-64"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                          <SelectTrigger className="w-40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Все статусы</SelectItem>
-                            <SelectItem value="pending">Ожидание</SelectItem>
-                            <SelectItem value="loading">Загрузка</SelectItem>
-                            <SelectItem value="in_transit">В пути</SelectItem>
-                            <SelectItem value="delivered">Доставлен</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button onClick={() => { setEditOrder(null); setShowOrderForm(true); }}>
-                          <Icon name="Plus" size={18} className="mr-2" />
-                          Новый заказ
-                        </Button>
-                      </div>
-                    </div>
+                    <CardTitle>Заказы</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-4">
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="Поиск заказа..." 
+                        className="flex-1"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                      <Button onClick={() => { setEditOrder(null); setShowOrderForm(true); }}>
+                        <Icon name="Plus" size={18} className="mr-2" />
+                        Новый заказ
+                      </Button>
+                    </div>
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -345,10 +330,7 @@ const Index = () => {
                       <TableBody>
                         {orders
                           .filter(order => {
-                            if (searchQuery === '') {
-                              const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-                              return matchesStatus;
-                            }
+                            if (searchQuery === '') return true;
                             
                             const query = searchQuery.replace(/[\s\-]/g, '').toLowerCase();
                             
@@ -360,16 +342,13 @@ const Index = () => {
                             const driverPhone = (order.driver_phone || '').replace(/[\s\-]/g, '').toLowerCase();
                             const driverAdditionalPhone = (order.driver_additional_phone || '').replace(/[\s\-]/g, '').toLowerCase();
                             
-                            const matchesSearch = orderNumber.includes(query) ||
+                            return orderNumber.includes(query) ||
                               trackNumber.includes(query) ||
                               invoice.includes(query) ||
                               licensePlate.includes(query) ||
                               trailerPlate.includes(query) ||
                               driverPhone.includes(query) ||
                               driverAdditionalPhone.includes(query);
-                            
-                            const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-                            return matchesSearch && matchesStatus;
                           })
                           .map((order) => {
                             const getDaysInTransit = () => {
