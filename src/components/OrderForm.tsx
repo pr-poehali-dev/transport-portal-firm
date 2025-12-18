@@ -656,7 +656,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                       }
                     }}
                     className={errors.order_date ? 'border-red-500' : ''}
-                    disabled={false && !editOrder}
+                    disabled={!!editOrder}
                   />
                   {errors.order_date && <p className="text-red-500 text-xs mt-1">{errors.order_date}</p>}
                 </div>
@@ -784,7 +784,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   onChange={(e) => setOrderInfo({ ...orderInfo, notes: e.target.value })}
                   placeholder="Дополнительная информация о заказе..."
                   rows={3}
-                  disabled={!!editOrder || isOrderStarted}
                 />
               </div>
 
