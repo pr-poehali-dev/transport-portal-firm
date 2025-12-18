@@ -28,6 +28,7 @@ interface OrderFormProps {
   drivers: any[];
   vehicles: any[];
   userRole?: string;
+  userName?: string;
 }
 
 interface Customs {
@@ -58,7 +59,7 @@ interface UploadedFile {
   type: string;
 }
 
-export default function OrderForm({ open, onClose, onSuccess, editOrder, clients, customers, drivers, vehicles, userRole = 'Пользователь' }: OrderFormProps) {
+export default function OrderForm({ open, onClose, onSuccess, editOrder, clients, customers, drivers, vehicles, userRole = 'Пользователь', userName = 'Пользователь' }: OrderFormProps) {
   const [orderInfo, setOrderInfo] = useState({
     order_number: '',
     client_id: '',
@@ -424,6 +425,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         body: JSON.stringify({
           action: 'update_order',
           order_id: editOrder.id,
+          user_role: userRole,
+          user_name: userName,
           order: {
             order_number: orderInfo.order_number,
             order_date: orderInfo.order_date,
@@ -536,6 +539,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         body: JSON.stringify({
           action: 'create_multi_stage_order',
           user_role: userRole,
+          user_name: userName,
           data: {
             order: {
               order_number: orderInfo.order_number,

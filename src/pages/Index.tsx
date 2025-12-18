@@ -415,7 +415,11 @@ const Index = () => {
                                 <Badge variant="outline" className="text-xs">{log.order_number}</Badge>
                                 <span className="text-xs text-gray-500">{log.created_at}</span>
                               </div>
-                              <p className="text-sm font-medium text-gray-900">{log.description}</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                <span className="text-primary font-semibold">{log.user_name || log.user_role}</span>
+                                {' — '}
+                                {log.description}
+                              </p>
                             </div>
                             <Icon 
                               name={selectedLogOrder === log.order_id ? "ChevronUp" : "ChevronDown"} 
@@ -432,7 +436,11 @@ const Index = () => {
                                   <div key={l.id} className="flex items-start gap-3 p-2 bg-gray-50 rounded">
                                     <Icon name="Circle" size={8} className="text-primary mt-1.5" />
                                     <div className="flex-1">
-                                      <p className="text-sm text-gray-700">{l.description}</p>
+                                      <p className="text-sm text-gray-700">
+                                        <span className="font-medium text-primary">{l.user_name || l.user_role}</span>
+                                        {' — '}
+                                        {l.description}
+                                      </p>
                                       <p className="text-xs text-gray-500 mt-1">{l.created_at}</p>
                                     </div>
                                   </div>
@@ -783,6 +791,7 @@ const Index = () => {
         drivers={drivers}
         vehicles={vehicles}
         userRole={userRole === 'admin' ? 'Администратор' : userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : userRole === 'manager' ? 'Менеджер' : 'Руководитель'}
+        userName={userName}
       />
 
       <Dialog open={showFitoDialog} onOpenChange={setShowFitoDialog}>

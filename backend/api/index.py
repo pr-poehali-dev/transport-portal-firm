@@ -320,14 +320,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 order_id = query_params.get('order_id')
                 if order_id:
                     cur.execute('''
-                        SELECT id, order_id, user_role, action_type, description, created_at
+                        SELECT id, order_id, user_role, user_name, action_type, description, created_at
                         FROM activity_log
                         WHERE order_id = %s
                         ORDER BY created_at DESC
                     ''', (order_id,))
                 else:
                     cur.execute('''
-                        SELECT al.id, al.order_id, al.user_role, al.action_type, al.description, al.created_at,
+                        SELECT al.id, al.order_id, al.user_role, al.user_name, al.action_type, al.description, al.created_at,
                                o.order_number
                         FROM activity_log al
                         LEFT JOIN orders o ON al.order_id = o.id
@@ -598,10 +598,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     ''', (order_id, stage_name, idx, False))
                 
                 user_role = body_data.get('user_role', 'Пользователь')
+                user_name = body_data.get('user_name', user_role)
+                
                 cur.execute('''
-                    INSERT INTO activity_log (order_id, user_role, action_type, description)
-                    VALUES (%s, %s, %s, %s)
-                ''', (order_id, user_role, 'create_order', f'{user_role} создал заказ {data.get("order_number")}'))
+                    INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
+                    VALUES (%s, %s, %s, %s, %s)
+                ''', (order_id, user_role, user_name, 'create_order', f'создал заказ {data.get("order_number")}'))
                 
                 conn.commit()
                 
@@ -642,6 +644,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 order_id = cur.fetchone()[0]
                 
+                user_role = body_data.get('user_role', 'Пользователь')
+                user_name = body_data.get('user_name', user_role)
+                
                 for stage in stages_data:
                     cur.execute('''
                         INSERT INTO order_transport_stages (
@@ -665,6 +670,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     ))
                     stage_id = cur.fetchone()[0]
                     
+                    route_desc = f"{stage.get('from_location')} → {stage.get('to_location')}"
+                    cur.execute('''
+                        INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
+                        VALUES (%s, %s, %s, %s, %s)
+                    ''', (order_id, user_role, user_name, 'add_stage', f'добавил маршрут "{route_desc}"'))
+                    
                     for customs in customs_data:
                         if customs.get('customs_name'):
                             cur.execute('''
@@ -680,11 +691,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                 customs.get('notes')
                             ))
                 
-                user_role = body_data.get('user_role', 'Пользователь')
                 cur.execute('''
-                    INSERT INTO activity_log (order_id, user_role, action_type, description)
-                    VALUES (%s, %s, %s, %s)
-                ''', (order_id, user_role, 'create_order', f'{user_role} создал многоэтапный заказ {order_data.get("order_number")}'))
+                    INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
+                    VALUES (%s, %s, %s, %s, %s)
+                ''', (order_id, user_role, user_name, 'create_order', f'создал заказ {order_data.get("order_number")}'))
                 
                 conn.commit()
                 
@@ -807,10 +817,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             VALUES (%s, %s, %s)
                         ''', (stage_id, customs.get('customs_name'), 'pending'))
                 
+                user_name = body_data.get('user_name', 'Пользователь')
+                user_role = body_data.get('user_role', 'Пользователь')
+                
                 cur.execute('''
-                    INSERT INTO activity_log (order_id, user_role, action_type, description)
-                    VALUES (%s, %s, %s, %s)
-                ''', (order_id, 'Пользователь', 'update_order', f'Обновлен заказ {order_data.get("order_number")}'))
+                    INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
+                    VALUES (%s, %s, %s, %s, %s)
+                ''', (order_id, user_role, user_name, 'update_order', f'обновил заказ {order_data.get("order_number")}'))
                 
                 conn.commit()
                 
@@ -951,6 +964,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 stage_id = body_data.get('stage_id')
                 is_completed = body_data.get('is_completed')
                 completed_by = body_data.get('completed_by', 'Пользователь')
+                user_name = body_data.get('user_name', completed_by)
                 
                 cur.execute('''
                     SELECT os.stage_name, os.order_id, o.order_number
@@ -970,9 +984,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     if stage_info:
                         stage_name, order_id, order_number = stage_info
                         cur.execute('''
-                            INSERT INTO activity_log (order_id, user_role, action_type, description)
-                            VALUES (%s, %s, %s, %s)
-                        ''', (order_id, completed_by, 'update_stage', f'{completed_by} выполнил этап "{stage_name}" в заказе {order_number}'))
+                            INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
+                            VALUES (%s, %s, %s, %s, %s)
+                        ''', (order_id, completed_by, user_name, 'stage_completed', f'завершил этап "{stage_name}" в заказе {order_number}'))
                         
                         # Отправка уведомления в Telegram о выполнении этапа
                         try:
@@ -1538,6 +1552,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 ))
                 
                 user_role = body_data.get('user_role', 'Пользователь')
+                user_name = body_data.get('user_name', user_role)
                 changes = []
                 if old_driver_id != data.get('driver_id'):
                     cur.execute('SELECT full_name FROM drivers WHERE id = %s', (data.get('driver_id'),))
@@ -1551,11 +1566,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         changes.append(f'назначил автомобиль {vehicle_plate[0]}')
                 
                 if changes:
-                    description = f'{user_role} {" и ".join(changes)} в заказе {old_order_number}'
+                    description = f'{" и ".join(changes)} в заказе {old_order_number}'
                     cur.execute('''
-                        INSERT INTO activity_log (order_id, user_role, action_type, description)
-                        VALUES (%s, %s, %s, %s)
-                    ''', (item_id, user_role, 'update_order', description))
+                        INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
+                        VALUES (%s, %s, %s, %s, %s)
+                    ''', (item_id, user_role, user_name, 'update_order', description))
                 
                 conn.commit()
                 
