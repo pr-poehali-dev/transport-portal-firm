@@ -837,21 +837,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               {stages.map((stage, idx) => (
                 <Card key={stage.id} className="relative">
                   <CardHeader className="flex flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-4 flex-1">
-                      <CardTitle className="text-lg">Маршрут {stage.stage_number}</CardTitle>
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <Label className="text-sm text-gray-600">Дата погрузки:</Label>
-                          <DateInput
-                            value={stage.planned_departure}
-                            onChange={(value) => updateStage(stage.id, 'planned_departure', value)}
-                            disabled={stage.started}
-                            className={errors[`stage_${idx}_date`] ? 'border-red-500' : ''}
-                          />
-                        </div>
-                        {errors[`stage_${idx}_date`] && <p className="text-red-500 text-xs">{errors[`stage_${idx}_date`]}</p>}
-                      </div>
-                    </div>
+                    <CardTitle className="text-lg">Маршрут {stage.stage_number}</CardTitle>
                     <Button
                       type="button"
                       variant="ghost"
@@ -865,6 +851,17 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-4">
+                      <div>
+                        <Label>Дата погрузки *</Label>
+                        <DateInput
+                          value={stage.planned_departure}
+                          onChange={(value) => updateStage(stage.id, 'planned_departure', value)}
+                          disabled={stage.started}
+                          className={errors[`stage_${idx}_date`] ? 'border-red-500' : ''}
+                        />
+                        {errors[`stage_${idx}_date`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_date`]}</p>}
+                      </div>
+
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label>Откуда *</Label>
@@ -906,8 +903,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                           </Select>
                           {errors[`stage_${idx}_vehicle`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_vehicle`]}</p>}
                         </div>
-
-                        <div></div>
 
                         <div>
                           <Label>Водитель *</Label>
