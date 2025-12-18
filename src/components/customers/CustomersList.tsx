@@ -17,7 +17,7 @@ export default function CustomersList({ customers, onEdit, onCreate, onViewAddre
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Заказчики</CardTitle>
-          <CardDescription>Управление списком заказчиков</CardDescription>
+          <CardDescription></CardDescription>
         </div>
         <Button onClick={onCreate}>
           <Icon name="Plus" size={16} className="mr-2" />
