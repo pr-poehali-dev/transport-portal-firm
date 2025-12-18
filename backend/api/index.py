@@ -47,7 +47,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         c.id as client_id,
                         o.customer_items,
                         o.invoice, o.track_number, o.cargo_type, 
-                        o.cargo_weight, o.notes
+                        o.cargo_weight, o.notes,
+                        o.fito_order_date, o.fito_ready_date, o.fito_received_date
                     FROM orders o
                     LEFT JOIN clients c ON o.client_id = c.id
                     ORDER BY o.order_date DESC
@@ -60,6 +61,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     if order.get('order_date'):
                         order['order_date_display'] = order['order_date'].strftime('%d.%m.%Y')
                         order['order_date'] = order['order_date'].strftime('%Y-%m-%d')
+                    
+                    if order.get('fito_order_date'):
+                        order['fito_order_date'] = order['fito_order_date'].strftime('%Y-%m-%d')
+                    if order.get('fito_ready_date'):
+                        order['fito_ready_date'] = order['fito_ready_date'].strftime('%Y-%m-%d')
+                    if order.get('fito_received_date'):
+                        order['fito_received_date'] = order['fito_received_date'].strftime('%Y-%m-%d')
                     
                     if order.get('customer_items'):
                         customer_items = order['customer_items']
@@ -805,6 +813,37 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'statusCode': 404,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({'success': False, 'message': 'Заказ не найден'}),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'update_fito_dates':
+                order_id = body_data.get('order_id')
+                fito_data = body_data.get('data', {})
+                
+                if not order_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': False, 'message': 'order_id is required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                fito_order_date = fito_data.get('fito_order_date') or None
+                fito_ready_date = fito_data.get('fito_ready_date') or None
+                fito_received_date = fito_data.get('fito_received_date') or None
+                
+                cur.execute('''
+                    UPDATE orders 
+                    SET fito_order_date = %s, fito_ready_date = %s, fito_received_date = %s
+                    WHERE id = %s
+                ''', (fito_order_date, fito_ready_date, fito_received_date, order_id))
+                
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'message': 'Даты Фито обновлены'}),
                     'isBase64Encoded': False
                 }
             

@@ -126,12 +126,30 @@ const Index = () => {
     return parts.length > 0 ? parts.join('\n') : 'Нет данных о Фито';
   };
 
+  const convertDateToDisplay = (dateStr: string) => {
+    if (!dateStr) return '';
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      return `${match[3]}-${match[2]}-${match[1]}`;
+    }
+    return dateStr;
+  };
+
+  const convertDateToISO = (dateStr: string) => {
+    if (!dateStr) return '';
+    const match = dateStr.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (match) {
+      return `${match[3]}-${match[2]}-${match[1]}`;
+    }
+    return dateStr;
+  };
+
   const handleOpenFitoDialog = (order: any) => {
     setSelectedFitoOrder(order);
     setFitoData({
-      fito_order_date: order.fito_order_date || '',
-      fito_ready_date: order.fito_ready_date || '',
-      fito_received_date: order.fito_received_date || ''
+      fito_order_date: convertDateToDisplay(order.fito_order_date || ''),
+      fito_ready_date: convertDateToDisplay(order.fito_ready_date || ''),
+      fito_received_date: convertDateToDisplay(order.fito_received_date || '')
     });
     setShowFitoDialog(true);
   };
@@ -146,7 +164,11 @@ const Index = () => {
         body: JSON.stringify({
           action: 'update_fito_dates',
           order_id: selectedFitoOrder.id,
-          data: fitoData
+          data: {
+            fito_order_date: convertDateToISO(fitoData.fito_order_date),
+            fito_ready_date: convertDateToISO(fitoData.fito_ready_date),
+            fito_received_date: convertDateToISO(fitoData.fito_received_date)
+          }
         })
       });
 
@@ -644,10 +666,13 @@ const Index = () => {
       />
 
       <Dialog open={showFitoDialog} onOpenChange={setShowFitoDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" aria-describedby="fito-dialog-description">
           <DialogHeader>
             <DialogTitle>Даты Фито - {selectedFitoOrder?.order_number}</DialogTitle>
           </DialogHeader>
+          <p id="fito-dialog-description" className="sr-only">
+            Введите даты для управления фитосанитарными документами заказа
+          </p>
           <div className="space-y-4">
             <div>
               <Label>Дата заказа Фито</Label>
