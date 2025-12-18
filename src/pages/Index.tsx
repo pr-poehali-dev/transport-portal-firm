@@ -6,6 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Icon from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import DateInput from '@/components/ui/date-input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import OrderForm from '@/components/OrderForm';
 import ResourceManager from '@/components/ResourceManager';
@@ -37,6 +41,13 @@ const Index = () => {
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [selectedLogOrder, setSelectedLogOrder] = useState<number | null>(null);
   const [userPermissions, setUserPermissions] = useState<any>({});
+  const [showFitoDialog, setShowFitoDialog] = useState(false);
+  const [selectedFitoOrder, setSelectedFitoOrder] = useState<any>(null);
+  const [fitoData, setFitoData] = useState({
+    fito_order_date: '',
+    fito_ready_date: '',
+    fito_received_date: ''
+  });
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -97,6 +108,56 @@ const Index = () => {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getFitoStatus = (order: any) => {
+    if (order.fito_received_date) return 'green';
+    if (order.fito_ready_date) return 'yellow';
+    if (order.fito_order_date) return 'red';
+    return 'gray';
+  };
+
+  const getFitoTooltip = (order: any) => {
+    const parts = [];
+    if (order.fito_order_date) parts.push(`Заказано: ${new Date(order.fito_order_date).toLocaleDateString('ru-RU')}`);
+    if (order.fito_ready_date) parts.push(`Готово: ${new Date(order.fito_ready_date).toLocaleDateString('ru-RU')}`);
+    if (order.fito_received_date) parts.push(`Получено: ${new Date(order.fito_received_date).toLocaleDateString('ru-RU')}`);
+    return parts.length > 0 ? parts.join('\n') : 'Нет данных о Фито';
+  };
+
+  const handleOpenFitoDialog = (order: any) => {
+    setSelectedFitoOrder(order);
+    setFitoData({
+      fito_order_date: order.fito_order_date || '',
+      fito_ready_date: order.fito_ready_date || '',
+      fito_received_date: order.fito_received_date || ''
+    });
+    setShowFitoDialog(true);
+  };
+
+  const handleSaveFitoDates = async () => {
+    if (!selectedFitoOrder) return;
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_fito_dates',
+          order_id: selectedFitoOrder.id,
+          data: fitoData
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to update fito dates');
+      
+      toast.success('Даты Фито обновлены');
+      setShowFitoDialog(false);
+      loadData();
+    } catch (error) {
+      toast.error('Ошибка при сохранении дат');
+      console.error(error);
     }
   };
 
@@ -392,11 +453,32 @@ const Index = () => {
                                   </Badge>
                                 </TableCell>
                                 <TableCell>
-                                  {order.fito_ready ? (
-                                    <Icon name="CheckCircle2" className="text-green-500" size={20} />
-                                  ) : (
-                                    <Icon name="Clock" className="text-yellow-500" size={20} />
-                                  )}
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="p-0 h-auto hover:bg-transparent"
+                                          onClick={() => handleOpenFitoDialog(order)}
+                                        >
+                                          <Icon 
+                                            name="Clock" 
+                                            className={`cursor-pointer ${
+                                              getFitoStatus(order) === 'green' ? 'text-green-500' :
+                                              getFitoStatus(order) === 'yellow' ? 'text-yellow-500' :
+                                              getFitoStatus(order) === 'red' ? 'text-red-500' :
+                                              'text-gray-400'
+                                            }`}
+                                            size={20}
+                                          />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="whitespace-pre-line">
+                                        {getFitoTooltip(order)}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex gap-1 justify-end">
@@ -560,6 +642,48 @@ const Index = () => {
         vehicles={vehicles}
         userRole={userRole === 'admin' ? 'Администратор' : userRole === 'logist' ? 'Логист' : userRole === 'buyer' ? 'Байер' : userRole === 'manager' ? 'Менеджер' : 'Руководитель'}
       />
+
+      <Dialog open={showFitoDialog} onOpenChange={setShowFitoDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Даты Фито - {selectedFitoOrder?.order_number}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Дата заказа Фито</Label>
+              <DateInput
+                value={fitoData.fito_order_date}
+                onChange={(val) => setFitoData({ ...fitoData, fito_order_date: val })}
+                placeholder="дд-мм-гггг"
+              />
+            </div>
+            <div>
+              <Label>Дата готовности Фито</Label>
+              <DateInput
+                value={fitoData.fito_ready_date}
+                onChange={(val) => setFitoData({ ...fitoData, fito_ready_date: val })}
+                placeholder="дд-мм-гггг"
+              />
+            </div>
+            <div>
+              <Label>Дата получения Фито</Label>
+              <DateInput
+                value={fitoData.fito_received_date}
+                onChange={(val) => setFitoData({ ...fitoData, fito_received_date: val })}
+                placeholder="дд-мм-гггг"
+              />
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button variant="outline" onClick={() => setShowFitoDialog(false)}>
+                Отмена
+              </Button>
+              <Button onClick={handleSaveFitoDates} className="flex-1">
+                Сохранить
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
