@@ -381,10 +381,7 @@ const Index = () => {
                 <Card>
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle>Заказы</CardTitle>
-                        <CardDescription>Управление перевозками и отчетность</CardDescription>
-                      </div>
+                      <CardTitle>Заказы</CardTitle>
                       <div className="flex gap-2">
                         <Input 
                           placeholder="Поиск заказа..." 
@@ -428,10 +425,29 @@ const Index = () => {
                       <TableBody>
                         {orders
                           .filter(order => {
-                            const matchesSearch = searchQuery === '' || 
-                              order.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              order.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              order.carrier.toLowerCase().includes(searchQuery.toLowerCase());
+                            if (searchQuery === '') {
+                              const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+                              return matchesStatus;
+                            }
+                            
+                            const query = searchQuery.replace(/[\s\-]/g, '').toLowerCase();
+                            
+                            const orderNumber = (order.order_number || '').toLowerCase();
+                            const trackNumber = (order.track_number || '').replace(/[\s\-]/g, '').toLowerCase();
+                            const invoice = (order.invoice || '').replace(/[\s\-]/g, '').toLowerCase();
+                            const licensePlate = (order.license_plate || '').replace(/[\s\-]/g, '').toLowerCase();
+                            const trailerPlate = (order.trailer_plate || '').replace(/[\s\-]/g, '').toLowerCase();
+                            const driverPhone = (order.driver_phone || '').replace(/[\s\-]/g, '').toLowerCase();
+                            const driverAdditionalPhone = (order.driver_additional_phone || '').replace(/[\s\-]/g, '').toLowerCase();
+                            
+                            const matchesSearch = orderNumber.includes(query) ||
+                              trackNumber.includes(query) ||
+                              invoice.includes(query) ||
+                              licensePlate.includes(query) ||
+                              trailerPlate.includes(query) ||
+                              driverPhone.includes(query) ||
+                              driverAdditionalPhone.includes(query);
+                            
                             const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
                             return matchesSearch && matchesStatus;
                           })
