@@ -204,6 +204,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif resource == 'customer_addresses':
+                customer_id = query_params.get('customer_id')
+                if not customer_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'customer_id required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute('''
+                    SELECT id, customer_id, address_name, address, contact_person, phone, is_primary
+                    FROM customer_delivery_addresses
+                    WHERE customer_id = %s
+                    ORDER BY is_primary DESC, address_name
+                ''', (customer_id,))
+                columns = [desc[0] for desc in cur.description]
+                addresses = [dict(zip(columns, row)) for row in cur.fetchall()]
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'addresses': addresses}),
+                    'isBase64Encoded': False
+                }
+            
             elif resource == 'order_stages':
                 order_id = query_params.get('order_id')
                 if not order_id:
@@ -260,7 +286,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     
                     # Получаем промежуточные точки для этого этапа
                     cur.execute('''
-                        SELECT id, waypoint_order, customer_id, address_type, location, waypoint_type, planned_time, actual_time, cargo_description, notes
+                        SELECT id, waypoint_order, customer_id, delivery_address_id, location, waypoint_type, planned_time, actual_time, cargo_description, notes
                         FROM stage_waypoints
                         WHERE stage_id = %s
                         ORDER BY waypoint_order
@@ -685,14 +711,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     for waypoint in waypoints_data:
                         cur.execute('''
                             INSERT INTO stage_waypoints (
-                                stage_id, waypoint_order, customer_id, address_type, location, waypoint_type,
+                                stage_id, waypoint_order, customer_id, delivery_address_id, location, waypoint_type,
                                 planned_time, cargo_description, notes
                             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                         ''', (
                             stage_id,
                             waypoint.get('waypoint_order'),
                             waypoint.get('customer_id') if waypoint.get('customer_id') else None,
-                            waypoint.get('address_type'),
+                            waypoint.get('delivery_address_id') if waypoint.get('delivery_address_id') else None,
                             waypoint.get('location'),
                             waypoint.get('waypoint_type'),
                             waypoint.get('planned_time') if waypoint.get('planned_time') else None,
@@ -846,14 +872,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     for waypoint in waypoints_data:
                         cur.execute('''
                             INSERT INTO stage_waypoints (
-                                stage_id, waypoint_order, customer_id, address_type, location, waypoint_type,
+                                stage_id, waypoint_order, customer_id, delivery_address_id, location, waypoint_type,
                                 planned_time, cargo_description, notes
                             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                         ''', (
                             stage_id,
                             waypoint.get('waypoint_order'),
                             waypoint.get('customer_id') if waypoint.get('customer_id') else None,
-                            waypoint.get('address_type'),
+                            waypoint.get('delivery_address_id') if waypoint.get('delivery_address_id') else None,
                             waypoint.get('location'),
                             waypoint.get('waypoint_type'),
                             waypoint.get('planned_time') if waypoint.get('planned_time') else None,

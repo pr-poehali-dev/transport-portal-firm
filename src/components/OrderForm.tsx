@@ -40,7 +40,7 @@ interface Waypoint {
   id: string;
   waypoint_order: number;
   customer_id: string;
-  address_type: 'legal' | 'delivery';
+  delivery_address_id: string;
   location: string;
   waypoint_type: 'loading' | 'unloading';
   planned_time: string;
@@ -103,12 +103,25 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoRoute, setAutoRoute] = useState('');
+  const [customerAddresses, setCustomerAddresses] = useState<Record<string, any[]>>({});
 
   useEffect(() => {
     if (open && !editOrder) {
       generateOrderNumber();
     }
   }, [open]);
+
+  const loadCustomerAddresses = async (customerId: string) => {
+    if (customerAddresses[customerId]) return;
+    
+    try {
+      const res = await fetch(`${API_URL}?resource=customer_addresses&customer_id=${customerId}`);
+      const data = await res.json();
+      setCustomerAddresses(prev => ({ ...prev, [customerId]: data.addresses || [] }));
+    } catch (error) {
+      console.error('Error loading customer addresses:', error);
+    }
+  };
 
   const generateOrderNumber = async () => {
     const today = new Date();
@@ -188,7 +201,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 id: wp.id?.toString() || Date.now().toString(),
                 waypoint_order: wp.waypoint_order || 0,
                 customer_id: wp.customer_id?.toString() || '',
-                address_type: wp.address_type || 'legal',
+                delivery_address_id: wp.delivery_address_id?.toString() || '',
                 location: wp.location || '',
                 waypoint_type: wp.waypoint_type || 'loading',
                 planned_time: wp.planned_time || '',
@@ -375,7 +388,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
             id: Date.now().toString(),
             waypoint_order: maxOrder + 1,
             customer_id: '',
-            address_type: 'legal' as const,
+            delivery_address_id: '',
             location: '',
             waypoint_type: 'loading' as const,
             planned_time: '',
@@ -528,7 +541,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
             waypoints: stage.waypoints.map(w => ({
               waypoint_order: w.waypoint_order,
               customer_id: parseInt(w.customer_id) || null,
-              address_type: w.address_type,
+              delivery_address_id: parseInt(w.delivery_address_id) || null,
               location: w.location,
               waypoint_type: w.waypoint_type,
               planned_time: w.planned_time || null,
@@ -604,7 +617,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         waypoints: stage.waypoints.map(w => ({
           waypoint_order: w.waypoint_order,
           customer_id: parseInt(w.customer_id) || null,
-          address_type: w.address_type,
+          delivery_address_id: parseInt(w.delivery_address_id) || null,
           location: w.location,
           waypoint_type: w.waypoint_type,
           planned_time: w.planned_time || null,
@@ -1051,11 +1064,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                                     value={waypoint.customer_id} 
                                     onValueChange={(val) => {
                                       updateWaypointField(stage.id, waypoint.id, 'customer_id', val);
-                                      const customer = customers.find(c => c.id.toString() === val);
-                                      if (customer) {
-                                        const addr = waypoint.address_type === 'legal' ? customer.legal_address : (customer.delivery_address || customer.legal_address);
-                                        updateWaypointField(stage.id, waypoint.id, 'location', addr || '');
-                                      }
+                                      updateWaypointField(stage.id, waypoint.id, 'delivery_address_id', '');
+                                      updateWaypointField(stage.id, waypoint.id, 'location', '');
+                                      loadCustomerAddresses(val);
                                     }}
                                   >
                                     <SelectTrigger className="flex-1">
@@ -1078,28 +1089,32 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                                     <Icon name="Trash2" size={16} className="text-red-500" />
                                   </Button>
                                 </div>
-                                <div>
-                                  <Label className="text-xs">Адрес</Label>
-                                  <Select 
-                                    value={waypoint.address_type} 
-                                    onValueChange={(val) => {
-                                      updateWaypointField(stage.id, waypoint.id, 'address_type', val);
-                                      const customer = customers.find(c => c.id.toString() === waypoint.customer_id);
-                                      if (customer) {
-                                        const addr = val === 'legal' ? customer.legal_address : (customer.delivery_address || customer.legal_address);
-                                        updateWaypointField(stage.id, waypoint.id, 'location', addr || '');
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="legal">Юридический адрес</SelectItem>
-                                      <SelectItem value="delivery">Адрес доставки</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
+                                {waypoint.customer_id && customerAddresses[waypoint.customer_id] && (
+                                  <div>
+                                    <Label className="text-xs">Адрес доставки</Label>
+                                    <Select 
+                                      value={waypoint.delivery_address_id} 
+                                      onValueChange={(val) => {
+                                        updateWaypointField(stage.id, waypoint.id, 'delivery_address_id', val);
+                                        const address = customerAddresses[waypoint.customer_id].find(a => a.id.toString() === val);
+                                        if (address) {
+                                          updateWaypointField(stage.id, waypoint.id, 'location', address.address || '');
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Выберите адрес" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {customerAddresses[waypoint.customer_id].map((address) => (
+                                          <SelectItem key={address.id} value={address.id.toString()}>
+                                            {address.address_name} - {address.address}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                )}
                                 <div>
                                   <Label className="text-xs">Примечание</Label>
                                   <Input
