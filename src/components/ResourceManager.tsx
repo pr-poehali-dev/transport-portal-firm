@@ -368,9 +368,9 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
     if (type === 'drivers') {
       return (
         <>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label>Фамилия *</Label>
+              <Label className="text-sm">Фамилия *</Label>
               <Input
                 value={formData.last_name || ''}
                 onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
@@ -379,7 +379,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
               {errors.last_name && <p className="text-red-500 text-xs mt-1">{errors.last_name}</p>}
             </div>
             <div>
-              <Label>Имя *</Label>
+              <Label className="text-sm">Имя *</Label>
               <Input
                 value={formData.first_name || ''}
                 onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
@@ -388,7 +388,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
               {errors.first_name && <p className="text-red-500 text-xs mt-1">{errors.first_name}</p>}
             </div>
             <div>
-              <Label>Отчество</Label>
+              <Label className="text-sm">Отчество</Label>
               <Input
                 value={formData.middle_name || ''}
                 onChange={(e) => setFormData({ ...formData, middle_name: e.target.value })}
@@ -396,193 +396,202 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
             </div>
           </div>
           
-          <div>
-            <Label>Номер телефона *</Label>
-            <PhoneInput
-              value={formData.phone || ''}
-              onChange={(value) => setFormData({ ...formData, phone: value })}
-              className={errors.phone ? 'border-red-500' : ''}
-            />
-            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-sm">Телефон *</Label>
+              <PhoneInput
+                value={formData.phone || ''}
+                onChange={(value) => setFormData({ ...formData, phone: value })}
+                className={errors.phone ? 'border-red-500' : ''}
+              />
+              {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+            </div>
+            <div>
+              <Label className="text-sm">Доп. телефон</Label>
+              <PhoneInput
+                value={formData.additional_phone || ''}
+                onChange={(value) => setFormData({ ...formData, additional_phone: value })}
+              />
+            </div>
           </div>
 
-          <div>
-            <Label>Дополнительный телефон</Label>
-            <PhoneInput
-              value={formData.additional_phone || ''}
-              onChange={(value) => setFormData({ ...formData, additional_phone: value })}
-            />
-          </div>
-
-          <div className="border-t pt-4 mt-4">
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <Icon name="CreditCard" size={18} />
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
+              <Icon name="CreditCard" size={16} />
               Паспорт
             </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Серия *</Label>
-                <Input
-                  value={formData.passport_series || ''}
-                  onChange={(e) => setFormData({ ...formData, passport_series: e.target.value })}
-                  placeholder="1234 или AB"
-                  className={errors.passport_series ? 'border-red-500' : ''}
-                />
-                {errors.passport_series && <p className="text-red-500 text-xs mt-1">{errors.passport_series}</p>}
+            <div className="space-y-3">
+              <div className="grid grid-cols-[1fr_2fr] gap-3">
+                <div>
+                  <Label className="text-sm">Серия *</Label>
+                  <Input
+                    value={formData.passport_series || ''}
+                    onChange={(e) => setFormData({ ...formData, passport_series: e.target.value })}
+                    placeholder="1234"
+                    className={errors.passport_series ? 'border-red-500' : ''}
+                  />
+                  {errors.passport_series && <p className="text-red-500 text-xs mt-1">{errors.passport_series}</p>}
+                </div>
+                <div>
+                  <Label className="text-sm">Номер *</Label>
+                  <Input
+                    value={formData.passport_number || ''}
+                    onChange={(e) => setFormData({ ...formData, passport_number: e.target.value })}
+                    placeholder="567890"
+                    className={errors.passport_number ? 'border-red-500' : ''}
+                  />
+                  {errors.passport_number && <p className="text-red-500 text-xs mt-1">{errors.passport_number}</p>}
+                </div>
               </div>
-              <div>
-                <Label>Номер *</Label>
-                <Input
-                  value={formData.passport_number || ''}
-                  onChange={(e) => setFormData({ ...formData, passport_number: e.target.value })}
-                  placeholder="567890 или 12345678"
-                  className={errors.passport_number ? 'border-red-500' : ''}
-                />
-                {errors.passport_number && <p className="text-red-500 text-xs mt-1">{errors.passport_number}</p>}
-              </div>
-            </div>
-            <div className="mt-4">
-              <Label>Кем выдан *</Label>
-              <Input
-                value={formData.passport_issued_by || ''}
-                onChange={(e) => setFormData({ ...formData, passport_issued_by: e.target.value })}
-                className={errors.passport_issued_by ? 'border-red-500' : ''}
-              />
-              {errors.passport_issued_by && <p className="text-red-500 text-xs mt-1">{errors.passport_issued_by}</p>}
-            </div>
-            <div className="mt-4">
-              <Label>Дата выдачи *</Label>
-              <div className="flex gap-2">
-                <DateInput
-                  value={(() => {
-                    if (!formData.passport_issue_date) return '';
-                    if (formData.passport_issue_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                      const date = new Date(formData.passport_issue_date);
-                      if (!isNaN(date.getTime())) {
-                        return format(date, 'dd-MM-yyyy');
-                      }
-                    }
-                    return formData.passport_issue_date;
-                  })()}
-                  onChange={(val) => {
-                    const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-                    if (match) {
-                      setFormData({ ...formData, passport_issue_date: `${match[3]}-${match[2]}-${match[1]}` });
-                    } else {
-                      setFormData({ ...formData, passport_issue_date: val });
-                    }
-                  }}
-                  maxDate="today"
-                  className={errors.passport_issue_date ? 'border-red-500' : ''}
-                />
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <Icon name="Calendar" size={16} />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={(() => {
-                        if (!formData.passport_issue_date || !formData.passport_issue_date.match(/^\d{4}-\d{2}-\d{2}$/)) return undefined;
-                        const date = new Date(formData.passport_issue_date);
-                        return isNaN(date.getTime()) ? undefined : date;
+              <div className="grid grid-cols-[2fr_1fr] gap-3">
+                <div>
+                  <Label className="text-sm">Кем выдан *</Label>
+                  <Input
+                    value={formData.passport_issued_by || ''}
+                    onChange={(e) => setFormData({ ...formData, passport_issued_by: e.target.value })}
+                    className={errors.passport_issued_by ? 'border-red-500' : ''}
+                  />
+                  {errors.passport_issued_by && <p className="text-red-500 text-xs mt-1">{errors.passport_issued_by}</p>}
+                </div>
+                <div>
+                  <Label className="text-sm">Дата выдачи *</Label>
+                  <div className="flex gap-2">
+                    <DateInput
+                      value={(() => {
+                        if (!formData.passport_issue_date) return '';
+                        if (formData.passport_issue_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                          const date = new Date(formData.passport_issue_date);
+                          if (!isNaN(date.getTime())) {
+                            return format(date, 'dd-MM-yyyy');
+                          }
+                        }
+                        return formData.passport_issue_date;
                       })()}
-                      onSelect={(date) => setFormData({ ...formData, passport_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
-                      locale={ru}
-                      initialFocus
+                      onChange={(val) => {
+                        const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+                        if (match) {
+                          setFormData({ ...formData, passport_issue_date: `${match[3]}-${match[2]}-${match[1]}` });
+                        } else {
+                          setFormData({ ...formData, passport_issue_date: val });
+                        }
+                      }}
+                      maxDate="today"
+                      className={errors.passport_issue_date ? 'border-red-500' : ''}
                     />
-                  </PopoverContent>
-                </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="icon">
+                          <Icon name="Calendar" size={16} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={(() => {
+                            if (!formData.passport_issue_date || !formData.passport_issue_date.match(/^\d{4}-\d{2}-\d{2}$/)) return undefined;
+                            const date = new Date(formData.passport_issue_date);
+                            return isNaN(date.getTime()) ? undefined : date;
+                          })()}
+                          onSelect={(date) => setFormData({ ...formData, passport_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                          locale={ru}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  {errors.passport_issue_date && <p className="text-red-500 text-xs mt-1">{errors.passport_issue_date}</p>}
+                </div>
               </div>
-              {errors.passport_issue_date && <p className="text-red-500 text-xs mt-1">{errors.passport_issue_date}</p>}
             </div>
           </div>
 
-          <div className="border-t pt-4 mt-4">
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <Icon name="Car" size={18} />
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
+              <Icon name="Car" size={16} />
               Водительское удостоверение
             </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Серия *</Label>
-                <Input
-                  value={formData.license_series || ''}
-                  onChange={(e) => setFormData({ ...formData, license_series: e.target.value })}
-                  placeholder="12 АА"
-                  className={errors.license_series ? 'border-red-500' : ''}
-                />
-                {errors.license_series && <p className="text-red-500 text-xs mt-1">{errors.license_series}</p>}
+            <div className="space-y-3">
+              <div className="grid grid-cols-[1fr_2fr] gap-3">
+                <div>
+                  <Label className="text-sm">Серия *</Label>
+                  <Input
+                    value={formData.license_series || ''}
+                    onChange={(e) => setFormData({ ...formData, license_series: e.target.value })}
+                    placeholder="12 АА"
+                    className={errors.license_series ? 'border-red-500' : ''}
+                  />
+                  {errors.license_series && <p className="text-red-500 text-xs mt-1">{errors.license_series}</p>}
+                </div>
+                <div>
+                  <Label className="text-sm">Номер *</Label>
+                  <Input
+                    value={formData.license_number || ''}
+                    onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
+                    placeholder="123456"
+                    className={errors.license_number ? 'border-red-500' : ''}
+                  />
+                  {errors.license_number && <p className="text-red-500 text-xs mt-1">{errors.license_number}</p>}
+                </div>
               </div>
-              <div>
-                <Label>Номер *</Label>
-                <Input
-                  value={formData.license_number || ''}
-                  onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
-                  placeholder="123456"
-                  className={errors.license_number ? 'border-red-500' : ''}
-                />
-                {errors.license_number && <p className="text-red-500 text-xs mt-1">{errors.license_number}</p>}
-              </div>
-            </div>
-            <div className="mt-4">
-              <Label>Кем выдан *</Label>
-              <Input
-                value={formData.license_issued_by || ''}
-                onChange={(e) => setFormData({ ...formData, license_issued_by: e.target.value })}
-                className={errors.license_issued_by ? 'border-red-500' : ''}
-              />
-              {errors.license_issued_by && <p className="text-red-500 text-xs mt-1">{errors.license_issued_by}</p>}
-            </div>
-            <div className="mt-4">
-              <Label>Дата выдачи *</Label>
-              <div className="flex gap-2">
-                <DateInput
-                  value={(() => {
-                    if (!formData.license_issue_date) return '';
-                    if (formData.license_issue_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                      const date = new Date(formData.license_issue_date);
-                      if (!isNaN(date.getTime())) {
-                        return format(date, 'dd-MM-yyyy');
-                      }
-                    }
-                    return formData.license_issue_date;
-                  })()}
-                  onChange={(val) => {
-                    const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-                    if (match) {
-                      setFormData({ ...formData, license_issue_date: `${match[3]}-${match[2]}-${match[1]}` });
-                    } else {
-                      setFormData({ ...formData, license_issue_date: val });
-                    }
-                  }}
-                  maxDate="today"
-                  className={errors.license_issue_date ? 'border-red-500' : ''}
-                />
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <Icon name="Calendar" size={16} />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={(() => {
-                        if (!formData.license_issue_date || !formData.license_issue_date.match(/^\d{4}-\d{2}-\d{2}$/)) return undefined;
-                        const date = new Date(formData.license_issue_date);
-                        return isNaN(date.getTime()) ? undefined : date;
+              <div className="grid grid-cols-[2fr_1fr] gap-3">
+                <div>
+                  <Label className="text-sm">Кем выдан *</Label>
+                  <Input
+                    value={formData.license_issued_by || ''}
+                    onChange={(e) => setFormData({ ...formData, license_issued_by: e.target.value })}
+                    className={errors.license_issued_by ? 'border-red-500' : ''}
+                  />
+                  {errors.license_issued_by && <p className="text-red-500 text-xs mt-1">{errors.license_issued_by}</p>}
+                </div>
+                <div>
+                  <Label className="text-sm">Дата выдачи *</Label>
+                  <div className="flex gap-2">
+                    <DateInput
+                      value={(() => {
+                        if (!formData.license_issue_date) return '';
+                        if (formData.license_issue_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                          const date = new Date(formData.license_issue_date);
+                          if (!isNaN(date.getTime())) {
+                            return format(date, 'dd-MM-yyyy');
+                          }
+                        }
+                        return formData.license_issue_date;
                       })()}
-                      onSelect={(date) => setFormData({ ...formData, license_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
-                      locale={ru}
-                      initialFocus
+                      onChange={(val) => {
+                        const match = val.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+                        if (match) {
+                          setFormData({ ...formData, license_issue_date: `${match[3]}-${match[2]}-${match[1]}` });
+                        } else {
+                          setFormData({ ...formData, license_issue_date: val });
+                        }
+                      }}
+                      maxDate="today"
+                      className={errors.license_issue_date ? 'border-red-500' : ''}
                     />
-                  </PopoverContent>
-                </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="icon">
+                          <Icon name="Calendar" size={16} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={(() => {
+                            if (!formData.license_issue_date || !formData.license_issue_date.match(/^\d{4}-\d{2}-\d{2}$/)) return undefined;
+                            const date = new Date(formData.license_issue_date);
+                            return isNaN(date.getTime()) ? undefined : date;
+                          })()}
+                          onSelect={(date) => setFormData({ ...formData, license_issue_date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                          locale={ru}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  {errors.license_issue_date && <p className="text-red-500 text-xs mt-1">{errors.license_issue_date}</p>}
+                </div>
               </div>
-              {errors.license_issue_date && <p className="text-red-500 text-xs mt-1">{errors.license_issue_date}</p>}
             </div>
           </div>
 
