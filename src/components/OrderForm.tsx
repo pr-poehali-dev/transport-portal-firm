@@ -168,12 +168,24 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
             const vehicle = vehicles.find(v => v.id === stage.vehicle_id);
             const driver = drivers.find(d => d.id === stage.driver_id);
             
+            // Преобразуем дату из YYYY-MM-DD в DD-MM-YYYY для DateInput
+            let plannedDeparture = '';
+            if (stage.planned_departure) {
+              const dateStr = stage.planned_departure.split(' ')[0]; // Убираем время если есть
+              if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const [year, month, day] = dateStr.split('-');
+                plannedDeparture = `${day}-${month}-${year}`;
+              } else {
+                plannedDeparture = dateStr;
+              }
+            }
+            
             return {
               id: `existing_${stage.id}`,
               stage_number: stage.stage_number || idx + 1,
               from_location: stage.from_location || '',
               to_location: stage.to_location || '',
-              planned_departure: stage.planned_departure ? stage.planned_departure.split(' ')[0] : '',
+              planned_departure: plannedDeparture,
               vehicle_id: stage.vehicle_id?.toString() || '',
               driver_id: stage.driver_id?.toString() || '',
               driver_phone: driver?.phone || '',
