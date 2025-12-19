@@ -300,6 +300,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'stage_name': f"Этап {stage['stage_number']}: {stage['stage_name']}",
                         'from_location': stage['from_location'],
                         'to_location': stage['to_location'],
+                        'planned_departure': stage.get('planned_departure').strftime('%Y-%m-%d') if stage.get('planned_departure') else None,
                         'vehicle_id': stage['vehicle_id'],
                         'driver_id': stage['driver_id'],
                         'driver_phone': stage.get('driver_phone') or '',
