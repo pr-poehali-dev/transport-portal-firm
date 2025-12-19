@@ -118,37 +118,67 @@ const Index = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [ordersRes, driversRes, vehiclesRes, statsRes, clientsRes, logsRes, customersRes] = await Promise.all([
-        fetch(`${API_URL}?resource=orders`),
-        fetch(`${API_URL}?resource=drivers`),
-        fetch(`${API_URL}?resource=vehicles`),
-        fetch(`${API_URL}?resource=stats`),
-        fetch(`${API_URL}?resource=clients`),
-        fetch(`${API_URL}?resource=activity_log`),
-        fetch(`${API_URL}?resource=customers`)
+      // Загружаем данные с таймаутом для каждого запроса
+      const timeout = (ms: number) => new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), ms)
+      );
+
+      const fetchWithTimeout = (url: string) => 
+        Promise.race([
+          fetch(url),
+          timeout(10000)
+        ]);
+
+      const results = await Promise.allSettled([
+        fetchWithTimeout(`${API_URL}?resource=orders`),
+        fetchWithTimeout(`${API_URL}?resource=drivers`),
+        fetchWithTimeout(`${API_URL}?resource=vehicles`),
+        fetchWithTimeout(`${API_URL}?resource=stats`),
+        fetchWithTimeout(`${API_URL}?resource=clients`),
+        fetchWithTimeout(`${API_URL}?resource=activity_log`),
+        fetchWithTimeout(`${API_URL}?resource=customers`)
       ]);
 
-      const ordersData = await ordersRes.json();
-      const driversData = await driversRes.json();
-      const clientsData = await clientsRes.json();
-      const vehiclesData = await vehiclesRes.json();
-      const statsData = await statsRes.json();
-      const logsData = await logsRes.json();
-      const customersData = await customersRes.json();
-
-      setOrders(ordersData.orders || []);
-      setDrivers(driversData.drivers || []);
-      setVehicles(vehiclesData.vehicles || []);
-      setStats(statsData);
-      setClients(clientsData.clients || []);
-      setActivityLogs(logsData.logs || []);
-      setCustomers(customersData.customers || []);
+      // Обрабатываем результаты
+      if (results[0].status === 'fulfilled') {
+        const ordersData = await (results[0].value as Response).json();
+        setOrders(ordersData.orders || []);
+      }
+      if (results[1].status === 'fulfilled') {
+        const driversData = await (results[1].value as Response).json();
+        setDrivers(driversData.drivers || []);
+      }
+      if (results[2].status === 'fulfilled') {
+        const vehiclesData = await (results[2].value as Response).json();
+        setVehicles(vehiclesData.vehicles || []);
+      }
+      if (results[3].status === 'fulfilled') {
+        const statsData = await (results[3].value as Response).json();
+        setStats(statsData);
+      }
+      if (results[4].status === 'fulfilled') {
+        const clientsData = await (results[4].value as Response).json();
+        setClients(clientsData.clients || []);
+      }
+      if (results[5].status === 'fulfilled') {
+        const logsData = await (results[5].value as Response).json();
+        setActivityLogs(logsData.logs || []);
+      }
+      if (results[6].status === 'fulfilled') {
+        const customersData = await (results[6].value as Response).json();
+        setCustomers(customersData.customers || []);
+      }
       
-      const rolesRes = await fetch(`${API_URL}?resource=roles`);
-      const rolesData = await rolesRes.json();
-      const currentRole = rolesData.roles?.find((r: any) => r.role_name === userRole);
-      if (currentRole) {
-        setUserPermissions(currentRole.permissions || {});
+      // Загружаем права доступа
+      try {
+        const rolesRes = await fetchWithTimeout(`${API_URL}?resource=roles`);
+        const rolesData = await (rolesRes as Response).json();
+        const currentRole = rolesData.roles?.find((r: any) => r.role_name === userRole);
+        if (currentRole) {
+          setUserPermissions(currentRole.permissions || {});
+        }
+      } catch (err) {
+        console.error('Error loading roles:', err);
       }
     } catch (error) {
       toast.error('Ошибка загрузки данных');
