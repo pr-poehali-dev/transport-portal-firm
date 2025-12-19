@@ -202,8 +202,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 notes: wp.notes || ''
               })) : [],
               notes: stage.notes || '',
-              saved: true,
-              started: stage.status === 'completed'
+              saved: true
             };
           });
           setStages(mappedStages);
@@ -707,56 +706,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     toast.success('Маршрут удалён');
   };
 
-  const handleCompleteStage = async (stageId: string) => {
-    const stage = stages.find(s => s.id === stageId);
-    const idx = stages.findIndex(s => s.id === stageId);
-    
-    if (!stage) return;
-    
-    // Валидация обязательных полей
-    const stageErrors: Record<string, string> = {};
-    if (!stage.planned_departure?.trim()) stageErrors[`stage_${idx}_date`] = 'Укажите дату погрузки';
-    if (!stage.from_location?.trim()) stageErrors[`stage_${idx}_from`] = 'Обязательное поле';
-    if (!stage.to_location?.trim()) stageErrors[`stage_${idx}_to`] = 'Обязательное поле';
-    if (!stage.vehicle_id) stageErrors[`stage_${idx}_vehicle`] = 'Обязательное поле';
-    if (!stage.driver_id) stageErrors[`stage_${idx}_driver`] = 'Выберите автомобиль с назначенным водителем';
-    
-    if (Object.keys(stageErrors).length > 0) {
-      setErrors({ ...errors, ...stageErrors });
-      toast.error('Заполните все обязательные поля маршрута');
-      return;
-    }
-    
-    try {
-      // Извлекаем числовой ID из строки вида "existing_19"
-      const numericId = stageId.startsWith('existing_') 
-        ? stageId.replace('existing_', '') 
-        : stageId;
 
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'complete_stage',
-          stage_id: numericId
-        })
-      });
 
-      if (!response.ok) throw new Error('Ошибка обновления статуса');
 
-      setStages(stages.map(s => 
-        s.id === stageId ? { ...s, started: true } : s
-      ));
-      setErrors({});
-      toast.success('Маршрут завершён');
-    } catch (error) {
-      toast.error('Не удалось завершить маршрут');
-    }
-  };
-
-  const [routeUnlocked, setRouteUnlocked] = useState(false);
-
-  const isOrderStarted = stages.some(s => s.started);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -1041,7 +993,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                             onChange={(e) => updateStage(stage.id, 'from_location', e.target.value)}
                             className={errors[`stage_${idx}_from`] ? 'border-red-500' : ''}
                             placeholder="Москва"
-                            disabled={isOrderStarted && !routeUnlocked}
+            
                           />
                           {errors[`stage_${idx}_from`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_from`]}</p>}
                         </div>
@@ -1053,7 +1005,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                             onChange={(e) => updateStage(stage.id, 'to_location', e.target.value)}
                             className={errors[`stage_${idx}_to`] ? 'border-red-500' : ''}
                             placeholder="Санкт-Петербург"
-                            disabled={isOrderStarted && !routeUnlocked}
+            
                           />
                           {errors[`stage_${idx}_to`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_to`]}</p>}
                         </div>
@@ -1178,7 +1130,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                               <Button
                                 variant="outline"
                                 role="combobox"
-                                disabled={isOrderStarted && !routeUnlocked}
+                
                                 className={`w-full justify-between ${errors[`stage_${idx}_vehicle`] ? 'border-red-500' : ''}`}
                               >
                                 {stage.vehicle_id ? (() => {
