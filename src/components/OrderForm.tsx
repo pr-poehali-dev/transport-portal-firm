@@ -1242,26 +1242,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                       </div>
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-4 border-t">
-                      {!stage.started ? (
-                        <Button
-                          type="button"
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleCompleteStage(stage.id)}
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          <Icon name="CheckCircle" size={16} className="mr-1" />
-                          Завершить
-                        </Button>
-                      ) : (
-                        <span className="text-sm text-green-600 font-medium flex items-center">
-                          <Icon name="CheckCircle" size={16} className="mr-1" />
-                          Завершён
-                        </span>
-                      )}
-                    </div>
-
                   </CardContent>
                 </Card>
               ))}
