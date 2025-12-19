@@ -793,7 +793,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     variant="outline"
                     size="sm"
                     onClick={addCustomerItem}
-                    disabled={isOrderStarted}
                   >
                     <Icon name="Plus" size={14} className="mr-1" />
                     Добавить заказчика
@@ -806,7 +805,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         <Select 
                           value={item.customer_id} 
                           onValueChange={(val) => updateCustomerItem(index, 'customer_id', val)}
-                          disabled={isOrderStarted}
                         >
                           <SelectTrigger className={errors[`customer_${index}_id`] ? 'border-red-500' : ''}>
                             <SelectValue placeholder="Выберите заказчика" />
@@ -826,7 +824,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                           placeholder="Примечание (7 тонн, 5 паллет)"
                           value={item.note}
                           onChange={(e) => updateCustomerItem(index, 'note', e.target.value)}
-                          disabled={isOrderStarted}
                         />
                       </div>
                       {customerItems.length > 1 && (
@@ -835,7 +832,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                           variant="ghost"
                           size="icon"
                           onClick={() => removeCustomerItem(index)}
-                          disabled={isOrderStarted}
                         >
                           <Icon name="Trash2" size={16} className="text-red-500" />
                         </Button>
