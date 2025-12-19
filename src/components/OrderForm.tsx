@@ -719,14 +719,14 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 overflow-y-auto flex-1 pr-2">
+        <div className="space-y-4 overflow-y-auto flex-1 pr-2">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Информация о заказе</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Информация о заказе</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               <div>
-                <Label>Маршрут</Label>
+                <Label className="text-sm">Маршрут</Label>
                 <Input
                   value={autoRoute}
                   disabled
@@ -735,9 +735,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Номер заказа *</Label>
+                  <Label className="text-sm">Номер заказа *</Label>
                   <div className="flex gap-2">
                     <Select 
                       value={direction} 
@@ -765,7 +765,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 </div>
 
                 <div>
-                  <Label>Дата заказа *</Label>
+                  <Label className="text-sm">Дата заказа *</Label>
                   <DateInput
                     value={orderInfo.order_date && orderInfo.order_date.match(/^\d{4}-\d{2}-\d{2}$/) 
                       ? orderInfo.order_date.split('-').reverse().join('-')
@@ -787,7 +787,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label>Заказчики *</Label>
+                  <Label className="text-sm">Заказчики *</Label>
                   <Button
                     type="button"
                     variant="outline"
@@ -795,10 +795,10 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     onClick={addCustomerItem}
                   >
                     <Icon name="Plus" size={14} className="mr-1" />
-                    Добавить заказчика
+                    Добавить
                   </Button>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {customerItems.map((item, index) => (
                     <div key={index} className="flex gap-2 items-start">
                       <div className="flex-1">
@@ -841,9 +841,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Инвойс *</Label>
+                  <Label className="text-sm">Инвойс *</Label>
                   <Input
                     value={orderInfo.invoice}
                     onChange={(e) => setOrderInfo({ ...orderInfo, invoice: e.target.value })}
@@ -856,7 +856,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 </div>
 
                 <div>
-                  <Label>Трак *</Label>
+                  <Label className="text-sm">Трак *</Label>
                   <Input
                     value={orderInfo.track_number}
                     onChange={(e) => setOrderInfo({ ...orderInfo, track_number: e.target.value })}
@@ -869,7 +869,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 </div>
 
                 <div>
-                  <Label>Характер груза *</Label>
+                  <Label className="text-sm">Характер груза *</Label>
                   <Input
                     value={orderInfo.cargo_type}
                     onChange={(e) => setOrderInfo({ ...orderInfo, cargo_type: e.target.value })}
@@ -882,7 +882,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 </div>
 
                 <div>
-                  <Label>Вес груза (кг) *</Label>
+                  <Label className="text-sm">Вес груза (кг) *</Label>
                   <Input
                     type="text"
                     value={orderInfo.cargo_weight}
@@ -897,17 +897,17 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               </div>
 
               <div>
-                <Label>Примечание</Label>
+                <Label className="text-sm">Примечание</Label>
                 <Textarea
                   value={orderInfo.notes}
                   onChange={(e) => setOrderInfo({ ...orderInfo, notes: e.target.value })}
                   placeholder="Дополнительная информация о заказе..."
-                  rows={3}
+                  rows={2}
                 />
               </div>
 
               <div>
-                <Label>Прикрепить файлы (накладные, заявки)</Label>
+                <Label className="text-sm">Прикрепить файлы (накладные, заявки)</Label>
                 <div className="mt-2">
                   <Input
                     type="file"
@@ -955,8 +955,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           <>
               {stages.map((stage, idx) => (
                 <Card key={stage.id} className="relative">
-                  <CardHeader className="flex flex-row items-center justify-between gap-4">
-                    <CardTitle className="text-lg">Маршрут {stage.stage_number}</CardTitle>
+                  <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
+                    <CardTitle className="text-base">Маршрут {stage.stage_number}</CardTitle>
                     <Button
                       type="button"
                       variant="ghost"
@@ -968,10 +968,10 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                       <Icon name="Trash2" size={16} />
                     </Button>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-4">
+                  <CardContent className="space-y-3">
+                    <div className="space-y-3">
                       <div>
-                        <Label>Дата погрузки *</Label>
+                        <Label className="text-sm">Дата погрузки *</Label>
                         <DateInput
                           value={stage.planned_departure}
                           onChange={(value) => updateStage(stage.id, 'planned_departure', value)}
@@ -981,9 +981,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         {errors[`stage_${idx}_date`] && <p className="text-red-500 text-xs mt-1">{errors[`stage_${idx}_date`]}</p>}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <Label>Откуда *</Label>
+                          <Label className="text-sm">Откуда *</Label>
                           <Input
                             value={stage.from_location}
                             onChange={(e) => updateStage(stage.id, 'from_location', e.target.value)}
@@ -995,7 +995,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         </div>
 
                         <div>
-                          <Label>Куда *</Label>
+                          <Label className="text-sm">Куда *</Label>
                           <Input
                             value={stage.to_location}
                             onChange={(e) => updateStage(stage.id, 'to_location', e.target.value)}
@@ -1009,7 +1009,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <Label>Промежуточные точки погрузки/разгрузки</Label>
+                          <Label className="text-sm">Промежуточные точки погрузки/разгрузки</Label>
                           <Button
                             type="button"
                             variant="outline"
@@ -1017,11 +1017,11 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                             onClick={() => addWaypointToStage(stage.id)}
                           >
                             <Icon name="Plus" size={14} className="mr-1" />
-                            Добавить точку
+                            Добавить
                           </Button>
                         </div>
                         {stage.waypoints.length > 0 && (
-                          <div className="space-y-3">
+                          <div className="space-y-2">
                             {stage.waypoints.map((waypoint) => (
                               <div key={waypoint.id} className="p-3 border rounded-lg space-y-3 bg-gray-50">
                                 <div className="flex gap-2 items-start">
@@ -1077,7 +1077,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <Label>Таможня</Label>
+                          <Label className="text-sm">Таможня</Label>
                           <Button
                             type="button"
                             variant="outline"
@@ -1085,7 +1085,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                             onClick={() => addCustomsToStage(stage.id)}
                           >
                             <Icon name="Plus" size={14} className="mr-1" />
-                            Добавить таможню
+                            Добавить
                           </Button>
                         </div>
                         {stage.customs.length > 0 && (
@@ -1115,9 +1115,9 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <Label>Автомобиль *</Label>
+                          <Label className="text-sm">Автомобиль *</Label>
                           <Popover open={vehicleSearchOpen[stage.id]} onOpenChange={(open) => {
                             setVehicleSearchOpen({ ...vehicleSearchOpen, [stage.id]: open });
                             if (!open) setVehicleSearchQuery({ ...vehicleSearchQuery, [stage.id]: '' });
@@ -1198,7 +1198,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         </div>
 
                         <div>
-                          <Label>Водитель *</Label>
+                          <Label className="text-sm">Водитель *</Label>
                           <Input
                             value={stage.driver_id ? (() => {
                               const driver = drivers.find(d => d.id === parseInt(stage.driver_id));
@@ -1212,7 +1212,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         </div>
 
                         <div>
-                          <Label>Телефон водителя</Label>
+                          <Label className="text-sm">Телефон водителя</Label>
                           <Input
                             value={stage.driver_phone}
                             disabled
@@ -1222,7 +1222,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         </div>
 
                         <div>
-                          <Label>Дополнительный телефон</Label>
+                          <Label className="text-sm">Доп. телефон</Label>
                           <Input
                             value={stage.driver_additional_phone}
                             disabled
@@ -1232,7 +1232,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         </div>
 
                         <div className="col-span-2">
-                          <Label>Примечания этапа</Label>
+                          <Label className="text-sm">Примечания этапа</Label>
                           <Input
                             value={stage.notes}
                             onChange={(e) => updateStage(stage.id, 'notes', e.target.value)}
