@@ -1575,6 +1575,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif action == 'complete_stage':
+                stage_id = body_data.get('stage_id')
+                
+                if not stage_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'success': False, 'error': 'stage_id required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute('''
+                    UPDATE order_transport_stages 
+                    SET status = %s
+                    WHERE stage_id = %s
+                ''', ('completed', stage_id))
+                
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
             elif action == 'add_customs_point':
                 order_id = body_data.get('order_id')
                 customs_data = body_data.get('customs', {})

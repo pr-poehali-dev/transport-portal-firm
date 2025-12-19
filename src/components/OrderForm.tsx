@@ -707,7 +707,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     toast.success('Маршрут удалён');
   };
 
-  const handleCompleteStage = (stageId: string) => {
+  const handleCompleteStage = async (stageId: string) => {
     const stage = stages.find(s => s.id === stageId);
     const idx = stages.findIndex(s => s.id === stageId);
     
@@ -727,11 +727,26 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       return;
     }
     
-    setStages(stages.map(s => 
-      s.id === stageId ? { ...s, started: true } : s
-    ));
-    setErrors({});
-    toast.success('Маршрут завершён');
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'complete_stage',
+          stage_id: stageId
+        })
+      });
+
+      if (!response.ok) throw new Error('Ошибка обновления статуса');
+
+      setStages(stages.map(s => 
+        s.id === stageId ? { ...s, started: true } : s
+      ));
+      setErrors({});
+      toast.success('Маршрут завершён');
+    } catch (error) {
+      toast.error('Не удалось завершить маршрут');
+    }
   };
 
   const [routeUnlocked, setRouteUnlocked] = useState(false);
