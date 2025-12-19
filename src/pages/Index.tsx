@@ -369,19 +369,19 @@ const Index = () => {
                 </h2>
                 <p className="text-xs md:text-sm text-gray-500 mt-1 flex items-center gap-2">
                   <span>Роль: <span className="font-semibold capitalize">{userRole}</span></span>
-                  {userRole === 'admin' && activeSessions.length > 0 && (
+                  {userRole === 'admin' && activeSessions.filter(s => s.user_id !== userId).length > 0 && (
                     <span className="flex items-center gap-1 ml-2">
                       <Icon name="Users" size={14} className="text-green-500" />
-                      <span className="text-green-600 font-medium">{activeSessions.length}</span>
+                      <span className="text-green-600 font-medium">{activeSessions.filter(s => s.user_id !== userId).length}</span>
                     </span>
                   )}
                 </p>
               </div>
               <div className="flex items-center gap-2 md:gap-4">
-                {activeSessions.length > 0 && userRole === 'admin' && (
+                {activeSessions.filter(s => s.user_id !== userId).length > 0 && userRole === 'admin' && (
                   <div className="hidden md:flex items-center gap-2 text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
                     <Icon name="Users" size={14} />
-                    <span>{activeSessions.length} {activeSessions.length === 1 ? 'пользователь' : 'пользователей'} в разделе</span>
+                    <span>{activeSessions.filter(s => s.user_id !== userId).length} {activeSessions.filter(s => s.user_id !== userId).length === 1 ? 'пользователь' : 'пользователей'} в разделе</span>
                   </div>
                 )}
                 <Button variant="outline" size="sm" onClick={loadData}>
