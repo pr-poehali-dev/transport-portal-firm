@@ -203,7 +203,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               })) : [],
               notes: stage.notes || '',
               saved: true,
-              started: false
+              started: stage.status === 'completed'
             };
           });
           setStages(mappedStages);
@@ -995,7 +995,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                       size="sm"
                       onClick={() => handleDeleteStage(stage.id)}
                       className="text-red-500"
-                      disabled={isOrderStarted && !routeUnlocked}
+                      disabled={stage.started}
                     >
                       <Icon name="Trash2" size={16} />
                     </Button>
