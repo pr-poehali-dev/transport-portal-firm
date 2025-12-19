@@ -260,7 +260,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     
                     # Получаем промежуточные точки для этого этапа
                     cur.execute('''
-                        SELECT id, waypoint_order, location, waypoint_type, planned_time, actual_time, cargo_description, notes
+                        SELECT id, waypoint_order, customer_id, address_type, location, waypoint_type, planned_time, actual_time, cargo_description, notes
                         FROM stage_waypoints
                         WHERE stage_id = %s
                         ORDER BY waypoint_order
@@ -685,12 +685,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     for waypoint in waypoints_data:
                         cur.execute('''
                             INSERT INTO stage_waypoints (
-                                stage_id, waypoint_order, location, waypoint_type,
+                                stage_id, waypoint_order, customer_id, address_type, location, waypoint_type,
                                 planned_time, cargo_description, notes
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                         ''', (
                             stage_id,
                             waypoint.get('waypoint_order'),
+                            waypoint.get('customer_id') if waypoint.get('customer_id') else None,
+                            waypoint.get('address_type'),
                             waypoint.get('location'),
                             waypoint.get('waypoint_type'),
                             waypoint.get('planned_time') if waypoint.get('planned_time') else None,
@@ -844,12 +846,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     for waypoint in waypoints_data:
                         cur.execute('''
                             INSERT INTO stage_waypoints (
-                                stage_id, waypoint_order, location, waypoint_type,
+                                stage_id, waypoint_order, customer_id, address_type, location, waypoint_type,
                                 planned_time, cargo_description, notes
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                         ''', (
                             stage_id,
                             waypoint.get('waypoint_order'),
+                            waypoint.get('customer_id') if waypoint.get('customer_id') else None,
+                            waypoint.get('address_type'),
                             waypoint.get('location'),
                             waypoint.get('waypoint_type'),
                             waypoint.get('planned_time') if waypoint.get('planned_time') else None,
