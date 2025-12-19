@@ -36,7 +36,8 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
     kpp: '',
     legal_address: '',
     director_name: '',
-    nickname: ''
+    nickname: '',
+    connection_basis: ''
   });
 
   const [addressFormData, setAddressFormData] = useState<DeliveryAddress>({
@@ -54,7 +55,8 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
       kpp: '',
       legal_address: '',
       director_name: '',
-      nickname: ''
+      nickname: '',
+      connection_basis: ''
     });
     setNewAddresses([{
       address_name: '',
@@ -99,7 +101,8 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
       kpp: customer.kpp || '',
       legal_address: customer.legal_address || '',
       director_name: customer.director_name || '',
-      nickname: customer.nickname || ''
+      nickname: customer.nickname || '',
+      connection_basis: customer.connection_basis || ''
     });
     
     try {

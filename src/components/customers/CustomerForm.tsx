@@ -114,8 +114,17 @@ export default function CustomerForm({
               <Input
                 value={formData.director_name}
                 onChange={(e) => setFormData({ ...formData, director_name: e.target.value })}
-                placeholder="Иванов Иван Иванович"
+                placeholder="Иванов Иван Иванovich"
                 required
+              />
+            </div>
+
+            <div>
+              <Label>Основание связи</Label>
+              <Input
+                value={formData.connection_basis || ''}
+                onChange={(e) => setFormData({ ...formData, connection_basis: e.target.value })}
+                placeholder="Договор №123 от 01.01.2024"
               />
             </div>
           </div>
