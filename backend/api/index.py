@@ -258,6 +258,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     customs_columns = [desc[0] for desc in cur.description]
                     customs_points = [dict(zip(customs_columns, row)) for row in cur.fetchall()]
                     
+                    # Получаем промежуточные точки для этого этапа
+                    cur.execute('''
+                        SELECT id, waypoint_order, location, waypoint_type, planned_time, actual_time, cargo_description, notes
+                        FROM stage_waypoints
+                        WHERE stage_id = %s
+                        ORDER BY waypoint_order
+                    ''', (stage['id'],))
+                    waypoints_columns = [desc[0] for desc in cur.description]
+                    waypoints = [dict(zip(waypoints_columns, row)) for row in cur.fetchall()]
+                    
                     formatted_stage = {
                         'id': stage['id'],
                         'stage_number': stage['stage_number'],
@@ -269,6 +279,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'driver_phone': stage.get('driver_phone') or '',
                         'driver_additional_phone': stage.get('driver_additional_phone') or '',
                         'customs_points': customs_points,
+                        'waypoints': waypoints,
                         'notes': stage.get('notes') or '',
                         'description': f"{stage['driver_name']} | {stage['license_plate']} {stage['vehicle_model']}" if stage.get('driver_name') else '',
                         'is_completed': stage['status'] == 'completed',
@@ -670,6 +681,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     ))
                     stage_id = cur.fetchone()[0]
                     
+                    waypoints_data = stage.get('waypoints', [])
+                    for waypoint in waypoints_data:
+                        cur.execute('''
+                            INSERT INTO stage_waypoints (
+                                stage_id, waypoint_order, location, waypoint_type,
+                                planned_time, cargo_description, notes
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        ''', (
+                            stage_id,
+                            waypoint.get('waypoint_order'),
+                            waypoint.get('location'),
+                            waypoint.get('waypoint_type'),
+                            waypoint.get('planned_time') if waypoint.get('planned_time') else None,
+                            waypoint.get('cargo_description'),
+                            waypoint.get('notes')
+                        ))
+                    
                     route_desc = f"{stage.get('from_location')} → {stage.get('to_location')}"
                     cur.execute('''
                         INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
@@ -789,6 +817,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     order_id
                 ))
                 
+                cur.execute('DELETE FROM stage_waypoints WHERE stage_id IN (SELECT id FROM order_transport_stages WHERE order_id = %s)', (order_id,))
                 cur.execute('DELETE FROM order_customs_points WHERE stage_id IN (SELECT id FROM order_transport_stages WHERE order_id = %s)', (order_id,))
                 cur.execute('DELETE FROM order_transport_stages WHERE order_id = %s', (order_id,))
                 
@@ -810,6 +839,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'pending'
                     ))
                     stage_id = cur.fetchone()[0]
+                    
+                    waypoints_data = stage.get('waypoints', [])
+                    for waypoint in waypoints_data:
+                        cur.execute('''
+                            INSERT INTO stage_waypoints (
+                                stage_id, waypoint_order, location, waypoint_type,
+                                planned_time, cargo_description, notes
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        ''', (
+                            stage_id,
+                            waypoint.get('waypoint_order'),
+                            waypoint.get('location'),
+                            waypoint.get('waypoint_type'),
+                            waypoint.get('planned_time') if waypoint.get('planned_time') else None,
+                            waypoint.get('cargo_description'),
+                            waypoint.get('notes')
+                        ))
                     
                     for customs in stage.get('customs_points', []):
                         cur.execute('''

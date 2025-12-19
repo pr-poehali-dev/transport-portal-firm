@@ -36,6 +36,17 @@ interface Customs {
   customs_name: string;
 }
 
+interface Waypoint {
+  id: string;
+  waypoint_order: number;
+  location: string;
+  waypoint_type: 'loading' | 'unloading';
+  planned_time: string;
+  actual_time?: string;
+  cargo_description: string;
+  notes: string;
+}
+
 interface Stage {
   id: string;
   stage_number: number;
@@ -47,6 +58,7 @@ interface Stage {
   driver_phone: string;
   driver_additional_phone: string;
   customs: Customs[];
+  waypoints: Waypoint[];
   notes: string;
   saved?: boolean;
   started?: boolean;
@@ -170,6 +182,16 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                 id: cp.id?.toString() || Date.now().toString(),
                 customs_name: cp.customs_name || ''
               })) : [],
+              waypoints: stage.waypoints ? stage.waypoints.map((wp: any) => ({
+                id: wp.id?.toString() || Date.now().toString(),
+                waypoint_order: wp.waypoint_order || 0,
+                location: wp.location || '',
+                waypoint_type: wp.waypoint_type || 'loading',
+                planned_time: wp.planned_time || '',
+                actual_time: wp.actual_time || '',
+                cargo_description: wp.cargo_description || '',
+                notes: wp.notes || ''
+              })) : [],
               notes: stage.notes || '',
               saved: true,
               started: !!stage.planned_departure
@@ -270,6 +292,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
       driver_phone: '',
       driver_additional_phone: '',
       customs: [],
+      waypoints: [],
       notes: '',
       started: false
     };
@@ -330,6 +353,53 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         return {
           ...s,
           customs: s.customs.filter(c => c.id !== customsId)
+        };
+      }
+      return s;
+    }));
+  };
+
+  const addWaypointToStage = (stageId: string) => {
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        const maxOrder = s.waypoints.length > 0 
+          ? Math.max(...s.waypoints.map(w => w.waypoint_order))
+          : 0;
+        return {
+          ...s,
+          waypoints: [...s.waypoints, {
+            id: Date.now().toString(),
+            waypoint_order: maxOrder + 1,
+            location: '',
+            waypoint_type: 'loading' as const,
+            planned_time: '',
+            cargo_description: '',
+            notes: ''
+          }]
+        };
+      }
+      return s;
+    }));
+  };
+
+  const removeWaypointFromStage = (stageId: string, waypointId: string) => {
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        return {
+          ...s,
+          waypoints: s.waypoints.filter(w => w.id !== waypointId)
+        };
+      }
+      return s;
+    }));
+  };
+
+  const updateWaypointField = (stageId: string, waypointId: string, field: keyof Waypoint, value: any) => {
+    setStages(stages.map(s => {
+      if (s.id === stageId) {
+        return {
+          ...s,
+          waypoints: s.waypoints.map(w => w.id === waypointId ? { ...w, [field]: value } : w)
         };
       }
       return s;
@@ -449,6 +519,14 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
             customs_points: stage.customs.map(c => ({
               customs_name: c.customs_name
             })),
+            waypoints: stage.waypoints.map(w => ({
+              waypoint_order: w.waypoint_order,
+              location: w.location,
+              waypoint_type: w.waypoint_type,
+              planned_time: w.planned_time || null,
+              cargo_description: w.cargo_description || null,
+              notes: w.notes || null
+            })),
             notes: stage.notes
           }))
         })
@@ -515,6 +593,14 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         from_location: stage.from_location,
         to_location: stage.to_location,
         planned_departure: stage.planned_departure?.trim() || null,
+        waypoints: stage.waypoints.map(w => ({
+          waypoint_order: w.waypoint_order,
+          location: w.location,
+          waypoint_type: w.waypoint_type,
+          planned_time: w.planned_time || null,
+          cargo_description: w.cargo_description || null,
+          notes: w.notes || null
+        })),
         notes: stage.notes || ''
       }));
 
@@ -958,6 +1044,86 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         )}
                         {stage.customs.length === 0 && (
                           <p className="text-sm text-gray-500 italic">Таможня не добавлена</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label>Промежуточные точки погрузки/разгрузки</Label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addWaypointToStage(stage.id)}
+                          >
+                            <Icon name="Plus" size={14} className="mr-1" />
+                            Добавить точку
+                          </Button>
+                        </div>
+                        {stage.waypoints.length > 0 && (
+                          <div className="space-y-3">
+                            {stage.waypoints.map((waypoint) => (
+                              <div key={waypoint.id} className="p-3 border rounded-lg space-y-2 bg-gray-50">
+                                <div className="flex gap-2">
+                                  <Select 
+                                    value={waypoint.waypoint_type} 
+                                    onValueChange={(val) => updateWaypointField(stage.id, waypoint.id, 'waypoint_type', val)}
+                                  >
+                                    <SelectTrigger className="w-40">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="loading">Погрузка</SelectItem>
+                                      <SelectItem value="unloading">Разгрузка</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <Input
+                                    value={waypoint.location}
+                                    onChange={(e) => updateWaypointField(stage.id, waypoint.id, 'location', e.target.value)}
+                                    placeholder="Адрес точки"
+                                    className="flex-1"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => removeWaypointFromStage(stage.id, waypoint.id)}
+                                  >
+                                    <Icon name="Trash2" size={16} className="text-red-500" />
+                                  </Button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <Label className="text-xs">Время</Label>
+                                    <Input
+                                      type="datetime-local"
+                                      value={waypoint.planned_time}
+                                      onChange={(e) => updateWaypointField(stage.id, waypoint.id, 'planned_time', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs">Описание груза</Label>
+                                    <Input
+                                      value={waypoint.cargo_description}
+                                      onChange={(e) => updateWaypointField(stage.id, waypoint.id, 'cargo_description', e.target.value)}
+                                      placeholder="3 паллеты"
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label className="text-xs">Примечание</Label>
+                                  <Input
+                                    value={waypoint.notes}
+                                    onChange={(e) => updateWaypointField(stage.id, waypoint.id, 'notes', e.target.value)}
+                                    placeholder="Доп. информация"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {stage.waypoints.length === 0 && (
+                          <p className="text-sm text-gray-500 italic">Промежуточные точки не добавлены</p>
                         )}
                       </div>
 
