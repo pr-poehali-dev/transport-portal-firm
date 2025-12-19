@@ -16,7 +16,7 @@ export default function CustomersList({ customers, onEdit, onCreate, onViewAddre
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Заказчики</CardTitle>
+          <CardTitle className="text-lg md:text-xl">Заказчики</CardTitle>
           <CardDescription></CardDescription>
         </div>
         <Button onClick={onCreate}>
