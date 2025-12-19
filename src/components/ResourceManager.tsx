@@ -732,7 +732,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
       return (
         <>
           <div>
-            <Label>Название перевозчика *</Label>
+            <Label className="text-sm">Название перевозчика *</Label>
             <Input
               value={formData.name || ''}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -741,16 +741,16 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
             {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label>Логист</Label>
+              <Label className="text-sm">Логист</Label>
               <Input
                 value={formData.contact_person || ''}
                 onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
               />
             </div>
             <div>
-              <Label>Телефон *</Label>
+              <Label className="text-sm">Телефон *</Label>
               <PhoneInput
                 value={formData.phone || ''}
                 onChange={(value) => setFormData({ ...formData, phone: value })}
@@ -759,7 +759,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
               {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
             </div>
             <div>
-              <Label>Email</Label>
+              <Label className="text-sm">Email</Label>
               <Input
                 type="email"
                 value={formData.email || ''}
@@ -768,84 +768,95 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
             </div>
           </div>
 
-          <div className="border-t pt-4 mt-4">
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <Icon name="FileText" size={18} />
-              Реквизиты
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
+              <Icon name="FileText" size={16} />
+              Реквизиты компании
             </h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label>ИНН</Label>
-                <Input
-                  value={formData.inn || ''}
-                  onChange={(e) => setFormData({ ...formData, inn: e.target.value })}
-                  placeholder="1234567890"
-                />
-              </div>
-              <div>
-                <Label>КПП</Label>
-                <Input
-                  value={formData.kpp || ''}
-                  onChange={(e) => setFormData({ ...formData, kpp: e.target.value })}
-                  placeholder="123456789"
-                />
-              </div>
-              <div>
-                <Label>ОГРН/ОГРНИП</Label>
-                <Input
-                  value={formData.ogrn || ''}
-                  onChange={(e) => setFormData({ ...formData, ogrn: e.target.value })}
-                  placeholder="1234567890123"
-                />
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <Label>Юридический адрес</Label>
-              <Input
-                value={formData.legal_address || ''}
-                onChange={(e) => setFormData({ ...formData, legal_address: e.target.value })}
-                placeholder="123456, г. Москва, ул. Примерная, д. 1"
-              />
-            </div>
-
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="sameAsLegal"
-                  checked={sameAsLegal}
-                  onChange={(e) => {
-                    setSameAsLegal(e.target.checked);
-                    if (e.target.checked) {
-                      setFormData({ ...formData, postal_address: formData.legal_address });
-                    }
-                  }}
-                  className="w-4 h-4"
-                />
-                <Label htmlFor="sameAsLegal" className="cursor-pointer">Почтовый адрес совпадает с юридическим</Label>
-              </div>
-              {!sameAsLegal && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <Label>Почтовый адрес</Label>
+                  <Label className="text-sm">ИНН</Label>
                   <Input
-                    value={formData.postal_address || ''}
-                    onChange={(e) => setFormData({ ...formData, postal_address: e.target.value })}
-                    placeholder="123456, г. Москва, ул. Примерная, д. 1"
+                    value={formData.inn || ''}
+                    onChange={(e) => setFormData({ ...formData, inn: e.target.value })}
+                    placeholder="1234567890"
                   />
                 </div>
-              )}
+                <div>
+                  <Label className="text-sm">КПП</Label>
+                  <Input
+                    value={formData.kpp || ''}
+                    onChange={(e) => setFormData({ ...formData, kpp: e.target.value })}
+                    placeholder="123456789"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">ОГРН/ОГРНИП</Label>
+                  <Input
+                    value={formData.ogrn || ''}
+                    onChange={(e) => setFormData({ ...formData, ogrn: e.target.value })}
+                    placeholder="1234567890123"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm">Юридический адрес</Label>
+                <Input
+                  value={formData.legal_address || ''}
+                  onChange={(e) => setFormData({ ...formData, legal_address: e.target.value })}
+                  placeholder="123456, г. Москва, ул. Примерная, д. 1"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="sameAsLegal"
+                    checked={sameAsLegal}
+                    onChange={(e) => {
+                      setSameAsLegal(e.target.checked);
+                      if (e.target.checked) {
+                        setFormData({ ...formData, postal_address: formData.legal_address });
+                      }
+                    }}
+                    className="w-4 h-4"
+                  />
+                  <Label htmlFor="sameAsLegal" className="text-sm cursor-pointer">Почтовый адрес совпадает с юридическим</Label>
+                </div>
+                {!sameAsLegal && (
+                  <div>
+                    <Label className="text-sm">Почтовый адрес</Label>
+                    <Input
+                      value={formData.postal_address || ''}
+                      onChange={(e) => setFormData({ ...formData, postal_address: e.target.value })}
+                      placeholder="123456, г. Москва, ул. Примерная, д. 1"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <Label className="text-sm">ФИО руководителя</Label>
+                <Input
+                  value={formData.director_name || ''}
+                  onChange={(e) => setFormData({ ...formData, director_name: e.target.value })}
+                  placeholder="Иванов Иван Иванович"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="border-t pt-4 mt-4">
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <Icon name="Landmark" size={18} />
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
+              <Icon name="Landmark" size={16} />
               Банковские реквизиты
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <Label>Наименование банка</Label>
+                <Label className="text-sm">Наименование банка</Label>
                 <Input
                   value={formData.bank_name || ''}
                   onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
@@ -853,16 +864,16 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                 />
               </div>
               <div>
-                <Label>Расчетный счет</Label>
+                <Label className="text-sm">Расчетный счет</Label>
                 <Input
                   value={formData.account_number || ''}
                   onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
                   placeholder="40702810000000000000"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>БИК</Label>
+                  <Label className="text-sm">БИК</Label>
                   <Input
                     value={formData.bik || ''}
                     onChange={(e) => setFormData({ ...formData, bik: e.target.value })}
@@ -870,7 +881,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                   />
                 </div>
                 <div>
-                  <Label>Корр. счет</Label>
+                  <Label className="text-sm">Корр. счет</Label>
                   <Input
                     value={formData.corr_account || ''}
                     onChange={(e) => setFormData({ ...formData, corr_account: e.target.value })}
@@ -878,17 +889,6 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
                   />
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="border-t pt-4 mt-4">
-            <div>
-              <Label>ФИО руководителя</Label>
-              <Input
-                value={formData.director_name || ''}
-                onChange={(e) => setFormData({ ...formData, director_name: e.target.value })}
-                placeholder="Иванов Иван Иванович"
-              />
             </div>
           </div>
         </>
