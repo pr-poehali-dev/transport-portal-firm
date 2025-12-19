@@ -844,9 +844,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 else:
                     old_customer_items = []
                 
-                # Получаем старые маршруты для сравнения
-                cur.execute('SELECT id, stage_number FROM order_transport_stages WHERE order_id = %s ORDER BY stage_number', (order_id,))
-                old_stages = {row[1]: row[0] for row in cur.fetchall()}
+                # Получаем старые маршруты для сравнения (ДО удаления!)
+                cur.execute('''
+                    SELECT stage_number, from_location, to_location, vehicle_id, driver_id, notes
+                    FROM order_transport_stages 
+                    WHERE order_id = %s 
+                    ORDER BY stage_number
+                ''', (order_id,))
+                old_stages_data = {}
+                for row in cur.fetchall():
+                    old_stages_data[row[0]] = {
+                        'from_location': row[1],
+                        'to_location': row[2],
+                        'vehicle_id': row[3],
+                        'driver_id': row[4],
+                        'notes': row[5]
+                    }
                 
                 customer_items = order_data.get('customer_items', [])
                 
@@ -875,7 +888,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 for stage in stages_data:
                     stage_number = stage.get('stage_number')
-                    is_new_stage = stage_number not in old_stages
+                    is_new_stage = stage_number not in old_stages_data
+                    old_stage = old_stages_data.get(stage_number, {})
                     
                     cur.execute('''
                         INSERT INTO order_transport_stages 
@@ -924,19 +938,82 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         ''', (stage_id, customs.get('customs_name'), 'pending'))
                         customs_added.append(customs.get('customs_name'))
                     
-                    # Логирование действий
-                    route_desc = f"{stage.get('from_location')} → {stage.get('to_location')}"
-                    
+                    # Детальное логирование изменений в маршруте
                     if is_new_stage:
+                        route_desc = f"{stage.get('from_location')} → {stage.get('to_location')}"
                         cur.execute('''
                             INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
                             VALUES (%s, %s, %s, %s, %s)
                         ''', (order_id, user_role, user_name, 'add_stage', f'добавил маршрут {stage_number} "{route_desc}"'))
                     else:
-                        cur.execute('''
-                            INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
-                            VALUES (%s, %s, %s, %s, %s)
-                        ''', (order_id, user_role, user_name, 'update_stage', f'изменил маршрут {stage_number} "{route_desc}"'))
+                        # Проверяем изменения в существующем маршруте
+                        stage_changes = []
+                        
+                        # Изменение места загрузки
+                        if stage.get('from_location') != old_stage.get('from_location'):
+                            old_from = old_stage.get('from_location') or 'не указано'
+                            new_from = stage.get('from_location') or 'не указано'
+                            stage_changes.append(f'изменил место загрузки в маршруте {stage_number} с "{old_from}" на "{new_from}"')
+                        
+                        # Изменение места выгрузки
+                        if stage.get('to_location') != old_stage.get('to_location'):
+                            old_to = old_stage.get('to_location') or 'не указано'
+                            new_to = stage.get('to_location') or 'не указано'
+                            stage_changes.append(f'изменил место выгрузки в маршруте {stage_number} с "{old_to}" на "{new_to}"')
+                        
+                        # Изменение автомобиля
+                        if stage.get('vehicle_id') != old_stage.get('vehicle_id'):
+                            old_vehicle_name = 'не указан'
+                            new_vehicle_name = 'не указан'
+                            
+                            if old_stage.get('vehicle_id'):
+                                cur.execute('SELECT license_plate FROM vehicles WHERE id = %s', (old_stage.get('vehicle_id'),))
+                                v_row = cur.fetchone()
+                                if v_row:
+                                    old_vehicle_name = v_row[0]
+                            
+                            if stage.get('vehicle_id'):
+                                cur.execute('SELECT license_plate FROM vehicles WHERE id = %s', (stage.get('vehicle_id'),))
+                                v_row = cur.fetchone()
+                                if v_row:
+                                    new_vehicle_name = v_row[0]
+                            
+                            stage_changes.append(f'изменил автомобиль в маршруте {stage_number} с "{old_vehicle_name}" на "{new_vehicle_name}"')
+                        
+                        # Изменение водителя
+                        if stage.get('driver_id') != old_stage.get('driver_id'):
+                            old_driver_name = 'не указан'
+                            new_driver_name = 'не указан'
+                            
+                            if old_stage.get('driver_id'):
+                                cur.execute('SELECT last_name, first_name FROM drivers WHERE id = %s', (old_stage.get('driver_id'),))
+                                d_row = cur.fetchone()
+                                if d_row:
+                                    old_driver_name = f"{d_row[0]} {d_row[1]}"
+                            
+                            if stage.get('driver_id'):
+                                cur.execute('SELECT last_name, first_name FROM drivers WHERE id = %s', (stage.get('driver_id'),))
+                                d_row = cur.fetchone()
+                                if d_row:
+                                    new_driver_name = f"{d_row[0]} {d_row[1]}"
+                            
+                            stage_changes.append(f'изменил водителя в маршруте {stage_number} с "{old_driver_name}" на "{new_driver_name}"')
+                        
+                        # Изменение примечаний к маршруту
+                        if stage.get('notes') != old_stage.get('notes'):
+                            if not old_stage.get('notes') and stage.get('notes'):
+                                stage_changes.append(f'добавил примечание к маршруту {stage_number}: "{stage.get("notes")}"')
+                            elif old_stage.get('notes') and not stage.get('notes'):
+                                stage_changes.append(f'удалил примечание из маршрута {stage_number}')
+                            elif old_stage.get('notes') and stage.get('notes'):
+                                stage_changes.append(f'изменил примечание в маршруте {stage_number}')
+                        
+                        # Записываем все изменения маршрута
+                        for change in stage_changes:
+                            cur.execute('''
+                                INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
+                                VALUES (%s, %s, %s, %s, %s)
+                            ''', (order_id, user_role, user_name, 'update_stage', change))
                     
                     if waypoints_added:
                         waypoints_str = ', '.join(waypoints_added)
@@ -988,8 +1065,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     changes.append(f'изменил трек-номер с "{old_val}" на "{new_val}"')
                 
                 # Проверка изменения примечаний
-                if order_data.get('notes') != old_notes:
-                    changes.append('изменил примечания к заказу')
+                new_notes = order_data.get('notes')
+                if new_notes != old_notes:
+                    if not old_notes and new_notes:
+                        changes.append(f'добавил примечание: "{new_notes}"')
+                    elif old_notes and not new_notes:
+                        changes.append('удалил примечание')
+                    elif old_notes and new_notes:
+                        changes.append(f'изменил примечание с "{old_notes}" на "{new_notes}"')
                 
                 # Проверка изменения перевозчика
                 new_client_id = order_data.get('client_id')
