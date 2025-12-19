@@ -33,6 +33,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
   const [formData, setFormData] = useState<any>({});
   const [selectedDriver, setSelectedDriver] = useState<any>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [sameAsLegal, setSameAsLegal] = useState(false);
 
   const getEmptyForm = () => {
     switch (type) {
@@ -63,7 +64,22 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
           display_name: ''
         };
       case 'clients':
-        return { name: '', contact_person: '', phone: '', email: '', address: '' };
+        return { 
+          name: '', 
+          contact_person: '', 
+          phone: '', 
+          email: '', 
+          inn: '',
+          kpp: '',
+          ogrn: '',
+          legal_address: '',
+          postal_address: '',
+          bank_name: '',
+          account_number: '',
+          bik: '',
+          corr_account: '',
+          director_name: ''
+        };
     }
   };
 
@@ -74,9 +90,13 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
         const driver = drivers.find(d => d.id === editItem.driver_id);
         setSelectedDriver(driver);
       }
+      if (type === 'clients' && editItem.legal_address === editItem.postal_address) {
+        setSameAsLegal(true);
+      }
     } else {
       setFormData(getEmptyForm());
       setSelectedDriver(null);
+      setSameAsLegal(false);
     }
     setErrors({});
   }, [editItem, showForm]);
@@ -711,36 +731,156 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
             />
             {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
           </div>
-          <div>
-            <Label>Контактное лицо</Label>
-            <Input
-              value={formData.contact_person || ''}
-              onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-            />
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label>Логист</Label>
+              <Input
+                value={formData.contact_person || ''}
+                onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Телефон *</Label>
+              <PhoneInput
+                value={formData.phone || ''}
+                onChange={(value) => setFormData({ ...formData, phone: value })}
+                className={errors.phone ? 'border-red-500' : ''}
+              />
+              {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={formData.email || ''}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </div>
           </div>
-          <div>
-            <Label>Телефон *</Label>
-            <PhoneInput
-              value={formData.phone || ''}
-              onChange={(value) => setFormData({ ...formData, phone: value })}
-              className={errors.phone ? 'border-red-500' : ''}
-            />
-            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+
+          <div className="border-t pt-4 mt-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Icon name="FileText" size={18} />
+              Реквизиты
+            </h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label>ИНН</Label>
+                <Input
+                  value={formData.inn || ''}
+                  onChange={(e) => setFormData({ ...formData, inn: e.target.value })}
+                  placeholder="1234567890"
+                />
+              </div>
+              <div>
+                <Label>КПП</Label>
+                <Input
+                  value={formData.kpp || ''}
+                  onChange={(e) => setFormData({ ...formData, kpp: e.target.value })}
+                  placeholder="123456789"
+                />
+              </div>
+              <div>
+                <Label>ОГРН/ОГРНИП</Label>
+                <Input
+                  value={formData.ogrn || ''}
+                  onChange={(e) => setFormData({ ...formData, ogrn: e.target.value })}
+                  placeholder="1234567890123"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <Label>Юридический адрес</Label>
+              <Input
+                value={formData.legal_address || ''}
+                onChange={(e) => setFormData({ ...formData, legal_address: e.target.value })}
+                placeholder="123456, г. Москва, ул. Примерная, д. 1"
+              />
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="sameAsLegal"
+                  checked={sameAsLegal}
+                  onChange={(e) => {
+                    setSameAsLegal(e.target.checked);
+                    if (e.target.checked) {
+                      setFormData({ ...formData, postal_address: formData.legal_address });
+                    }
+                  }}
+                  className="w-4 h-4"
+                />
+                <Label htmlFor="sameAsLegal" className="cursor-pointer">Почтовый адрес совпадает с юридическим</Label>
+              </div>
+              {!sameAsLegal && (
+                <div>
+                  <Label>Почтовый адрес</Label>
+                  <Input
+                    value={formData.postal_address || ''}
+                    onChange={(e) => setFormData({ ...formData, postal_address: e.target.value })}
+                    placeholder="123456, г. Москва, ул. Примерная, д. 1"
+                  />
+                </div>
+              )}
+            </div>
           </div>
-          <div>
-            <Label>Email</Label>
-            <Input
-              type="email"
-              value={formData.email || ''}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
+
+          <div className="border-t pt-4 mt-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Icon name="Landmark" size={18} />
+              Банковские реквизиты
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <Label>Наименование банка</Label>
+                <Input
+                  value={formData.bank_name || ''}
+                  onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+                  placeholder="ПАО Сбербанк"
+                />
+              </div>
+              <div>
+                <Label>Расчетный счет</Label>
+                <Input
+                  value={formData.account_number || ''}
+                  onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
+                  placeholder="40702810000000000000"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>БИК</Label>
+                  <Input
+                    value={formData.bik || ''}
+                    onChange={(e) => setFormData({ ...formData, bik: e.target.value })}
+                    placeholder="044525225"
+                  />
+                </div>
+                <div>
+                  <Label>Корр. счет</Label>
+                  <Input
+                    value={formData.corr_account || ''}
+                    onChange={(e) => setFormData({ ...formData, corr_account: e.target.value })}
+                    placeholder="30101810000000000225"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <Label>Адрес</Label>
-            <Input
-              value={formData.address || ''}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            />
+
+          <div className="border-t pt-4 mt-4">
+            <div>
+              <Label>ФИО руководителя</Label>
+              <Input
+                value={formData.director_name || ''}
+                onChange={(e) => setFormData({ ...formData, director_name: e.target.value })}
+                placeholder="Иванов Иван Иванович"
+              />
+            </div>
           </div>
         </>
       );
