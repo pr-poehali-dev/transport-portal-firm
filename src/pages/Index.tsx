@@ -399,56 +399,63 @@ const Index = () => {
               <div className="space-y-6 animate-fade-in">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Журнал действий</CardTitle>
-                    <CardDescription>История всех операций по заказам</CardDescription>
+                    <CardTitle className="text-lg">Журнал действий</CardTitle>
+                    <CardDescription className="text-sm">История операций по заказам</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      {activityLogs.map((log) => (
-                        <div key={log.id} className="border-l-4 border-primary pl-4 py-2">
-                          <div 
-                            className="flex items-start justify-between cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
-                            onClick={() => setSelectedLogOrder(selectedLogOrder === log.order_id ? null : log.order_id)}
-                          >
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-1">
-                                <Badge variant="outline" className="text-xs">{log.order_number}</Badge>
-                                <span className="text-xs text-gray-500">{log.created_at}</span>
+                    <div className="space-y-2">
+                      {(() => {
+                        const groupedLogs = activityLogs.reduce((acc, log) => {
+                          if (!acc[log.order_id]) {
+                            acc[log.order_id] = {
+                              order_number: log.order_number,
+                              order_id: log.order_id,
+                              logs: []
+                            };
+                          }
+                          acc[log.order_id].logs.push(log);
+                          return acc;
+                        }, {} as Record<number, { order_number: string, order_id: number, logs: any[] }>);
+
+                        return Object.values(groupedLogs).map(({ order_number, order_id, logs }) => (
+                          <div key={order_id} className="border rounded-lg overflow-hidden">
+                            <div 
+                              className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                              onClick={() => setSelectedLogOrder(selectedLogOrder === order_id ? null : order_id)}
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="font-medium text-sm">{order_number}</span>
+                                <Badge variant="secondary" className="text-xs">{logs.length}</Badge>
                               </div>
-                              <p className="text-sm font-medium text-gray-900">
-                                <span className="text-primary font-semibold">{log.user_name || log.user_role}</span>
-                                {' — '}
-                                {log.description}
-                              </p>
+                              <Icon 
+                                name={selectedLogOrder === order_id ? "ChevronUp" : "ChevronDown"} 
+                                size={18} 
+                                className="text-gray-400"
+                              />
                             </div>
-                            <Icon 
-                              name={selectedLogOrder === log.order_id ? "ChevronUp" : "ChevronDown"} 
-                              size={20} 
-                              className="text-gray-400 flex-shrink-0 ml-2"
-                            />
-                          </div>
-                          
-                          {selectedLogOrder === log.order_id && (
-                            <div className="mt-3 ml-2 space-y-2 animate-fade-in">
-                              {activityLogs
-                                .filter(l => l.order_id === log.order_id)
-                                .map(l => (
-                                  <div key={l.id} className="flex items-start gap-3 p-2 bg-gray-50 rounded">
-                                    <Icon name="Circle" size={8} className="text-primary mt-1.5" />
-                                    <div className="flex-1">
-                                      <p className="text-sm text-gray-700">
-                                        <span className="font-medium text-primary">{l.user_name || l.user_role}</span>
-                                        {' — '}
-                                        {l.description}
-                                      </p>
-                                      <p className="text-xs text-gray-500 mt-1">{l.created_at}</p>
+                            
+                            {selectedLogOrder === order_id && (
+                              <div className="border-t bg-gray-50">
+                                <div className="divide-y">
+                                  {logs.map(log => (
+                                    <div key={log.id} className="px-3 py-2 hover:bg-gray-100 transition-colors">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm text-gray-900">
+                                            <span className="font-medium text-primary">{log.user_name || log.user_role}</span>
+                                            <span className="text-gray-600"> — {log.description}</span>
+                                          </p>
+                                        </div>
+                                        <span className="text-xs text-gray-500 whitespace-nowrap">{log.created_at}</span>
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ));
+                      })()}
                       {activityLogs.length === 0 && (
                         <div className="text-center py-12 text-gray-500">
                           <Icon name="Activity" size={48} className="mx-auto mb-3 text-gray-300" />
