@@ -203,7 +203,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               })) : [],
               notes: stage.notes || '',
               saved: true,
-              started: !!stage.planned_departure
+              started: false
             };
           });
           setStages(mappedStages);
