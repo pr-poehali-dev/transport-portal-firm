@@ -852,7 +852,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.invoice}
                     onChange={(e) => setOrderInfo({ ...orderInfo, invoice: e.target.value })}
                     placeholder="INV-2024-001"
-                    disabled={!!editOrder || isOrderStarted}
+                    disabled={!!editOrder}
                     className={errors.invoice ? 'border-red-500' : ''}
                     required
                   />
@@ -865,7 +865,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.track_number}
                     onChange={(e) => setOrderInfo({ ...orderInfo, track_number: e.target.value })}
                     placeholder="TRACK123456"
-                    disabled={!!editOrder || isOrderStarted}
+                    disabled={!!editOrder}
                     className={errors.track_number ? 'border-red-500' : ''}
                     required
                   />
@@ -878,7 +878,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.cargo_type}
                     onChange={(e) => setOrderInfo({ ...orderInfo, cargo_type: e.target.value })}
                     placeholder="Лук, Нобилис"
-                    disabled={!!editOrder || isOrderStarted}
+                    disabled={!!editOrder}
                     className={errors.cargo_type ? 'border-red-500' : ''}
                     required
                   />
@@ -892,7 +892,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                     value={orderInfo.cargo_weight}
                     onChange={(e) => setOrderInfo({ ...orderInfo, cargo_weight: e.target.value })}
                     placeholder="20000"
-                    disabled={!!editOrder || isOrderStarted}
+                    disabled={!!editOrder}
                     className={errors.cargo_weight ? 'border-red-500' : ''}
                     required
                   />
