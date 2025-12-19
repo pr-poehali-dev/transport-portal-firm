@@ -728,12 +728,17 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     }
     
     try {
+      // Извлекаем числовой ID из строки вида "existing_19"
+      const numericId = stageId.startsWith('existing_') 
+        ? stageId.replace('existing_', '') 
+        : stageId;
+
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           action: 'complete_stage',
-          stage_id: stageId
+          stage_id: numericId
         })
       });
 
