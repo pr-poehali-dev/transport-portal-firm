@@ -1589,7 +1589,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 cur.execute('''
                     UPDATE order_transport_stages 
                     SET status = %s
-                    WHERE stage_id = %s
+                    WHERE id = %s
                 ''', ('completed', stage_id))
                 
                 conn.commit()
