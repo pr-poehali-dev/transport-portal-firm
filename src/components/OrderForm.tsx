@@ -1279,7 +1279,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               ))}
 
               <div className="flex gap-3">
-                <Button type="button" variant="outline" onClick={addStage} className="flex-1">
+                <Button type="button" onClick={addStage} className="flex-1 bg-blue-600 hover:bg-blue-700">
                   <Icon name="Plus" size={18} className="mr-2" />
                   Добавить маршрут
                 </Button>
