@@ -783,6 +783,32 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                   />
                   {errors.order_date && <p className="text-red-500 text-xs mt-1">{errors.order_date}</p>}
                 </div>
+
+                <div>
+                  <Label className="text-sm">Инвойс *</Label>
+                  <Input
+                    value={orderInfo.invoice}
+                    onChange={(e) => setOrderInfo({ ...orderInfo, invoice: e.target.value })}
+                    placeholder="INV-2024-001"
+                    disabled={!!editOrder}
+                    className={errors.invoice ? 'border-red-500' : ''}
+                    required
+                  />
+                  {errors.invoice && <p className="text-red-500 text-xs mt-1">{errors.invoice}</p>}
+                </div>
+
+                <div>
+                  <Label className="text-sm">Трак *</Label>
+                  <Input
+                    value={orderInfo.track_number}
+                    onChange={(e) => setOrderInfo({ ...orderInfo, track_number: e.target.value })}
+                    placeholder="TRACK123456"
+                    disabled={!!editOrder}
+                    className={errors.track_number ? 'border-red-500' : ''}
+                    required
+                  />
+                  {errors.track_number && <p className="text-red-500 text-xs mt-1">{errors.track_number}</p>}
+                </div>
               </div>
 
               <div>
@@ -842,32 +868,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-sm">Инвойс *</Label>
-                  <Input
-                    value={orderInfo.invoice}
-                    onChange={(e) => setOrderInfo({ ...orderInfo, invoice: e.target.value })}
-                    placeholder="INV-2024-001"
-                    disabled={!!editOrder}
-                    className={errors.invoice ? 'border-red-500' : ''}
-                    required
-                  />
-                  {errors.invoice && <p className="text-red-500 text-xs mt-1">{errors.invoice}</p>}
-                </div>
-
-                <div>
-                  <Label className="text-sm">Трак *</Label>
-                  <Input
-                    value={orderInfo.track_number}
-                    onChange={(e) => setOrderInfo({ ...orderInfo, track_number: e.target.value })}
-                    placeholder="TRACK123456"
-                    disabled={!!editOrder}
-                    className={errors.track_number ? 'border-red-500' : ''}
-                    required
-                  />
-                  {errors.track_number && <p className="text-red-500 text-xs mt-1">{errors.track_number}</p>}
-                </div>
-
                 <div>
                   <Label className="text-sm">Характер груза *</Label>
                   <Input
