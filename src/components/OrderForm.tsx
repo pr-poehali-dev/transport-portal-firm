@@ -1046,52 +1046,59 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                         {stage.waypoints.length > 0 && (
                           <div className="space-y-3">
                             {stage.waypoints.map((waypoint) => (
-                              <div key={waypoint.id} className="p-3 border rounded-lg space-y-2 bg-gray-50">
-                                <div className="flex gap-2">
-                                  <Select 
-                                    value={waypoint.waypoint_type} 
-                                    onValueChange={(val) => updateWaypointField(stage.id, waypoint.id, 'waypoint_type', val)}
-                                  >
-                                    <SelectTrigger className="w-40">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="loading">Погрузка</SelectItem>
-                                      <SelectItem value="unloading">Разгрузка</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <Select 
-                                    value={waypoint.customer_id} 
-                                    onValueChange={(val) => {
-                                      updateWaypointField(stage.id, waypoint.id, 'customer_id', val);
-                                      updateWaypointField(stage.id, waypoint.id, 'delivery_address_id', '');
-                                      updateWaypointField(stage.id, waypoint.id, 'location', '');
-                                      loadCustomerAddresses(val);
-                                    }}
-                                  >
-                                    <SelectTrigger className="flex-1">
-                                      <SelectValue placeholder="Выберите заказчика" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {customers.map((customer) => (
-                                        <SelectItem key={customer.id} value={customer.id.toString()}>
-                                          {customer.nickname}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                              <div key={waypoint.id} className="p-3 border rounded-lg space-y-3 bg-gray-50">
+                                <div className="flex gap-2 items-start">
+                                  <div className="w-40">
+                                    <Label className="text-xs mb-1 block">Тип</Label>
+                                    <Select 
+                                      value={waypoint.waypoint_type} 
+                                      onValueChange={(val) => updateWaypointField(stage.id, waypoint.id, 'waypoint_type', val)}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="loading">Погрузка</SelectItem>
+                                        <SelectItem value="unloading">Разгрузка</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="flex-1">
+                                    <Label className="text-xs mb-1 block">Заказчик</Label>
+                                    <Select 
+                                      value={waypoint.customer_id} 
+                                      onValueChange={(val) => {
+                                        updateWaypointField(stage.id, waypoint.id, 'customer_id', val);
+                                        updateWaypointField(stage.id, waypoint.id, 'delivery_address_id', '');
+                                        updateWaypointField(stage.id, waypoint.id, 'location', '');
+                                        loadCustomerAddresses(val);
+                                      }}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Выберите заказчика" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {customers.map((customer) => (
+                                          <SelectItem key={customer.id} value={customer.id.toString()}>
+                                            {customer.nickname}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
                                   <Button
                                     type="button"
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => removeWaypointFromStage(stage.id, waypoint.id)}
+                                    className="mt-5"
                                   >
                                     <Icon name="Trash2" size={16} className="text-red-500" />
                                   </Button>
                                 </div>
                                 {waypoint.customer_id && customerAddresses[waypoint.customer_id] && (
                                   <div>
-                                    <Label className="text-xs">Адрес доставки</Label>
+                                    <Label className="text-xs mb-1 block">Адрес доставки</Label>
                                     <Select 
                                       value={waypoint.delivery_address_id} 
                                       onValueChange={(val) => {
@@ -1116,7 +1123,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                                   </div>
                                 )}
                                 <div>
-                                  <Label className="text-xs">Примечание</Label>
+                                  <Label className="text-xs mb-1 block">Примечание</Label>
                                   <Input
                                     value={waypoint.notes}
                                     onChange={(e) => updateWaypointField(stage.id, waypoint.id, 'notes', e.target.value)}
