@@ -515,24 +515,33 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
             track_number: orderInfo.track_number || null,
             notes: orderInfo.notes || null
           },
-          stages: stages.map(stage => ({
-            stage_number: stage.stage_number,
-            from_location: stage.from_location,
-            to_location: stage.to_location,
-            planned_departure: stage.planned_departure?.trim() || null,
-            vehicle_id: parseInt(stage.vehicle_id),
-            driver_id: parseInt(stage.driver_id),
-            customs_points: stage.customs.map(c => ({
-              customs_name: c.customs_name
-            })),
-            waypoints: stage.waypoints.map(w => ({
-              waypoint_order: w.waypoint_order,
-              location: w.location,
-              waypoint_type: w.waypoint_type,
-              notes: w.notes || null
-            })),
-            notes: stage.notes
-          }))
+          stages: stages.map(stage => {
+            // Преобразуем дату из DD-MM-YYYY в YYYY-MM-DD
+            let plannedDeparture = stage.planned_departure?.trim() || null;
+            if (plannedDeparture && plannedDeparture.match(/^\d{2}-\d{2}-\d{4}$/)) {
+              const [day, month, year] = plannedDeparture.split('-');
+              plannedDeparture = `${year}-${month}-${day}`;
+            }
+            
+            return {
+              stage_number: stage.stage_number,
+              from_location: stage.from_location,
+              to_location: stage.to_location,
+              planned_departure: plannedDeparture,
+              vehicle_id: parseInt(stage.vehicle_id),
+              driver_id: parseInt(stage.driver_id),
+              customs_points: stage.customs.map(c => ({
+                customs_name: c.customs_name
+              })),
+              waypoints: stage.waypoints.map(w => ({
+                waypoint_order: w.waypoint_order,
+                location: w.location,
+                waypoint_type: w.waypoint_type,
+                notes: w.notes || null
+              })),
+              notes: stage.notes
+            };
+          })
         })
       });
 
@@ -590,21 +599,30 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     setSaving(true);
     try {
       // Подготовка этапов (если есть)
-      const stagesData = stages.map(stage => ({
-        stage_number: stage.stage_number,
-        vehicle_id: parseInt(stage.vehicle_id),
-        driver_id: parseInt(stage.driver_id),
-        from_location: stage.from_location,
-        to_location: stage.to_location,
-        planned_departure: stage.planned_departure?.trim() || null,
-        waypoints: stage.waypoints.map(w => ({
-          waypoint_order: w.waypoint_order,
-          location: w.location,
-          waypoint_type: w.waypoint_type,
-          notes: w.notes || null
-        })),
-        notes: stage.notes || ''
-      }));
+      const stagesData = stages.map(stage => {
+        // Преобразуем дату из DD-MM-YYYY в YYYY-MM-DD
+        let plannedDeparture = stage.planned_departure?.trim() || null;
+        if (plannedDeparture && plannedDeparture.match(/^\d{2}-\d{2}-\d{4}$/)) {
+          const [day, month, year] = plannedDeparture.split('-');
+          plannedDeparture = `${year}-${month}-${day}`;
+        }
+        
+        return {
+          stage_number: stage.stage_number,
+          vehicle_id: parseInt(stage.vehicle_id),
+          driver_id: parseInt(stage.driver_id),
+          from_location: stage.from_location,
+          to_location: stage.to_location,
+          planned_departure: plannedDeparture,
+          waypoints: stage.waypoints.map(w => ({
+            waypoint_order: w.waypoint_order,
+            location: w.location,
+            waypoint_type: w.waypoint_type,
+            notes: w.notes || null
+          })),
+          notes: stage.notes || ''
+        };
+      });
 
       // Подготовка таможен
       const customsData: any[] = [];
