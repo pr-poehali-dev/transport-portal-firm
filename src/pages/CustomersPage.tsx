@@ -19,9 +19,11 @@ interface DeliveryAddress {
 interface CustomersPageProps {
   customers: any[];
   onRefresh: () => void;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
 }
 
-export default function CustomersPage({ customers, onRefresh }: CustomersPageProps) {
+export default function CustomersPage({ customers, onRefresh, searchQuery = '', onSearchChange }: CustomersPageProps) {
   const [showForm, setShowForm] = useState(false);
   const [editCustomer, setEditCustomer] = useState<any>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
@@ -399,6 +401,8 @@ export default function CustomersPage({ customers, onRefresh }: CustomersPagePro
         onCreate={handleCreate}
         onViewAddresses={handleViewAddresses}
         onDelete={handleDelete}
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
       />
 
       <CustomerForm

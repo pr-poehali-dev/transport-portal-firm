@@ -25,9 +25,11 @@ interface ResourceManagerProps {
   drivers?: any[];
   clients?: any[];
   onRefresh: () => void;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
 }
 
-export default function ResourceManager({ type, data, drivers = [], clients = [], onRefresh }: ResourceManagerProps) {
+export default function ResourceManager({ type, data, drivers = [], clients = [], onRefresh, searchQuery = '', onSearchChange }: ResourceManagerProps) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
@@ -225,7 +227,44 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
     }
   };
 
+  const getFilteredData = () => {
+    if (searchQuery === '') return data;
+    
+    const query = searchQuery.toLowerCase().replace(/[\s\-]/g, '');
+    
+    return data.filter(item => {
+      if (type === 'drivers') {
+        const fullName = [item.last_name, item.first_name, item.middle_name].filter(Boolean).join(' ').toLowerCase();
+        const phone = (item.phone || '').replace(/[\s\-]/g, '').toLowerCase();
+        const additionalPhone = (item.additional_phone || '').replace(/[\s\-]/g, '').toLowerCase();
+        const license = [item.license_series, item.license_number].filter(Boolean).join('').toLowerCase();
+        const passport = [item.passport_series, item.passport_number].filter(Boolean).join('').toLowerCase();
+        return fullName.includes(query) || phone.includes(query) || additionalPhone.includes(query) || license.includes(query) || passport.includes(query);
+      }
+      
+      if (type === 'vehicles') {
+        const brand = (item.vehicle_brand || '').toLowerCase();
+        const plate = (item.license_plate || '').replace(/[\s\-]/g, '').toLowerCase();
+        const trailer = (item.trailer_plate || '').replace(/[\s\-]/g, '').toLowerCase();
+        const company = (item.company_name || '').toLowerCase();
+        return brand.includes(query) || plate.includes(query) || trailer.includes(query) || company.includes(query);
+      }
+      
+      if (type === 'clients') {
+        const name = (item.name || '').toLowerCase();
+        const contact = (item.contact_person || '').toLowerCase();
+        const phone = (item.phone || '').replace(/[\s\-]/g, '').toLowerCase();
+        const email = (item.email || '').toLowerCase();
+        return name.includes(query) || contact.includes(query) || phone.includes(query) || email.includes(query);
+      }
+      
+      return true;
+    });
+  };
+
   const renderTable = () => {
+    const filteredData = getFilteredData();
+    
     if (type === 'drivers') {
       return (
         <div className="overflow-x-auto">
@@ -239,7 +278,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((item) => (
+              {filteredData.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">
                     {[item.last_name, item.first_name, item.middle_name].filter(Boolean).join(' ')}
@@ -287,7 +326,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((item) => (
+              {filteredData.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium text-sm">{item.vehicle_brand}</TableCell>
                   <TableCell className="text-sm">{item.license_plate}</TableCell>
@@ -332,7 +371,7 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((item) => (
+              {filteredData.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium text-sm">{item.name}</TableCell>
                   <TableCell className="hidden md:table-cell text-sm">{item.contact_person}</TableCell>
@@ -907,6 +946,16 @@ export default function ResourceManager({ type, data, drivers = [], clients = []
           </Button>
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
+          {onSearchChange && (
+            <div className="mb-4">
+              <Input
+                placeholder={`Поиск ${type === 'drivers' ? 'водителя' : type === 'vehicles' ? 'автомобиля' : 'перевозчика'}...`}
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          )}
           {renderTable()}
         </CardContent>
       </Card>

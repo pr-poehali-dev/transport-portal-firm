@@ -37,6 +37,11 @@ const Index = () => {
   const [clients, setClients] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [driversSearchQuery, setDriversSearchQuery] = useState('');
+  const [vehiclesSearchQuery, setVehiclesSearchQuery] = useState('');
+  const [clientsSearchQuery, setClientsSearchQuery] = useState('');
+  const [customersSearchQuery, setCustomersSearchQuery] = useState('');
+  const [logsSearchQuery, setLogsSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [selectedLogOrder, setSelectedLogOrder] = useState<number | null>(null);
@@ -433,9 +438,22 @@ const Index = () => {
                     <CardDescription className="text-sm">История операций по заказам</CardDescription>
                   </CardHeader>
                   <CardContent>
+                    <Input 
+                      placeholder="Поиск по номеру заказа..." 
+                      className="w-full mb-4"
+                      value={logsSearchQuery}
+                      onChange={(e) => setLogsSearchQuery(e.target.value)}
+                    />
                     <div className="space-y-2">
                       {(() => {
-                        const groupedLogs = activityLogs.reduce((acc, log) => {
+                        const filteredLogs = activityLogs.filter(log => {
+                          if (logsSearchQuery === '') return true;
+                          const query = logsSearchQuery.toLowerCase();
+                          const orderNumber = (log.order_number || '').toLowerCase();
+                          return orderNumber.includes(query);
+                        });
+                        
+                        const groupedLogs = filteredLogs.reduce((acc, log) => {
                           if (!acc[log.order_id]) {
                             acc[log.order_id] = {
                               order_number: log.order_number,
@@ -722,13 +740,27 @@ const Index = () => {
 
             {activeSection === 'drivers' && (
               <div className="space-y-6 animate-fade-in">
-                <ResourceManager type="drivers" data={drivers} onRefresh={loadData} />
+                <ResourceManager 
+                  type="drivers" 
+                  data={drivers} 
+                  onRefresh={loadData} 
+                  searchQuery={driversSearchQuery}
+                  onSearchChange={setDriversSearchQuery}
+                />
               </div>
             )}
 
             {activeSection === 'vehicles' && (
               <div className="space-y-6 animate-fade-in">
-                <ResourceManager type="vehicles" data={vehicles} drivers={drivers} clients={clients} onRefresh={loadData} />
+                <ResourceManager 
+                  type="vehicles" 
+                  data={vehicles} 
+                  drivers={drivers} 
+                  clients={clients} 
+                  onRefresh={loadData}
+                  searchQuery={vehiclesSearchQuery}
+                  onSearchChange={setVehiclesSearchQuery}
+                />
               </div>
             )}
 
@@ -788,12 +820,24 @@ const Index = () => {
 
             {activeSection === 'clients' && (
               <div className="space-y-6 animate-fade-in">
-                <ResourceManager type="clients" data={clients} clients={clients} onRefresh={loadData} />
+                <ResourceManager 
+                  type="clients" 
+                  data={clients} 
+                  clients={clients} 
+                  onRefresh={loadData}
+                  searchQuery={clientsSearchQuery}
+                  onSearchChange={setClientsSearchQuery}
+                />
               </div>
             )}
 
             {activeSection === 'customers' && (
-              <CustomersPage customers={customers} onRefresh={loadData} />
+              <CustomersPage 
+                customers={customers} 
+                onRefresh={loadData}
+                searchQuery={customersSearchQuery}
+                onSearchChange={setCustomersSearchQuery}
+              />
             )}
 
             {activeSection === 'settings' && userPermissions?.settings?.view && (

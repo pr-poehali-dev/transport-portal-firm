@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
 
 interface CustomersListProps {
@@ -9,9 +10,21 @@ interface CustomersListProps {
   onCreate: () => void;
   onViewAddresses: (customer: any) => void;
   onDelete: (customer: any) => void;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
 }
 
-export default function CustomersList({ customers, onEdit, onCreate, onViewAddresses, onDelete }: CustomersListProps) {
+export default function CustomersList({ customers, onEdit, onCreate, onViewAddresses, onDelete, searchQuery = '', onSearchChange }: CustomersListProps) {
+  const filteredCustomers = searchQuery === '' ? customers : customers.filter(customer => {
+    const query = searchQuery.toLowerCase();
+    const nickname = (customer.nickname || '').toLowerCase();
+    const company = (customer.company_name || '').toLowerCase();
+    const inn = (customer.inn || '').toLowerCase();
+    const kpp = (customer.kpp || '').toLowerCase();
+    const director = (customer.director_name || '').toLowerCase();
+    return nickname.includes(query) || company.includes(query) || inn.includes(query) || kpp.includes(query) || director.includes(query);
+  });
+  
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -25,6 +38,16 @@ export default function CustomersList({ customers, onEdit, onCreate, onViewAddre
         </Button>
       </CardHeader>
       <CardContent>
+        {onSearchChange && (
+          <div className="mb-4">
+            <Input
+              placeholder="Поиск заказчика..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="w-full"
+            />
+          </div>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
@@ -38,7 +61,7 @@ export default function CustomersList({ customers, onEdit, onCreate, onViewAddre
             </TableRow>
           </TableHeader>
           <TableBody>
-            {customers.map((customer) => (
+            {filteredCustomers.map((customer) => (
               <TableRow key={customer.id}>
                 <TableCell className="font-medium">{customer.nickname}</TableCell>
                 <TableCell>{customer.company_name}</TableCell>
