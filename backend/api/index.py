@@ -818,16 +818,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 user_name = body_data.get('user_name', 'Пользователь')
                 user_role = body_data.get('user_role', 'Пользователь')
                 
-                cur.execute('SELECT order_number FROM orders WHERE id = %s', (order_id,))
-                existing_order = cur.fetchone()
+                # Получаем старые данные заказа для сравнения
+                cur.execute('''
+                    SELECT order_number, order_date, cargo_type, cargo_weight, 
+                           invoice, track_number, notes, customer_items, client_id
+                    FROM orders WHERE id = %s
+                ''', (order_id,))
+                old_order = cur.fetchone()
                 
-                if not existing_order:
+                if not old_order:
                     return {
                         'statusCode': 404,
                         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                         'body': json.dumps({'success': False, 'message': 'Заказ не найден'}),
                         'isBase64Encoded': False
                     }
+                
+                old_order_number, old_order_date, old_cargo_type, old_cargo_weight, old_invoice, old_track_number, old_notes, old_customer_items_json, old_client_id = old_order
+                old_customer_items = json.loads(old_customer_items_json) if old_customer_items_json else []
                 
                 # Получаем старые маршруты для сравнения
                 cur.execute('SELECT id, stage_number FROM order_transport_stages WHERE order_id = %s ORDER BY stage_number', (order_id,))
@@ -839,7 +847,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     UPDATE orders 
                     SET order_number = %s, order_date = %s, cargo_type = %s, 
                         cargo_weight = %s, invoice = %s, track_number = %s, 
-                        notes = %s, customer_items = %s
+                        notes = %s, customer_items = %s, client_id = %s
                     WHERE id = %s
                 ''', (
                     order_data.get('order_number'),
@@ -850,6 +858,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     order_data.get('track_number'),
                     order_data.get('notes'),
                     json.dumps(customer_items),
+                    order_data.get('client_id') if order_data.get('client_id') else None,
                     order_id
                 ))
                 
@@ -935,6 +944,94 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
                             VALUES (%s, %s, %s, %s, %s)
                         ''', (order_id, user_role, user_name, 'add_customs', f'добавил таможню в маршрут {stage_number}: {customs_str}'))
+                
+                # Логирование изменений в информации о заказе
+                changes = []
+                
+                # Проверка изменения номера заказа
+                if order_data.get('order_number') != old_order_number:
+                    changes.append(f'изменил номер заказа с "{old_order_number}" на "{order_data.get("order_number")}"')
+                
+                # Проверка изменения даты заказа
+                if order_data.get('order_date') != old_order_date:
+                    changes.append(f'изменил дату заказа с "{old_order_date}" на "{order_data.get("order_date")}"')
+                
+                # Проверка изменения типа груза
+                if order_data.get('cargo_type') != old_cargo_type:
+                    old_val = old_cargo_type or 'не указано'
+                    new_val = order_data.get('cargo_type') or 'не указано'
+                    changes.append(f'изменил тип груза с "{old_val}" на "{new_val}"')
+                
+                # Проверка изменения веса груза
+                if order_data.get('cargo_weight') != old_cargo_weight:
+                    old_val = old_cargo_weight or 'не указано'
+                    new_val = order_data.get('cargo_weight') or 'не указано'
+                    changes.append(f'изменил вес груза с "{old_val}" на "{new_val}"')
+                
+                # Проверка изменения инвойса
+                if order_data.get('invoice') != old_invoice:
+                    old_val = old_invoice or 'не указано'
+                    new_val = order_data.get('invoice') or 'не указано'
+                    changes.append(f'изменил инвойс с "{old_val}" на "{new_val}"')
+                
+                # Проверка изменения трек-номера
+                if order_data.get('track_number') != old_track_number:
+                    old_val = old_track_number or 'не указано'
+                    new_val = order_data.get('track_number') or 'не указано'
+                    changes.append(f'изменил трек-номер с "{old_val}" на "{new_val}"')
+                
+                # Проверка изменения примечаний
+                if order_data.get('notes') != old_notes:
+                    changes.append('изменил примечания к заказу')
+                
+                # Проверка изменения перевозчика
+                new_client_id = order_data.get('client_id')
+                if new_client_id != old_client_id:
+                    old_carrier = 'не указан'
+                    new_carrier = 'не указан'
+                    
+                    if old_client_id:
+                        cur.execute('SELECT name FROM clients WHERE id = %s', (old_client_id,))
+                        carrier_row = cur.fetchone()
+                        if carrier_row:
+                            old_carrier = carrier_row[0]
+                    
+                    if new_client_id:
+                        cur.execute('SELECT name FROM clients WHERE id = %s', (new_client_id,))
+                        carrier_row = cur.fetchone()
+                        if carrier_row:
+                            new_carrier = carrier_row[0]
+                    
+                    changes.append(f'изменил перевозчика с "{old_carrier}" на "{new_carrier}"')
+                
+                # Проверка изменения заказчиков
+                old_customer_ids = set(str(item.get('customer_id')) for item in old_customer_items if item.get('customer_id'))
+                new_customer_ids = set(str(item.get('customer_id')) for item in customer_items if item.get('customer_id'))
+                
+                if old_customer_ids != new_customer_ids:
+                    added_customers = new_customer_ids - old_customer_ids
+                    removed_customers = old_customer_ids - new_customer_ids
+                    
+                    if added_customers:
+                        for customer_id in added_customers:
+                            cur.execute('SELECT nickname FROM customers WHERE id = %s', (customer_id,))
+                            customer_row = cur.fetchone()
+                            if customer_row:
+                                changes.append(f'добавил заказчика "{customer_row[0]}"')
+                    
+                    if removed_customers:
+                        for customer_id in removed_customers:
+                            cur.execute('SELECT nickname FROM customers WHERE id = %s', (customer_id,))
+                            customer_row = cur.fetchone()
+                            if customer_row:
+                                changes.append(f'удалил заказчика "{customer_row[0]}"')
+                
+                # Записываем все изменения в лог
+                for change in changes:
+                    cur.execute('''
+                        INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
+                        VALUES (%s, %s, %s, %s, %s)
+                    ''', (order_id, user_role, user_name, 'update_order_info', change))
                 
                 conn.commit()
                 
