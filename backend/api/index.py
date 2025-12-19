@@ -835,7 +835,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
                 
                 old_order_number, old_order_date, old_cargo_type, old_cargo_weight, old_invoice, old_track_number, old_notes, old_customer_items_json, old_client_id = old_order
-                old_customer_items = json.loads(old_customer_items_json) if old_customer_items_json else []
+                
+                # Парсим старые customer_items
+                if isinstance(old_customer_items_json, str):
+                    old_customer_items = json.loads(old_customer_items_json) if old_customer_items_json else []
+                elif isinstance(old_customer_items_json, list):
+                    old_customer_items = old_customer_items_json
+                else:
+                    old_customer_items = []
                 
                 # Получаем старые маршруты для сравнения
                 cur.execute('SELECT id, stage_number FROM order_transport_stages WHERE order_id = %s ORDER BY stage_number', (order_id,))
