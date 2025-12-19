@@ -39,13 +39,8 @@ interface Customs {
 interface Waypoint {
   id: string;
   waypoint_order: number;
-  customer_id: string;
-  delivery_address_id: string;
   location: string;
   waypoint_type: 'loading' | 'unloading';
-  planned_time: string;
-  actual_time?: string;
-  cargo_description: string;
   notes: string;
 }
 
@@ -103,7 +98,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoRoute, setAutoRoute] = useState('');
-  const [customerAddresses, setCustomerAddresses] = useState<Record<string, any[]>>({});
+
 
   useEffect(() => {
     if (open && !editOrder) {
@@ -111,17 +106,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     }
   }, [open]);
 
-  const loadCustomerAddresses = async (customerId: string) => {
-    if (customerAddresses[customerId]) return;
-    
-    try {
-      const res = await fetch(`${API_URL}?resource=customer_addresses&customer_id=${customerId}`);
-      const data = await res.json();
-      setCustomerAddresses(prev => ({ ...prev, [customerId]: data.addresses || [] }));
-    } catch (error) {
-      console.error('Error loading customer addresses:', error);
-    }
-  };
+
 
   const generateOrderNumber = async () => {
     const today = new Date();
@@ -200,13 +185,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
               waypoints: stage.waypoints ? stage.waypoints.map((wp: any) => ({
                 id: wp.id?.toString() || Date.now().toString(),
                 waypoint_order: wp.waypoint_order || 0,
-                customer_id: wp.customer_id?.toString() || '',
-                delivery_address_id: wp.delivery_address_id?.toString() || '',
                 location: wp.location || '',
                 waypoint_type: wp.waypoint_type || 'loading',
-                planned_time: wp.planned_time || '',
-                actual_time: wp.actual_time || '',
-                cargo_description: wp.cargo_description || '',
                 notes: wp.notes || ''
               })) : [],
               notes: stage.notes || '',
@@ -387,12 +367,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
           waypoints: [...s.waypoints, {
             id: Date.now().toString(),
             waypoint_order: maxOrder + 1,
-            customer_id: '',
-            delivery_address_id: '',
             location: '',
             waypoint_type: 'loading' as const,
-            planned_time: '',
-            cargo_description: '',
             notes: ''
           }]
         };
@@ -437,7 +413,7 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
     }));
   };
 
-  // Автоматическое формирование маршрута из этапов
+  // Автоматическое формирование маршрута из этапов с промежуточными точками
   useEffect(() => {
     if (stages.length === 0) {
       setAutoRoute('');
@@ -446,13 +422,24 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
 
     const routeParts: string[] = [];
     
-    // Добавляем начальную точку первого этапа
-    if (stages[0]?.from_location) {
-      routeParts.push(stages[0].from_location);
-    }
-    
-    // Добавляем конечные точки всех этапов
-    stages.forEach((stage) => {
+    stages.forEach((stage, idx) => {
+      // Добавляем начальную точку первого этапа
+      if (idx === 0 && stage.from_location) {
+        routeParts.push(stage.from_location);
+      }
+      
+      // Добавляем промежуточные точки этапа
+      if (stage.waypoints && stage.waypoints.length > 0) {
+        stage.waypoints
+          .sort((a, b) => a.waypoint_order - b.waypoint_order)
+          .forEach((waypoint) => {
+            if (waypoint.location) {
+              routeParts.push(waypoint.location);
+            }
+          });
+      }
+      
+      // Добавляем конечную точку этапа
       if (stage.to_location) {
         routeParts.push(stage.to_location);
       }
@@ -540,12 +527,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
             })),
             waypoints: stage.waypoints.map(w => ({
               waypoint_order: w.waypoint_order,
-              customer_id: parseInt(w.customer_id) || null,
-              delivery_address_id: parseInt(w.delivery_address_id) || null,
               location: w.location,
               waypoint_type: w.waypoint_type,
-              planned_time: w.planned_time || null,
-              cargo_description: w.cargo_description || null,
               notes: w.notes || null
             })),
             notes: stage.notes
@@ -616,12 +599,8 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
         planned_departure: stage.planned_departure?.trim() || null,
         waypoints: stage.waypoints.map(w => ({
           waypoint_order: w.waypoint_order,
-          customer_id: parseInt(w.customer_id) || null,
-          delivery_address_id: parseInt(w.delivery_address_id) || null,
           location: w.location,
           waypoint_type: w.waypoint_type,
-          planned_time: w.planned_time || null,
-          cargo_description: w.cargo_description || null,
           notes: w.notes || null
         })),
         notes: stage.notes || ''
@@ -1064,27 +1043,12 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                                     </Select>
                                   </div>
                                   <div className="flex-1">
-                                    <Label className="text-xs mb-1 block">Заказчик</Label>
-                                    <Select 
-                                      value={waypoint.customer_id} 
-                                      onValueChange={(val) => {
-                                        updateWaypointField(stage.id, waypoint.id, 'customer_id', val);
-                                        updateWaypointField(stage.id, waypoint.id, 'delivery_address_id', '');
-                                        updateWaypointField(stage.id, waypoint.id, 'location', '');
-                                        loadCustomerAddresses(val);
-                                      }}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Выберите заказчика" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {customers.map((customer) => (
-                                          <SelectItem key={customer.id} value={customer.id.toString()}>
-                                            {customer.nickname}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
+                                    <Label className="text-xs mb-1 block">Город</Label>
+                                    <Input
+                                      value={waypoint.location}
+                                      onChange={(e) => updateWaypointField(stage.id, waypoint.id, 'location', e.target.value)}
+                                      placeholder="Название города"
+                                    />
                                   </div>
                                   <Button
                                     type="button"
@@ -1096,32 +1060,6 @@ export default function OrderForm({ open, onClose, onSuccess, editOrder, clients
                                     <Icon name="Trash2" size={16} className="text-red-500" />
                                   </Button>
                                 </div>
-                                {waypoint.customer_id && customerAddresses[waypoint.customer_id] && (
-                                  <div>
-                                    <Label className="text-xs mb-1 block">Адрес доставки</Label>
-                                    <Select 
-                                      value={waypoint.delivery_address_id} 
-                                      onValueChange={(val) => {
-                                        updateWaypointField(stage.id, waypoint.id, 'delivery_address_id', val);
-                                        const address = customerAddresses[waypoint.customer_id].find(a => a.id.toString() === val);
-                                        if (address) {
-                                          updateWaypointField(stage.id, waypoint.id, 'location', address.address || '');
-                                        }
-                                      }}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Выберите адрес" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {customerAddresses[waypoint.customer_id].map((address) => (
-                                          <SelectItem key={address.id} value={address.id.toString()}>
-                                            {address.address_name} - {address.address}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                )}
                                 <div>
                                   <Label className="text-xs mb-1 block">Примечание</Label>
                                   <Input
