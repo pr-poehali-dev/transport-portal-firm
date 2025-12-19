@@ -815,6 +815,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 order_data = body_data.get('order', {})
                 stages_data = body_data.get('stages', [])
                 
+                user_name = body_data.get('user_name', 'Пользователь')
+                user_role = body_data.get('user_role', 'Пользователь')
+                
                 cur.execute('SELECT order_number FROM orders WHERE id = %s', (order_id,))
                 existing_order = cur.fetchone()
                 
@@ -825,6 +828,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'body': json.dumps({'success': False, 'message': 'Заказ не найден'}),
                         'isBase64Encoded': False
                     }
+                
+                # Получаем старые маршруты для сравнения
+                cur.execute('SELECT id, stage_number FROM order_transport_stages WHERE order_id = %s ORDER BY stage_number', (order_id,))
+                old_stages = {row[1]: row[0] for row in cur.fetchall()}
                 
                 customer_items = order_data.get('customer_items', [])
                 
@@ -851,6 +858,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 cur.execute('DELETE FROM order_transport_stages WHERE order_id = %s', (order_id,))
                 
                 for stage in stages_data:
+                    stage_number = stage.get('stage_number')
+                    is_new_stage = stage_number not in old_stages
+                    
                     cur.execute('''
                         INSERT INTO order_transport_stages 
                         (order_id, stage_number, from_location, to_location, planned_departure, vehicle_id, driver_id, notes, status)
@@ -858,7 +868,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         RETURNING id
                     ''', (
                         order_id,
-                        stage.get('stage_number'),
+                        stage_number,
                         stage.get('from_location'),
                         stage.get('to_location'),
                         stage.get('planned_departure'),
@@ -870,6 +880,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     stage_id = cur.fetchone()[0]
                     
                     waypoints_data = stage.get('waypoints', [])
+                    waypoints_added = []
                     for waypoint in waypoints_data:
                         cur.execute('''
                             INSERT INTO stage_waypoints (
@@ -887,20 +898,43 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             waypoint.get('cargo_description'),
                             waypoint.get('notes')
                         ))
+                        waypoints_added.append(waypoint.get('location'))
                     
+                    customs_added = []
                     for customs in stage.get('customs_points', []):
                         cur.execute('''
                             INSERT INTO order_customs_points (stage_id, customs_name, status)
                             VALUES (%s, %s, %s)
                         ''', (stage_id, customs.get('customs_name'), 'pending'))
-                
-                user_name = body_data.get('user_name', 'Пользователь')
-                user_role = body_data.get('user_role', 'Пользователь')
-                
-                cur.execute('''
-                    INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
-                    VALUES (%s, %s, %s, %s, %s)
-                ''', (order_id, user_role, user_name, 'update_order', f'обновил заказ {order_data.get("order_number")}'))
+                        customs_added.append(customs.get('customs_name'))
+                    
+                    # Логирование действий
+                    route_desc = f"{stage.get('from_location')} → {stage.get('to_location')}"
+                    
+                    if is_new_stage:
+                        cur.execute('''
+                            INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
+                            VALUES (%s, %s, %s, %s, %s)
+                        ''', (order_id, user_role, user_name, 'add_stage', f'добавил маршрут {stage_number} "{route_desc}"'))
+                    else:
+                        cur.execute('''
+                            INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
+                            VALUES (%s, %s, %s, %s, %s)
+                        ''', (order_id, user_role, user_name, 'update_stage', f'изменил маршрут {stage_number} "{route_desc}"'))
+                    
+                    if waypoints_added:
+                        waypoints_str = ', '.join(waypoints_added)
+                        cur.execute('''
+                            INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
+                            VALUES (%s, %s, %s, %s, %s)
+                        ''', (order_id, user_role, user_name, 'add_waypoints', f'добавил промежуточные точки в маршрут {stage_number}: {waypoints_str}'))
+                    
+                    if customs_added:
+                        customs_str = ', '.join(customs_added)
+                        cur.execute('''
+                            INSERT INTO activity_log (order_id, user_role, user_name, action_type, description)
+                            VALUES (%s, %s, %s, %s, %s)
+                        ''', (order_id, user_role, user_name, 'add_customs', f'добавил таможню в маршрут {stage_number}: {customs_str}'))
                 
                 conn.commit()
                 
