@@ -141,7 +141,30 @@ const ContractApplicationPage = ({ customers, clients, drivers, vehicles, onRefr
       const result = await response.json();
 
       if (result.success) {
+        const contractId = editContract?.id || result.contract_id;
         toast.success(editContract ? 'Договор обновлён' : 'Договор создан');
+        
+        // Генерируем и открываем PDF
+        if (contractId) {
+          try {
+            const pdfResponse = await fetch('https://functions.poehali.dev/09ad9e8b-778a-402e-b159-d948dea42519', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contract_id: contractId })
+            });
+            
+            const pdfResult = await pdfResponse.json();
+            
+            if (pdfResult.success && pdfResult.url) {
+              window.open(pdfResult.url, '_blank');
+              toast.success('PDF открыт в новой вкладке');
+            }
+          } catch (pdfError) {
+            console.error('PDF generation error:', pdfError);
+            toast.error('Ошибка генерации PDF');
+          }
+        }
+        
         setShowForm(false);
         setEditContract(null);
         resetForm();
@@ -320,6 +343,29 @@ const ContractApplicationPage = ({ customers, clients, drivers, vehicles, onRefr
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={async () => {
+                            try {
+                              const response = await fetch('https://functions.poehali.dev/09ad9e8b-778a-402e-b159-d948dea42519', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ contract_id: contract.id })
+                              });
+                              const result = await response.json();
+                              if (result.success && result.url) {
+                                window.open(result.url, '_blank');
+                              } else {
+                                toast.error('Ошибка генерации PDF');
+                              }
+                            } catch (error) {
+                              toast.error('Ошибка генерации PDF');
+                            }
+                          }}
+                        >
+                          <Icon name="FileText" size={16} />
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => handleEdit(contract)}>
                           <Icon name="Edit" size={16} />
                         </Button>

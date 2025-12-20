@@ -1,0 +1,17 @@
+{
+  "tests": [
+    {
+      "name": "Generate contract PDF",
+      "method": "POST",
+      "body": {
+        "contract_id": 1
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "url": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

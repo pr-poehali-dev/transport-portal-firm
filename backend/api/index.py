@@ -588,6 +588,37 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'sessions': sessions}),
                     'isBase64Encoded': False
                 }
+            
+            elif resource == 'contract_applications':
+                cur.execute('''
+                    SELECT 
+                        ca.id, ca.contract_number, ca.contract_date,
+                        ca.customer_id, ca.carrier_id,
+                        cust.nickname as customer_nickname,
+                        cust.full_legal_name as customer_full_name,
+                        cl.name as carrier_name,
+                        ca.loading_address, ca.unloading_address,
+                        ca.created_at
+                    FROM contract_applications ca
+                    LEFT JOIN customers cust ON ca.customer_id = cust.id
+                    LEFT JOIN clients cl ON ca.carrier_id = cl.id
+                    ORDER BY ca.created_at DESC
+                ''')
+                columns = [desc[0] for desc in cur.description]
+                contracts = [dict(zip(columns, row)) for row in cur.fetchall()]
+                
+                for contract in contracts:
+                    if contract.get('contract_date'):
+                        contract['contract_date'] = contract['contract_date'].strftime('%Y-%m-%d')
+                    if contract.get('created_at'):
+                        contract['created_at'] = contract['created_at'].strftime('%d.%m.%Y %H:%M')
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'contracts': contracts}),
+                    'isBase64Encoded': False
+                }
         
         elif method == 'POST':
             body_data = json.loads(event.get('body', '{}'))
@@ -1848,6 +1879,112 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({'success': True, 'customs_id': customs_id}),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'create_contract_application':
+                data = body_data.get('data', {})
+                
+                cur.execute('''
+                    INSERT INTO contract_applications (
+                        contract_number, contract_date, customer_id, carrier_id,
+                        vehicle_type, refrigerator, cargo_weight, cargo_volume,
+                        transport_mode, additional_conditions,
+                        loading_address, loading_date, loading_contact,
+                        unloading_address, unloading_date, unloading_contact,
+                        payment_amount, payment_without_vat, payment_terms, payment_documents,
+                        driver_name, driver_license, driver_passport, driver_passport_issued,
+                        vehicle_number, trailer_number, transport_conditions
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                ''', (
+                    data.get('contract_number'), data.get('contract_date'),
+                    data.get('customer_id') if data.get('customer_id') else None,
+                    data.get('carrier_id') if data.get('carrier_id') else None,
+                    data.get('vehicle_type'), data.get('refrigerator', False),
+                    data.get('cargo_weight') if data.get('cargo_weight') else None,
+                    data.get('cargo_volume') if data.get('cargo_volume') else None,
+                    data.get('transport_mode'), data.get('additional_conditions'),
+                    data.get('loading_address'), data.get('loading_date') if data.get('loading_date') else None,
+                    data.get('loading_contact'),
+                    data.get('unloading_address'), data.get('unloading_date') if data.get('unloading_date') else None,
+                    data.get('unloading_contact'),
+                    data.get('payment_amount') if data.get('payment_amount') else None,
+                    data.get('payment_without_vat', False),
+                    data.get('payment_terms'), data.get('payment_documents'),
+                    data.get('driver_name'), data.get('driver_license'),
+                    data.get('driver_passport'), data.get('driver_passport_issued'),
+                    data.get('vehicle_number'), data.get('trailer_number'),
+                    data.get('transport_conditions')
+                ))
+                
+                contract_id = cur.fetchone()[0]
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True, 'contract_id': contract_id}),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'update_contract_application':
+                contract_id = body_data.get('contract_id')
+                data = body_data.get('data', {})
+                
+                cur.execute('''
+                    UPDATE contract_applications SET
+                        contract_number = %s, contract_date = %s, customer_id = %s, carrier_id = %s,
+                        vehicle_type = %s, refrigerator = %s, cargo_weight = %s, cargo_volume = %s,
+                        transport_mode = %s, additional_conditions = %s,
+                        loading_address = %s, loading_date = %s, loading_contact = %s,
+                        unloading_address = %s, unloading_date = %s, unloading_contact = %s,
+                        payment_amount = %s, payment_without_vat = %s, payment_terms = %s, payment_documents = %s,
+                        driver_name = %s, driver_license = %s, driver_passport = %s, driver_passport_issued = %s,
+                        vehicle_number = %s, trailer_number = %s, transport_conditions = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ''', (
+                    data.get('contract_number'), data.get('contract_date'),
+                    data.get('customer_id') if data.get('customer_id') else None,
+                    data.get('carrier_id') if data.get('carrier_id') else None,
+                    data.get('vehicle_type'), data.get('refrigerator', False),
+                    data.get('cargo_weight') if data.get('cargo_weight') else None,
+                    data.get('cargo_volume') if data.get('cargo_volume') else None,
+                    data.get('transport_mode'), data.get('additional_conditions'),
+                    data.get('loading_address'), data.get('loading_date') if data.get('loading_date') else None,
+                    data.get('loading_contact'),
+                    data.get('unloading_address'), data.get('unloading_date') if data.get('unloading_date') else None,
+                    data.get('unloading_contact'),
+                    data.get('payment_amount') if data.get('payment_amount') else None,
+                    data.get('payment_without_vat', False),
+                    data.get('payment_terms'), data.get('payment_documents'),
+                    data.get('driver_name'), data.get('driver_license'),
+                    data.get('driver_passport'), data.get('driver_passport_issued'),
+                    data.get('vehicle_number'), data.get('trailer_number'),
+                    data.get('transport_conditions'),
+                    contract_id
+                ))
+                
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'delete_contract_application':
+                contract_id = body_data.get('contract_id')
+                
+                cur.execute('DELETE FROM contract_applications WHERE id = %s', (contract_id,))
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'success': True}),
                     'isBase64Encoded': False
                 }
         
