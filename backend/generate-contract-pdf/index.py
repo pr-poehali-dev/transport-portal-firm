@@ -76,9 +76,9 @@ def handler(event, context):
             ca.payment_amount, ca.payment_without_vat, ca.payment_terms, ca.payment_documents,
             ca.driver_name, ca.driver_license, ca.driver_passport, ca.driver_passport_issued,
             ca.vehicle_number, ca.trailer_number, ca.transport_conditions
-        FROM contract_applications ca
-        LEFT JOIN customers cust ON ca.customer_id = cust.id
-        LEFT JOIN clients cl ON ca.carrier_id = cl.id
+        FROM t_p96093837_transport_portal_fir.contract_applications ca
+        LEFT JOIN t_p96093837_transport_portal_fir.customers cust ON ca.customer_id = cust.id
+        LEFT JOIN t_p96093837_transport_portal_fir.clients cl ON ca.carrier_id = cl.id
         WHERE ca.id = %s
     ''', (contract_id,))
     

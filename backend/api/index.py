@@ -599,7 +599,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         cl.name as carrier_name,
                         ca.loading_address, ca.unloading_address,
                         ca.created_at
-                    FROM contract_applications ca
+                    FROM t_p96093837_transport_portal_fir.contract_applications ca
                     LEFT JOIN customers cust ON ca.customer_id = cust.id
                     LEFT JOIN clients cl ON ca.carrier_id = cl.id
                     ORDER BY ca.created_at DESC
@@ -1886,7 +1886,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 data = body_data.get('data', {})
                 
                 cur.execute('''
-                    INSERT INTO contract_applications (
+                    INSERT INTO t_p96093837_transport_portal_fir.contract_applications (
                         contract_number, contract_date, customer_id, carrier_id,
                         vehicle_type, refrigerator, cargo_weight, cargo_volume,
                         transport_mode, additional_conditions,
@@ -1933,7 +1933,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 data = body_data.get('data', {})
                 
                 cur.execute('''
-                    UPDATE contract_applications SET
+                    UPDATE t_p96093837_transport_portal_fir.contract_applications SET
                         contract_number = %s, contract_date = %s, customer_id = %s, carrier_id = %s,
                         vehicle_type = %s, refrigerator = %s, cargo_weight = %s, cargo_volume = %s,
                         transport_mode = %s, additional_conditions = %s,
@@ -1978,7 +1978,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             elif action == 'delete_contract_application':
                 contract_id = body_data.get('contract_id')
                 
-                cur.execute('DELETE FROM contract_applications WHERE id = %s', (contract_id,))
+                cur.execute('DELETE FROM t_p96093837_transport_portal_fir.contract_applications WHERE id = %s', (contract_id,))
                 conn.commit()
                 
                 return {
