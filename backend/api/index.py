@@ -1,15 +1,7 @@
 import json
-import sys
 import os
+import psycopg2
 from typing import Dict, Any
-
-sys.path.insert(0, os.path.dirname(__file__))
-
-from utils.db import get_db_connection
-from utils.response import options_response, error_response
-
-from handlers import orders, drivers, vehicles, clients, customers, contracts
-from handlers import activity, settings, sessions, users
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
