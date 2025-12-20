@@ -17,6 +17,7 @@ import SettingsPage from '@/components/SettingsPage';
 import LoginPage from '@/components/LoginPage';
 
 import CustomersPage from './CustomersPage';
+import ContractApplicationPage from '@/components/ContractApplicationPage';
 
 const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44ca0e';
 
@@ -887,7 +888,17 @@ const Index = () => {
               <SettingsPage currentUser={userRole} />
             )}
 
-            {(activeSection === 'contract-application' || activeSection === 'ttn' || activeSection === 'upd') && (
+            {activeSection === 'contract-application' && (
+              <ContractApplicationPage
+                customers={customers}
+                clients={clients}
+                drivers={drivers}
+                vehicles={vehicles}
+                onRefresh={loadData}
+              />
+            )}
+
+            {(activeSection === 'ttn' || activeSection === 'upd') && (
               <div className="animate-fade-in">
                 <Card className="text-center py-16">
                   <CardContent>
