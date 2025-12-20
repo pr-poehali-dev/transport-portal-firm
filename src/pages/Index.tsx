@@ -17,7 +17,6 @@ import SettingsPage from '@/components/SettingsPage';
 import LoginPage from '@/components/LoginPage';
 
 import CustomersPage from './CustomersPage';
-import TempFilesPage from '@/components/TempFilesPage';
 
 const API_URL = 'https://functions.poehali.dev/626acb06-0cc7-4734-8340-e2c53e44ca0e';
 
@@ -407,14 +406,7 @@ const Index = () => {
               </div>
             )}
             
-            <Button
-              variant={activeSection === 'temp-files' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => { setActiveSection('temp-files'); setMobileMenuOpen(false); }}
-            >
-              <Icon name="Upload" size={20} className="mr-3" />
-              Временное
-            </Button>
+
             <Button
               variant={activeSection === 'overview' ? 'default' : 'ghost'}
               className="w-full justify-start"
@@ -450,7 +442,7 @@ const Index = () => {
                   {activeSection === 'contract-application' && 'Договор-Заявка'}
                   {activeSection === 'ttn' && 'ТТН'}
                   {activeSection === 'upd' && 'УПД'}
-                  {activeSection === 'temp-files' && 'Временные файлы'}
+
                   {activeSection === 'settings' && 'Настройки'}
                 </h2>
                 <p className="text-xs md:text-sm text-gray-500 mt-1 flex items-center gap-2">
@@ -893,10 +885,6 @@ const Index = () => {
 
             {activeSection === 'settings' && userPermissions?.settings?.view && (
               <SettingsPage currentUser={userRole} />
-            )}
-
-            {activeSection === 'temp-files' && (
-              <TempFilesPage />
             )}
 
             {(activeSection === 'contract-application' || activeSection === 'ttn' || activeSection === 'upd') && (
