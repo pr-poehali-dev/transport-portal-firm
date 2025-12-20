@@ -600,8 +600,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         ca.loading_address, ca.unloading_address,
                         ca.created_at
                     FROM t_p96093837_transport_portal_fir.contract_applications ca
-                    LEFT JOIN customers cust ON ca.customer_id = cust.id
-                    LEFT JOIN clients cl ON ca.carrier_id = cl.id
+                    LEFT JOIN t_p96093837_transport_portal_fir.customers cust ON ca.customer_id = cust.id
+                    LEFT JOIN t_p96093837_transport_portal_fir.clients cl ON ca.carrier_id = cl.id
                     ORDER BY ca.created_at DESC
                 ''')
                 columns = [desc[0] for desc in cur.description]

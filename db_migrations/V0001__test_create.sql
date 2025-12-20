@@ -1,0 +1,1 @@
+CREATE TABLE test_minimal (id SERIAL PRIMARY KEY);
