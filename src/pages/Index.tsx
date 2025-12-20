@@ -56,6 +56,7 @@ const Index = () => {
   });
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [userName, setUserName] = useState('');
+  const [documentsMenuOpen, setDocumentsMenuOpen] = useState(false);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -369,6 +370,43 @@ const Index = () => {
               <Icon name="Building2" size={20} className="mr-3" />
               Заказчики
             </Button>
+            
+            <Button
+              variant={documentsMenuOpen || ['contract-application', 'ttn', 'upd'].includes(activeSection) ? 'default' : 'ghost'}
+              className="w-full justify-start"
+              onClick={() => setDocumentsMenuOpen(!documentsMenuOpen)}
+            >
+              <Icon name="FileText" size={20} className="mr-3" />
+              Документы
+              <Icon name={documentsMenuOpen ? "ChevronUp" : "ChevronDown"} size={16} className="ml-auto" />
+            </Button>
+            
+            {documentsMenuOpen && (
+              <div className="ml-6 space-y-1">
+                <Button
+                  variant={activeSection === 'contract-application' ? 'default' : 'ghost'}
+                  className="w-full justify-start text-sm"
+                  onClick={() => { setActiveSection('contract-application'); setMobileMenuOpen(false); }}
+                >
+                  Договор-Заявка
+                </Button>
+                <Button
+                  variant={activeSection === 'ttn' ? 'default' : 'ghost'}
+                  className="w-full justify-start text-sm"
+                  onClick={() => { setActiveSection('ttn'); setMobileMenuOpen(false); }}
+                >
+                  ТТН
+                </Button>
+                <Button
+                  variant={activeSection === 'upd' ? 'default' : 'ghost'}
+                  className="w-full justify-start text-sm"
+                  onClick={() => { setActiveSection('upd'); setMobileMenuOpen(false); }}
+                >
+                  УПД
+                </Button>
+              </div>
+            )}
+            
             <Button
               variant={activeSection === 'temp-files' ? 'default' : 'ghost'}
               className="w-full justify-start"
@@ -409,6 +447,9 @@ const Index = () => {
                   {activeSection === 'drivers' && 'База водителей'}
                   {activeSection === 'clients' && 'Перевозчик'}
                   {activeSection === 'customers' && 'Заказчики'}
+                  {activeSection === 'contract-application' && 'Договор-Заявка'}
+                  {activeSection === 'ttn' && 'ТТН'}
+                  {activeSection === 'upd' && 'УПД'}
                   {activeSection === 'temp-files' && 'Временные файлы'}
                   {activeSection === 'settings' && 'Настройки'}
                 </h2>
@@ -856,6 +897,22 @@ const Index = () => {
 
             {activeSection === 'temp-files' && (
               <TempFilesPage />
+            )}
+
+            {(activeSection === 'contract-application' || activeSection === 'ttn' || activeSection === 'upd') && (
+              <div className="animate-fade-in">
+                <Card className="text-center py-16">
+                  <CardContent>
+                    <Icon name="FileText" size={64} className="mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-2xl font-bold mb-2">Раздел в разработке</h3>
+                    <p className="text-gray-600">
+                      Функционал "{activeSection === 'contract-application' && 'Договор-Заявка'}
+                      {activeSection === 'ttn' && 'ТТН'}
+                      {activeSection === 'upd' && 'УПД'}" будет доступен в следующей версии
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             )}
 
             {(activeSection === 'routes' || activeSection === 'reports') && (
