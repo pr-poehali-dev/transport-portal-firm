@@ -1,1 +1,0 @@
-ALTER TABLE customers ADD COLUMN connection_basis VARCHAR(500);
