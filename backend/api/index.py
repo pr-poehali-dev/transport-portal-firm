@@ -1036,9 +1036,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 if order_data.get('order_number') != old_order_number:
                     changes.append(f'изменил номер заказа с "{old_order_number}" на "{order_data.get("order_number")}"')
                 
-                # Проверка изменения даты заказа
-                if order_data.get('order_date') != old_order_date:
-                    changes.append(f'изменил дату заказа с "{old_order_date}" на "{order_data.get("order_date")}"')
+                # Проверка изменения даты заказа (сравниваем только дату без времени)
+                new_order_date = str(order_data.get('order_date', '')).split('T')[0] if order_data.get('order_date') else ''
+                old_order_date_str = str(old_order_date).split('T')[0] if old_order_date else ''
+                if new_order_date and old_order_date_str and new_order_date != old_order_date_str:
+                    changes.append(f'изменил дату заказа с "{old_order_date_str}" на "{new_order_date}"')
                 
                 # Проверка изменения типа груза
                 if order_data.get('cargo_type') != old_cargo_type:
