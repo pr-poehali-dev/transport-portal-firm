@@ -80,7 +80,6 @@ const ContractApplicationPage = ({ customers, clients, drivers, vehicles, onRefr
     contract_date: new Date().toISOString().split('T')[0],
     customer_id: '',
     carrier_id: '',
-    carrier_name: '',
     vehicle_type: '',
     refrigerator: false,
     cargo_weight: '',
@@ -103,21 +102,7 @@ const ContractApplicationPage = ({ customers, clients, drivers, vehicles, onRefr
     driver_passport_issued: '',
     vehicle_number: '',
     trailer_number: '',
-    transport_conditions: '',
-    customer_full_name: '',
-    customer_inn: '',
-    customer_ogrn: '',
-    customer_legal_address: '',
-    customer_postal_address: '',
-    customer_bank_details: '',
-    customer_director: '',
-    carrier_full_name: '',
-    carrier_inn: '',
-    carrier_ogrn: '',
-    carrier_legal_address: '',
-    carrier_postal_address: '',
-    carrier_bank_details: '',
-    carrier_director: ''
+    transport_conditions: ''
   });
 
   useEffect(() => {
@@ -180,7 +165,6 @@ const ContractApplicationPage = ({ customers, clients, drivers, vehicles, onRefr
       contract_date: contract.contract_date,
       customer_id: contract.customer_id.toString(),
       carrier_id: contract.carrier_id?.toString() || '',
-      carrier_name: contract.carrier_name || '',
       vehicle_type: contract.vehicle_type || '',
       refrigerator: contract.refrigerator || false,
       cargo_weight: contract.cargo_weight?.toString() || '',
@@ -203,21 +187,7 @@ const ContractApplicationPage = ({ customers, clients, drivers, vehicles, onRefr
       driver_passport_issued: contract.driver_passport_issued || '',
       vehicle_number: contract.vehicle_number || '',
       trailer_number: contract.trailer_number || '',
-      transport_conditions: contract.transport_conditions || '',
-      customer_full_name: contract.customer_full_name || '',
-      customer_inn: contract.customer_inn || '',
-      customer_ogrn: contract.customer_ogrn || '',
-      customer_legal_address: contract.customer_legal_address || '',
-      customer_postal_address: contract.customer_postal_address || '',
-      customer_bank_details: contract.customer_bank_details || '',
-      customer_director: contract.customer_director || '',
-      carrier_full_name: contract.carrier_full_name || '',
-      carrier_inn: contract.carrier_inn || '',
-      carrier_ogrn: contract.carrier_ogrn || '',
-      carrier_legal_address: contract.carrier_legal_address || '',
-      carrier_postal_address: contract.carrier_postal_address || '',
-      carrier_bank_details: contract.carrier_bank_details || '',
-      carrier_director: contract.carrier_director || ''
+      transport_conditions: contract.transport_conditions || ''
     });
     setShowForm(true);
   };
@@ -255,7 +225,6 @@ const ContractApplicationPage = ({ customers, clients, drivers, vehicles, onRefr
       contract_date: new Date().toISOString().split('T')[0],
       customer_id: '',
       carrier_id: '',
-      carrier_name: '',
       vehicle_type: '',
       refrigerator: false,
       cargo_weight: '',
@@ -278,59 +247,16 @@ const ContractApplicationPage = ({ customers, clients, drivers, vehicles, onRefr
       driver_passport_issued: '',
       vehicle_number: '',
       trailer_number: '',
-      transport_conditions: '',
-      customer_full_name: '',
-      customer_inn: '',
-      customer_ogrn: '',
-      customer_legal_address: '',
-      customer_postal_address: '',
-      customer_bank_details: '',
-      customer_director: '',
-      carrier_full_name: '',
-      carrier_inn: '',
-      carrier_ogrn: '',
-      carrier_legal_address: '',
-      carrier_postal_address: '',
-      carrier_bank_details: '',
-      carrier_director: ''
+      transport_conditions: ''
     });
   };
 
   const handleCustomerChange = (customerId: string) => {
     setFormData({ ...formData, customer_id: customerId });
-    const customer = customers.find(c => c.id.toString() === customerId);
-    if (customer) {
-      setFormData(prev => ({
-        ...prev,
-        customer_id: customerId,
-        customer_full_name: customer.full_legal_name || '',
-        customer_inn: customer.inn || '',
-        customer_ogrn: customer.ogrn || '',
-        customer_legal_address: customer.legal_address || '',
-        customer_postal_address: customer.postal_address || '',
-        customer_bank_details: customer.bank_details || '',
-        customer_director: customer.director_name || ''
-      }));
-    }
   };
 
   const handleCarrierChange = (carrierId: string) => {
     setFormData({ ...formData, carrier_id: carrierId });
-    const carrier = clients.find(c => c.id.toString() === carrierId);
-    if (carrier) {
-      setFormData(prev => ({
-        ...prev,
-        carrier_id: carrierId,
-        carrier_name: carrier.name || '',
-        carrier_full_name: carrier.full_legal_name || '',
-        carrier_inn: carrier.inn || '',
-        carrier_ogrn: carrier.ogrn || '',
-        carrier_legal_address: carrier.legal_address || '',
-        carrier_postal_address: carrier.postal_address || '',
-        carrier_bank_details: carrier.bank_details || '',
-        carrier_director: carrier.director_name || ''
-      }));
-    }
   };
 
   const filteredContracts = contracts.filter(contract =>
@@ -436,85 +362,37 @@ const ContractApplicationPage = ({ customers, clients, drivers, vehicles, onRefr
               </div>
             </div>
 
-            <div className="border-t pt-4">
-              <h3 className="font-semibold mb-3">Заказчик</h3>
-              <div className="space-y-3">
-                <div>
-                  <Label>Выбрать заказчика</Label>
-                  <Select value={formData.customer_id} onValueChange={handleCustomerChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Выберите заказчика" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id.toString()}>
-                          {customer.nickname}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Input
-                  placeholder="Полное наименование"
-                  value={formData.customer_full_name}
-                  onChange={(e) => setFormData({ ...formData, customer_full_name: e.target.value })}
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    placeholder="ИНН"
-                    value={formData.customer_inn}
-                    onChange={(e) => setFormData({ ...formData, customer_inn: e.target.value })}
-                  />
-                  <Input
-                    placeholder="ОГРН"
-                    value={formData.customer_ogrn}
-                    onChange={(e) => setFormData({ ...formData, customer_ogrn: e.target.value })}
-                  />
-                </div>
-                <Textarea
-                  placeholder="Юридический адрес"
-                  value={formData.customer_legal_address}
-                  onChange={(e) => setFormData({ ...formData, customer_legal_address: e.target.value })}
-                  rows={2}
-                />
-                <Textarea
-                  placeholder="Банковские реквизиты"
-                  value={formData.customer_bank_details}
-                  onChange={(e) => setFormData({ ...formData, customer_bank_details: e.target.value })}
-                  rows={3}
-                />
+            <div className="grid grid-cols-2 gap-4 border-t pt-4">
+              <div>
+                <Label>Заказчик</Label>
+                <Select value={formData.customer_id} onValueChange={handleCustomerChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите заказчика" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id.toString()}>
+                        {customer.nickname}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
 
-            <div className="border-t pt-4">
-              <h3 className="font-semibold mb-3">Перевозчик</h3>
-              <div className="space-y-3">
-                <div>
-                  <Label>Выбрать перевозчика</Label>
-                  <Select value={formData.carrier_id} onValueChange={handleCarrierChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Выберите перевозчика" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id.toString()}>
-                          {client.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Input
-                  placeholder="Полное наименование перевозчика"
-                  value={formData.carrier_full_name}
-                  onChange={(e) => setFormData({ ...formData, carrier_full_name: e.target.value })}
-                />
-                <Textarea
-                  placeholder="Банковские реквизиты перевозчика"
-                  value={formData.carrier_bank_details}
-                  onChange={(e) => setFormData({ ...formData, carrier_bank_details: e.target.value })}
-                  rows={3}
-                />
+              <div>
+                <Label>Перевозчик</Label>
+                <Select value={formData.carrier_id} onValueChange={handleCarrierChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите перевозчика" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id.toString()}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
